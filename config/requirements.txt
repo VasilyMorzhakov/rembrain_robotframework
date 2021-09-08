@@ -1,0 +1,5 @@
+amqp==5.0.6
+pika==1.2.0
+python-logging-rabbitmq==2.0.0
+python-json-logger==2.0.2
+pyyaml==5.4.1

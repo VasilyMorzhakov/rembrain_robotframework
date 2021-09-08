@@ -1,0 +1,15 @@
+processes:
+  p4:
+    publish:
+      - messages1
+      - messages2
+  p2:
+    consume:
+      - messages1
+  p2_new:
+    consume:
+      - messages2
+    expect: hi2
+
+shared_objects:
+  hi_received: Value:int

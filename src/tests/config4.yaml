@@ -1,0 +1,8 @@
+processes:
+  p1:
+    publish: messages
+  p2:
+    consume: messages
+
+shared_objects:
+  ok: Value:int

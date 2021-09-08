@@ -1,0 +1,6 @@
+*.pyc
+*.env
+*.DS_Store
+/.idea/
+pidfile
+!example.env
