@@ -53,34 +53,34 @@ class RobotDispatcher:
         # create queues
         consume_queues = {}  # consume from queues
         publish_queues = {}  # publish to queues
-        for p_name, p_desc in self.config["processes"].items():
-            if not p_desc:
+        for process_name, process_params in self.config["processes"].items():
+            if not process_params:
                 continue
 
-            if "consume" in p_desc:
-                if type(p_desc["consume"]) is not list:
-                    p_desc["consume"] = [p_desc["consume"]]
+            if "consume" in process_params:
+                if type(process_params["consume"]) is not list:
+                    process_params["consume"] = [process_params["consume"]]
 
-                for queue in p_desc["consume"]:
+                for queue in process_params["consume"]:
                     if queue in consume_queues:
-                        consume_queues[queue].append(p_name)
+                        consume_queues[queue].append(process_name)
                     else:
-                        consume_queues[queue] = [p_name]
+                        consume_queues[queue] = [process_name]
 
-            if "publish" in p_desc:
-                if not isinstance(p_desc["publish"], list):
-                    p_desc["publish"] = [p_desc["publish"]]
+            if "publish" in process_params:
+                if not isinstance(process_params["publish"], list):
+                    process_params["publish"] = [process_params["publish"]]
 
-                for queue in p_desc["publish"]:
+                for queue in process_params["publish"]:
                     if queue in publish_queues:
-                        publish_queues[queue].append(p_name)
+                        publish_queues[queue].append(process_name)
                     else:
-                        publish_queues[queue] = [p_name]
+                        publish_queues[queue] = [process_name]
 
             # copy other arguments from yaml to a file
-            for key in p_desc:
+            for key in process_params:
                 if key not in ("publish", "consume"):
-                    self.processes[p_name][key] = p_desc[key]
+                    self.processes[process_name][key] = process_params[key]
 
         for queue_name, bind_processes in consume_queues.items():
             for process in bind_processes:
@@ -98,50 +98,50 @@ class RobotDispatcher:
 
         # shared objects
         self.shared_objects = {
-            so_name: utils.generate(so, self.manager) for so_name, so in self.config["shared_objects"].items()
+            name: utils.generate(obj, self.manager) for name, obj in self.config["shared_objects"].items()
         }
 
     def start_processes(self) -> None:
-        for p_name in self.processes.keys():
-            self._run_process(p_name)
+        for process_name in self.processes.keys():
+            self._run_process(process_name)
 
     def add_process(
             self,
-            p_name: str,
+            process_name: str,
             process_class: T.Any,
             publish_queues: T.Optional[T.Dict[str, T.List[Queue]]] = None,
             consume_queues: T.Optional[T.Dict[str, Queue]] = None,
             **kwargs,
     ) -> None:
-        if p_name in self.process_pool:
-            logging.error(f"Error at creating new process, process {p_name} is already running.")
+        if process_name in self.process_pool:
+            logging.error(f"Error at creating new process, process {process_name} is already running.")
             raise Exception("Process already exists in pool.")
 
-        if p_name in self.processes:
-            logging.error(f"Error at creating new process, process {p_name} already exists in processes.")
+        if process_name in self.processes:
+            logging.error(f"Error at creating new process, process {process_name} already exists in processes.")
             raise Exception("Process already exists in processes.")
 
-        self.processes[p_name] = {
+        self.processes[process_name] = {
             'process_class': process_class,
             'consume_queues': consume_queues if consume_queues else {},
             'publish_queues': publish_queues if publish_queues else {}
         }
 
-        self._run_process(p_name, **kwargs)
-        logging.info(f"New process {p_name} was  created successfully.")
+        self._run_process(process_name, **kwargs)
+        logging.info(f"New process {process_name} was  created successfully.")
 
-    def add_shared_object(self, so_name: str, so_type: str) -> None:
-        if so_name in self.shared_objects.keys():
-            raise Exception(f"Shared object {so_name} already exists.")
+    def add_shared_object(self, object_name: str, object_type: str) -> None:
+        if object_name in self.shared_objects.keys():
+            raise Exception(f"Shared object {object_name} already exists.")
 
-        self.shared_objects[so_name] = utils.generate(so_type, self.manager)
+        self.shared_objects[object_name] = utils.generate(object_type, self.manager)
 
-    def del_shared_object(self, so_name: str) -> None:
-        if so_name not in self.shared_objects.keys():
-            logging.warning(f"Shared object {so_name} does not exist.")
+    def del_shared_object(self, object_name: str) -> None:
+        if object_name not in self.shared_objects.keys():
+            logging.warning(f"Shared object {object_name} does not exist.")
             return
 
-        del self.shared_objects[so_name]
+        del self.shared_objects[object_name]
 
     def stop_process(self, process_name: str) -> None:
         if process_name not in self.process_pool.keys():
@@ -204,7 +204,7 @@ class RobotDispatcher:
                 "project_description": self.project_description,
                 **self.processes[proc_name],
                 **kwargs,
-            },
+            }
         )
         process.start()
         self.process_pool[proc_name] = process

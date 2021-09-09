@@ -1,20 +1,19 @@
 import os
 import socket
-import threading
 import time
 import typing as T
+from threading import Thread
 from traceback import format_exc
 
 import websocket
 
-from rembrain_robotframework.src.ws.command_type import WsCommandType
-from rembrain_robotframework.src.ws.request import WsRequest
+from rembrain_robotframework.src.ws import WsCommandType, WsRequest
 
 
 class WsDispatcher:
     def __init__(self):
         self.ws: T.Optional[websocket.WebSocket] = None
-        self._reader: T.Optional[threading.Thread] = None
+        self._reader: T.Optional[Thread] = None
 
     def open(self) -> None:
         if not self.ws or not self.ws.connected:
@@ -30,7 +29,6 @@ class WsDispatcher:
             print(f"WsDispatcher ERROR: ws CLOSE failed. Reason: {format_exc()}.")
 
         self.ws = None
-
         self._end_silent_reader()
 
     def pull(self, request: WsRequest) -> T.Generator[T.Union[str, bytes], None, None]:
@@ -82,11 +80,10 @@ class WsDispatcher:
                     time.sleep(5.0)
 
             except Exception:
-                if retry_times is None:
-                    print(f"WsDispatcher ERROR: Send '{WsCommandType.PUSH}' command failed. Reason: {format_exc()}.")
-
+                print(f"WsDispatcher ERROR: Send '{WsCommandType.PUSH}' command failed. Reason: {format_exc()}.")
                 self.close()
 
+        # todo try to remove this code
         if delay:
             time.sleep(delay)
 
@@ -105,6 +102,7 @@ class WsDispatcher:
                 self.open()
                 self.ws.send(request.json())
                 self.ws.recv()
+                # todo does it need ?
                 self.ws.settimeout(1.0)
 
                 self._start_silent_reader()
@@ -127,7 +125,7 @@ class WsDispatcher:
                 time.sleep(2.0)
 
     def _start_silent_reader(self) -> None:
-        self._reader = threading.Thread(target=self._silent_recv, daemon=True)
+        self._reader = Thread(target=self._silent_recv, daemon=True)
         self._stop_reader = False
         self._reader.start()
 

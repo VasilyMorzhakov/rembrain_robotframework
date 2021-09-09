@@ -67,12 +67,3 @@ def start_process(process_class: T.Any, *args, **kwargs) -> None:
     finally:
         if process:
             process.free_resources()
-
-
-def eternal(func: T.Callable) -> T.Callable:
-    @wraps(func)
-    def wrapper(*args, **kwargs):
-        while True:
-            return func(*args, **kwargs)
-
-    return wrapper

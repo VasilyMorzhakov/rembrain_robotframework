@@ -10,7 +10,6 @@ from traceback import format_exc
 from python_logging_rabbitmq import FieldFilter
 
 from rembrain_robotframework.src.ws import WsRequest, WsCommandType, WsDispatcher
-from src.utils import eternal
 
 
 class LogHandler(logging.Handler):
@@ -64,17 +63,17 @@ class LogHandler(logging.Handler):
 
         return formatted_record
 
-    @eternal
     def _send_to_ws(self) -> None:
-        try:
-            if self.logs_queue.qsize() > 0:
-                self.ws_connect.open()
-                request: WsRequest = self.logs_queue.get()
-                self.ws_connect.push(request, retry_times=2, delay=5)
+        while True:
+            try:
+                if self.logs_queue.qsize() > 0:
+                    self.ws_connect.open()
+                    request: WsRequest = self.logs_queue.get()
+                    self.ws_connect.push(request, retry_times=2, delay=5)
 
-        except Exception as e:
-            print("Exception in logging:", e)
-            time.sleep(5)
-            self.ws_connect.close()
+            except Exception as e:
+                print("Exception in logging:", e)
+                time.sleep(5)
+                self.ws_connect.close()
 
-        time.sleep(0.1)
+            time.sleep(0.1)

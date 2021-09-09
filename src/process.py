@@ -17,7 +17,7 @@ class RobotProcess:
         self.name: str = name
         self.consume_queues: T.Dict[str, Queue] = consume_queues  # queues for reading
         self.publish_queues: T.Dict[str, T.List[Queue]] = publish_queues  # queues for writing
-        self.shared = namedtuple('_', shared_objects.keys())(**shared_objects)
+        self.shared: T.Any = namedtuple('_', shared_objects.keys())(**shared_objects)
 
         self.debug: bool = False
         self.queues_to_clear: T.List[str] = []  # in case of exception this queues are cleared

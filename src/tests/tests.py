@@ -186,6 +186,7 @@ class TestServer(unittest.TestCase):
         time.sleep(16.0)
         if robot_dispatcher.shared_objects["ok"].value != 1:
             time.sleep(10.0)
+
         self.assertEqual(robot_dispatcher.shared_objects["ok"].value, 1)
 
 
