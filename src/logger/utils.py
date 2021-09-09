@@ -6,14 +6,13 @@ import typing as T
 import pika
 from python_logging_rabbitmq import RabbitMQHandler
 
-from robot_framework.src.logger.formatter import JsonFormatter
-from robot_framework.src.logger.handler import LogHandler
+from rembrain_robotframework.src.logger.formatter import JsonFormatter
+from rembrain_robotframework.src.logger.handler import LogHandler
 
 
 def get_log_handler(project_description: dict, in_cluster: bool = True) -> T.Any:
     if in_cluster:
         if "RABBIT_ADDRESS" not in os.environ or "@" not in os.environ["RABBIT_ADDRESS"]:
-            # testing environment
             print("Warning, testing environment, web logging is not working")
             return logging.StreamHandler()
 
@@ -45,7 +44,6 @@ def get_log_handler(project_description: dict, in_cluster: bool = True) -> T.Any
                 ("ROBOT_NAME" in os.environ and "ROBOT_PASSWORD" in os.environ)
                 or ("ML_NAME" in os.environ and "ML_PASSWORD" in os.environ)
         ):
-            # testing environment
             print("Warning, testing environment, web logging is not working")
             return logging.StreamHandler()
 
@@ -64,7 +62,7 @@ def set_logger(project_description: dict, in_cluster: bool = True) -> None:
     # if it into cluster - it just uses rabbit directly, else - it uses web sockets.
     if in_cluster:
         if "RABBIT_ADDRESS" not in os.environ:
-            print("\n\n\nNo rabbit address is supplied for this process, logging is not started\n\n\n")
+            print("No rabbit address is supplied for this process, logging is not started.")
             return
 
         logging.getLogger("pika").setLevel(logging.WARNING)

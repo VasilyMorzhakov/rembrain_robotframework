@@ -4,10 +4,11 @@ import time
 import typing as T
 import unittest
 from multiprocessing import Queue
+
 import numpy as np
 import yaml
 
-from robot_framework import RobotDispatcher, RobotProcess
+from rembrain_robotframework import RobotDispatcher, RobotProcess
 
 
 class P1(RobotProcess):
@@ -20,7 +21,6 @@ class P1(RobotProcess):
 class P2(RobotProcess):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-
         self.to_expect = kwargs.get("expect", "hi")
 
     def run(self) -> None:
@@ -28,7 +28,6 @@ class P2(RobotProcess):
 
         while time.time() - start_time < 2:
             record: str = self.consume()
-
             if record == self.to_expect:
                 self.shared.hi_received.value += 1
                 logging.info(f"{self.name}  {record}  received")
@@ -51,7 +50,6 @@ class P4(RobotProcess):
     def run(self) -> None:
         self.publish(queue_name="messages1", message="hi1")
         self.publish(queue_name="messages2", message="hi2")
-
         logging.info(self.name + " hi sended")
 
 
@@ -91,6 +89,7 @@ class VideoConsumer(RobotProcess):
         for _ in range(4000):
             record: str = self.consume()
             assert record.shape == (212, 256, 3)
+
         self.shared.ok.value = 1
 
 

@@ -4,8 +4,8 @@ import time
 import typing as T
 from multiprocessing import Process, Queue, Manager
 
-from robot_framework.src import utils
-from robot_framework.src.utils import set_logger
+from rembrain_robotframework.src import utils
+from rembrain_robotframework.src.utils import set_logger
 
 
 class RobotDispatcher:

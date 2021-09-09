@@ -7,8 +7,8 @@ from traceback import format_exc
 
 import websocket
 
-from robot_framework.src.ws.command_type import WsCommandType
-from robot_framework.src.ws.request import WsRequest
+from rembrain_robotframework.src.ws.command_type import WsCommandType
+from rembrain_robotframework.src.ws.request import WsRequest
 
 
 class WsDispatcher:
@@ -49,10 +49,7 @@ class WsDispatcher:
                         break
 
                     response: T.Union[str, bytes] = self.ws.recv()
-                    if isinstance(response, bytes):
-                        yield response
-
-                    if isinstance(response, str) and response != WsCommandType.PING:
+                    if isinstance(response, bytes) or (isinstance(response, str) and response != WsCommandType.PING):
                         yield response
 
             except Exception:
@@ -61,6 +58,7 @@ class WsDispatcher:
             time.sleep(5)
             self.close()
 
+    # todo refactor params
     def push(
             self, request: WsRequest, retry_times: T.Optional[int] = None, delay: T.Optional[int] = None
     ) -> T.Optional[T.Union[str, bytes]]:

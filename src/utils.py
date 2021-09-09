@@ -5,7 +5,7 @@ from ctypes import c_bool, c_int, c_float, c_char_p
 from functools import wraps
 from multiprocessing import Value, Lock, Manager
 
-from robot_framework.src.logger.utils import set_logger
+from rembrain_robotframework.src.logger.utils import set_logger
 
 
 def generate(name: str, manager: Manager) -> T.Any:
@@ -67,3 +67,12 @@ def start_process(process_class: T.Any, *args, **kwargs) -> None:
     finally:
         if process:
             process.free_resources()
+
+
+def eternal(func: T.Callable) -> T.Callable:
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        while True:
+            return func(*args, **kwargs)
+
+    return wrapper

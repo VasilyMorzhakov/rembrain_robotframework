@@ -4,7 +4,7 @@ import typing as T
 import cv2
 import numpy
 
-from robot_framework.src.pack import PackType
+from rembrain_robotframework.src.pack import PackType
 
 
 class Unpacker:

@@ -13,8 +13,6 @@ class SensorSender(RobotProcess):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-
-        self.ws_connect = WsDispatcher()
         if "to_play" in self.publish_queues:
             self.publish("online", queue_name="to_play")
 
@@ -31,5 +29,5 @@ class SensorSender(RobotProcess):
 
         while True:
             message: Any = self.consume()
-            request.message=message
+            request.message = message
             self.ws_connect.push(request)

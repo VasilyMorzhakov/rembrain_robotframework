@@ -9,8 +9,8 @@ from traceback import format_exc
 
 from python_logging_rabbitmq import FieldFilter
 
-from robot_framework.src import ws
-from robot_framework.src.ws.dispatcher import WsDispatcher
+from rembrain_robotframework.src.ws import WsRequest, WsCommandType, WsDispatcher
+from src.utils import eternal
 
 
 class LogHandler(logging.Handler):
@@ -24,17 +24,13 @@ class LogHandler(logging.Handler):
         if len(self.fields) > 0:
             self.addFilter(FieldFilter(self.fields, True))
 
-        # todo maybe queue from multiprocessing?
         self.logs_queue = queue.Queue()
         self.ws_connect = WsDispatcher()
         Thread(target=self._send_to_ws, daemon=True).start()
 
     def emit(self, record: logging.LogRecord) -> None:
         try:
-            try:
-                formatted_record: T.Any = json.loads(self.format(record))
-            except (UnicodeDecodeError, json.JSONDecodeError):
-                formatted_record: str = self.format(record)
+            formatted_record = self._get_formatted_record(record)
 
             if "ROBOT_PASSWORD" in os.environ:
                 username: str = os.environ["ROBOT_NAME"]
@@ -43,8 +39,8 @@ class LogHandler(logging.Handler):
                 username: str = os.environ["ML_NAME"]
                 password: str = os.environ["ML_PASSWORD"]
 
-            request = ws.WsRequest(
-                command=ws.WsCommandType.PUSH,
+            request = WsRequest(
+                command=WsCommandType.PUSH,
                 exchange=self._RABBIT_EXCHANGE,
                 robot_name="",
                 username=username,
@@ -58,16 +54,27 @@ class LogHandler(logging.Handler):
         except Exception:
             print("Attention: logger exception - record was not written! Reason:", format_exc())
 
-    def _send_to_ws(self) -> None:
-        while True:
-            try:
-                if self.logs_queue.qsize() > 0:
-                    self.ws_connect.open()
-                    request: ws.WsRequest = self.logs_queue.get()
-                    self.ws_connect.push(request, retry_times=2, delay=5)
-            except Exception as e:
-                print("Exception in logging:", e)
-                time.sleep(5)
-                self.ws_connect.close()
+    def _get_formatted_record(self, record: logging.LogRecord) -> T.Any:
+        formatted_record: str = self.format(record)
 
-            time.sleep(0.1)
+        try:
+            formatted_record = json.loads(formatted_record)
+        except (UnicodeDecodeError, json.JSONDecodeError):
+            pass
+
+        return formatted_record
+
+    @eternal
+    def _send_to_ws(self) -> None:
+        try:
+            if self.logs_queue.qsize() > 0:
+                self.ws_connect.open()
+                request: WsRequest = self.logs_queue.get()
+                self.ws_connect.push(request, retry_times=2, delay=5)
+
+        except Exception as e:
+            print("Exception in logging:", e)
+            time.sleep(5)
+            self.ws_connect.close()
+
+        time.sleep(0.1)
