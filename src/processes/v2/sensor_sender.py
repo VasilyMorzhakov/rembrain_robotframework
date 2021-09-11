@@ -7,7 +7,7 @@ from rembrain_robotframework.src.ws.command_type import WsCommandType
 from rembrain_robotframework.src.ws.dispatcher import WsDispatcher
 from rembrain_robotframework.src.ws.request import WsRequest
 
-
+# todo it does not need for this realization ?
 class SensorSender(RobotProcess):
     """ It sends messages (like current robot position) to the server."""
 
@@ -17,6 +17,7 @@ class SensorSender(RobotProcess):
             self.publish("online", queue_name="to_play")
 
     def run(self) -> None:
+        return
         logging.info(f"{self.__class__.__name__} started, name: {self.name}.")
 
         request = WsRequest(

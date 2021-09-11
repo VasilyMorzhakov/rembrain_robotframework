@@ -2,11 +2,13 @@ import json
 import logging
 import typing as T
 
-from rembrain_robotframework.src import RobotProcess
+from rembrain_robotframework import RobotProcess
 
 
+# todo it does not need for this realization ?
 class CommandReceiver(RobotProcess):
     def run(self) -> None:
+        return
         logging.info(f"{self.__class__.__name__} started, name: {self.name}.")
 
         while True:
