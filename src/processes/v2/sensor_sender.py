@@ -1,11 +1,7 @@
 import logging
-import os
-from typing import Any
 
 from rembrain_robotframework import RobotProcess
-from rembrain_robotframework.src.ws.command_type import WsCommandType
-from rembrain_robotframework.src.ws.dispatcher import WsDispatcher
-from rembrain_robotframework.src.ws.request import WsRequest
+
 
 # todo it does not need for this realization ?
 class SensorSender(RobotProcess):
@@ -17,18 +13,4 @@ class SensorSender(RobotProcess):
             self.publish("online", queue_name="to_play")
 
     def run(self) -> None:
-        return
         logging.info(f"{self.__class__.__name__} started, name: {self.name}.")
-
-        request = WsRequest(
-            command=WsCommandType.PUSH,
-            exchange="state",
-            robot_name=os.environ["ROBOT_NAME"],
-            username=os.environ["ROBOT_NAME"],
-            password=os.environ["ROBOT_PASSWORD"],
-        )
-
-        while True:
-            message: Any = self.consume()
-            request.message = message
-            self.ws_connect.push(request)
