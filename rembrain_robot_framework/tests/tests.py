@@ -8,7 +8,7 @@ from multiprocessing import Queue
 import numpy as np
 import yaml
 
-from rembrain_robotframework import RobotDispatcher, RobotProcess
+from rembrain_robot_framework import RobotDispatcher, RobotProcess
 
 
 class P1(RobotProcess):

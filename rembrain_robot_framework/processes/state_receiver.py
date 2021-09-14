@@ -3,10 +3,8 @@ import logging
 import os
 from typing import Union, Generator
 
-from rembrain_robotframework import RobotProcess
-from robot_framework.ws import WsCommandType
-from robot_framework.ws.dispatcher import WsDispatcher
-from robot_framework.ws.request import WsRequest
+from rembrain_robot_framework import RobotProcess
+from rembrain_robot_framework.ws import WsCommandType, WsDispatcher, WsRequest
 
 
 class StateReceiver(RobotProcess):

@@ -6,8 +6,7 @@ import typing as T
 import pika
 from python_logging_rabbitmq import RabbitMQHandler
 
-from robot_framework.logger.formatter import JsonFormatter
-from robot_framework.logger.handler import LogHandler
+from rembrain_robot_framework.logger import JsonFormatter, LogHandler
 
 
 def get_log_handler(project_description: dict, in_cluster: bool = True) -> T.Any:

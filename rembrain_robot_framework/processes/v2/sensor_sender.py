@@ -1,6 +1,6 @@
 import logging
 
-from rembrain_robotframework import RobotProcess
+from rembrain_robot_framework import RobotProcess
 
 
 # todo it does not need for this realization ?

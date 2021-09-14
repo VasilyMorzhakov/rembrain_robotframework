@@ -2,10 +2,8 @@ import logging
 import os
 from typing import Any
 
-from rembrain_robotframework import RobotProcess
-from robot_framework.ws import WsCommandType
-from robot_framework.ws.dispatcher import WsDispatcher
-from robot_framework.ws.request import WsRequest
+from rembrain_robot_framework import RobotProcess
+from rembrain_robot_framework.ws import WsCommandType, WsDispatcher, WsRequest
 
 
 class SensorSender(RobotProcess):
@@ -31,5 +29,5 @@ class SensorSender(RobotProcess):
 
         while True:
             message: Any = self.consume()
-            request.message=message
+            request.message = message
             self.ws_connect.push(request)

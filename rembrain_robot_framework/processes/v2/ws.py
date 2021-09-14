@@ -2,8 +2,8 @@ import logging
 import os
 import typing as T
 
-from rembrain_robotframework import RobotProcess
-from robot_framework.ws import WsDispatcher, WsRequest, WsCommandType
+from rembrain_robot_framework import RobotProcess
+from rembrain_robot_framework.ws import WsDispatcher, WsRequest, WsCommandType
 
 
 class WsRobotProcess(RobotProcess):

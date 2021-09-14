@@ -7,7 +7,7 @@ from traceback import format_exc
 
 import websocket
 
-from robot_framework.ws import WsCommandType, WsRequest
+from rembrain_robot_framework.ws import WsCommandType, WsRequest
 
 
 class WsDispatcher:
