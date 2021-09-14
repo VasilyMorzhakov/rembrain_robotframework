@@ -5,9 +5,9 @@ import time
 from datetime import datetime, timezone
 
 from rembrain_robotframework import RobotProcess
-from rembrain_robotframework.src.ws.command_type import WsCommandType
-from rembrain_robotframework.src.ws.dispatcher import WsDispatcher
-from rembrain_robotframework.src.ws.request import WsRequest
+from robot_framework.ws import WsCommandType
+from robot_framework.ws.dispatcher import WsDispatcher
+from robot_framework.ws.request import WsRequest
 
 
 class CommandSender(RobotProcess):

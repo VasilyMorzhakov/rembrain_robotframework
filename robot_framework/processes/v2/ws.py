@@ -3,7 +3,7 @@ import os
 import typing as T
 
 from rembrain_robotframework import RobotProcess
-from rembrain_robotframework.src.ws import WsDispatcher, WsRequest, WsCommandType
+from robot_framework.ws import WsDispatcher, WsRequest, WsCommandType
 
 
 class WsRobotProcess(RobotProcess):

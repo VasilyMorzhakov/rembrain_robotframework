@@ -9,7 +9,7 @@ from traceback import format_exc
 
 from python_logging_rabbitmq import FieldFilter
 
-from rembrain_robotframework.src.ws import WsRequest, WsCommandType, WsDispatcher
+from robot_framework.ws import WsRequest, WsCommandType, WsDispatcher
 
 
 class LogHandler(logging.Handler):

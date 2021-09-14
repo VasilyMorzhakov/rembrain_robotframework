@@ -5,7 +5,7 @@ from ctypes import c_bool, c_int, c_float, c_char_p
 from functools import wraps
 from multiprocessing import Value, Lock, Manager
 
-from rembrain_robotframework.src.logger.utils import set_logger
+from robot_framework.logger.utils import set_logger
 
 
 def generate(name: str, manager: Manager) -> T.Any:

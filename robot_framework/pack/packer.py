@@ -5,7 +5,7 @@ import typing as T
 import cv2
 import numpy
 
-from rembrain_robotframework.src.pack import PackType
+from robot_framework.pack import PackType
 
 
 class Packer:
