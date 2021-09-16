@@ -1,6 +1,6 @@
 amqp==5.0.6
 numpy==1.19.3
-opencv-python==4.4.0.42
+opencv-python==4.5.3.56
 pika==1.2.0
 pydantic==1.8.2
 python-logging-rabbitmq==2.0.0
