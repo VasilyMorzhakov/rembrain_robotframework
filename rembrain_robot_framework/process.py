@@ -91,7 +91,16 @@ class RobotProcess:
 
         return message
 
-    def is_full(self, publish_queue_name: str) -> bool:
+    def is_full(self, *, publish_queue_name: T.Optional = None, consume_queue_name: T.Optional = None) -> bool:
+        if publish_queue_name is None and consume_queue_name is None:
+            raise Exception(f"None of params was got!")
+
+        if publish_queue_name and consume_queue_name:
+            raise Exception(f"Only one of params must set!")
+
+        if consume_queue_name:
+            return self.consume_queues[consume_queue_name].full()
+
         for q in self.publish_queues[publish_queue_name]:
             if q.full():
                 return True

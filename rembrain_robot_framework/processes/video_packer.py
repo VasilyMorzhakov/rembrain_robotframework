@@ -7,8 +7,7 @@ from rembrain_robot_framework import RobotProcess
 from rembrain_robot_framework.pack import Packer
 
 
-# todo fix it
-class VideoStreamer(RobotProcess):
+class VideoPacker(RobotProcess):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.packets_sent = 0
