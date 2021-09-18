@@ -1,5 +1,4 @@
 from .amqp_receiver import AmqpReceiver
-from .audio_receiver_sd import AudioReceiverSd
 from .command_receiver import CommandReceiver
 from .command_sender import CommandSender
 from .ping_sender import PingSender

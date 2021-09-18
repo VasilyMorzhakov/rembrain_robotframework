@@ -32,6 +32,10 @@ class WsRobotProcess(RobotProcess):
 
         self.is_decode: bool = kwargs.get('is_decode', False)
 
+        self.retry_push: T.Union[str, int, None] = kwargs.get('retry_push')
+        if self.retry_push:
+            self.retry_push = int(self.retry_push)
+
     def get_ws_request(self) -> WsRequest:
         return WsRequest(
             command=self.command_type,
@@ -76,7 +80,7 @@ class WsRobotProcess(RobotProcess):
 
         while True:
             request.message = self.consume()
-            self.ws_connect.push(request)
+            self.ws_connect.push(request, retry_times=self.retry_push)
 
     # todo what about time?
     def _push_loop(self):
