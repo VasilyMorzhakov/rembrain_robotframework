@@ -103,12 +103,13 @@ class TestServer(unittest.TestCase):
             "p2_new": {"process_class": P2, "keep_alive": False},
         }
 
-        config: T.Any = yaml.load(open(os.path.join(os.path.dirname(__file__), "config1.yaml")), Loader=yaml.BaseLoader)
-        robot_dispatcher = RobotDispatcher(config, processes)
-        robot_dispatcher.start_processes()
+        with open(os.path.join(os.path.dirname(__file__), "config1.yaml")) as file:
+            config: T.Any = yaml.load(file, Loader=yaml.BaseLoader)
+            robot_dispatcher = RobotDispatcher(config, processes)
+            robot_dispatcher.start_processes()
 
-        time.sleep(3.0)
-        self.assertEqual(robot_dispatcher.shared_objects["hi_received"].value, 4)
+            time.sleep(3.0)
+            self.assertEqual(robot_dispatcher.shared_objects["hi_received"].value, 4)
 
     def test_input_queues_different(self):
         print(f"Test: check queues are different.")
@@ -118,12 +119,12 @@ class TestServer(unittest.TestCase):
             "p3": {"process_class": P3, "keep_alive": False},
         }
 
-        config: T.Any = yaml.load(open(os.path.join(os.path.dirname(__file__), "config2.yaml")), Loader=yaml.BaseLoader)
+        with open(os.path.join(os.path.dirname(__file__), "config2.yaml")) as file:
+            config: T.Any = yaml.load(file, Loader=yaml.BaseLoader)
+
         robot_dispatcher = RobotDispatcher(config, processes)
         robot_dispatcher.start_processes()
-
         time.sleep(3.0)
-
         self.assertEqual(robot_dispatcher.shared_objects["hi_received"].value, 2)
 
     def test_output_queues_different(self) -> None:
@@ -134,7 +135,9 @@ class TestServer(unittest.TestCase):
             "p2_new": {"process_class": P2, "keep_alive": False},
         }
 
-        config: T.Any = yaml.load(open(os.path.join(os.path.dirname(__file__), "config3.yaml")), Loader=yaml.BaseLoader)
+        with open(os.path.join(os.path.dirname(__file__), "config3.yaml")) as file:
+            config: T.Any = yaml.load(file, Loader=yaml.BaseLoader)
+
         robot_dispatcher = RobotDispatcher(config, processes)
         robot_dispatcher.start_processes()
 
@@ -169,7 +172,6 @@ class TestServer(unittest.TestCase):
         )
 
         time.sleep(3.0)
-
         self.assertEqual(robot_dispatcher.shared_objects["success"].value, True)
 
     def test_performance(self) -> None:
@@ -179,14 +181,13 @@ class TestServer(unittest.TestCase):
             "p2": {"process_class": VideoConsumer, "keep_alive": False},
         }
 
-        config: T.Any = yaml.load(open(os.path.join(os.path.dirname(__file__), "config4.yaml")), Loader=yaml.BaseLoader)
+        with open(os.path.join(os.path.dirname(__file__), "config4.yaml")) as file:
+            config: T.Any = yaml.load(file, Loader=yaml.BaseLoader)
+
         robot_dispatcher = RobotDispatcher(config, processes)
         robot_dispatcher.start_processes()
 
-        time.sleep(16.0)
-        if robot_dispatcher.shared_objects["ok"].value != 1:
-            time.sleep(10.0)
-
+        time.sleep(20.0)
         self.assertEqual(robot_dispatcher.shared_objects["ok"].value, 1)
 
 
