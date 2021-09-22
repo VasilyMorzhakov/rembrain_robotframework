@@ -15,7 +15,7 @@ class P1(RobotProcess):
     def run(self) -> None:
         self.publish("hi")
 
-        logging.info(self.name + " hi sended")
+        logging.info(self.name + " hi sent")
 
 
 class P2(RobotProcess):
@@ -30,7 +30,7 @@ class P2(RobotProcess):
             record: str = self.consume()
             if record == self.to_expect:
                 self.shared.hi_received.value += 1
-                logging.info(f"{self.name}  {record}  received")
+                logging.info(f"{self.name} {record} received")
 
 
 class P3(RobotProcess):
@@ -50,7 +50,7 @@ class P4(RobotProcess):
     def run(self) -> None:
         self.publish(queue_name="messages1", message="hi1")
         self.publish(queue_name="messages2", message="hi2")
-        logging.info(self.name + " hi sended")
+        logging.info(self.name + " hi sent")
 
 
 class AP1(RobotProcess):
