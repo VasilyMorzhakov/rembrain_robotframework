@@ -1,0 +1,7 @@
+processes:
+  failing_process:
+    fail_threshold: 4
+    sleep_interval: 0.1
+
+shared_objects:
+  ok: Value:int
