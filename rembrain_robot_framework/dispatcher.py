@@ -9,8 +9,6 @@ from rembrain_robot_framework.utils import set_logger
 
 
 class RobotDispatcher:
-    """ It passes a config object and a list of created processes."""
-
     def __init__(
             self,
             config: T.Any = None,
