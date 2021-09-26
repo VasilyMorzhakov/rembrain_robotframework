@@ -1,3 +1,4 @@
+from __future__ import annotations
 import logging
 import time
 import typing as T
@@ -6,6 +7,11 @@ from functools import wraps
 from multiprocessing import Value, Lock, Manager
 
 from rembrain_robot_framework.logger import set_logger
+
+# This is all so we can import RobotProcess for typechecking without circular imports
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from rembrain_robot_framework.process import RobotProcess
 
 
 def generate(name: str, manager: Manager) -> T.Any:
@@ -57,7 +63,7 @@ def keep_alive(start_process_func: T.Callable) -> T.Callable:
 
 
 @keep_alive
-def start_process(process_class: T.Any, *args, **kwargs) -> None:
+def start_process(process_class: RobotProcess, *args, **kwargs) -> None:
     process: T.Any = None
     set_logger(kwargs["project_description"], kwargs.get("in_cluster", True))
 

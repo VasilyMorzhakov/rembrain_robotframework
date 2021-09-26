@@ -66,4 +66,10 @@ def set_logger(project_description: dict, in_cluster: bool = True) -> None:
 
         logging.getLogger("pika").setLevel(logging.WARNING)
 
-    logging.root.addHandler(get_log_handler(project_description, in_cluster))
+    handler = get_log_handler(project_description, in_cluster)
+    # Don't add handlers of the type that have already been added
+    has_this_handler = main_logger.hasHandlers() and any(
+        (isinstance(handler, type(x)) for x in main_logger.handlers)
+    )
+    if not has_this_handler:
+        main_logger.addHandler(handler)
