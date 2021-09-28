@@ -1,5 +1,4 @@
 amqp==5.0.6
-numpy==1.21.2
 opencv-python==4.4.0.46
 pika==1.2.0
 python-json-logger==2.0.2
