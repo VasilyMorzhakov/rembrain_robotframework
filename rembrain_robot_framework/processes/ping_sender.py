@@ -4,13 +4,12 @@ import subprocess
 import time
 
 from rembrain_robot_framework import RobotProcess
-from rembrain_robot_framework.ws import WsCommandType, WsDispatcher, WsRequest
 
 
+# todo check it
 class PingSender(RobotProcess):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.ws_connect = WsDispatcher()
 
         # get container ID - it's assumed, that we're in a docker container
         try:
@@ -21,14 +20,14 @@ class PingSender(RobotProcess):
             logging.error(e, exc_info=True)
 
     def run(self):
-        logging.info(f"Started pinger process, name: {self.name}.")
-        request = WsRequest(
-            command=WsCommandType.PUSH,
-            exchange="processor_ping_sender",
-            robot_name=os.environ["ROBOT_NAME"],
-            username=os.environ["ROBOT_NAME"],
-            password=os.environ["ROBOT_PASSWORD"],
-        )
+        logging.info(f"{self.__class__.__name__} started, name: {self.name}.")
+        # request = WsRequest(
+        #     command=WsCommandType.PUSH,
+        #     exchange="processor_ping_sender",
+        #     robot_name=os.environ["ROBOT_NAME"],
+        #     username=os.environ["ROBOT_NAME"],
+        #     password=os.environ["ROBOT_PASSWORD"],
+        # )
 
         while True:
             processor_info = {
@@ -37,6 +36,5 @@ class PingSender(RobotProcess):
                 "active": self.shared.processor_active.value,
                 "id": self.container_id
             }
-            request.message = processor_info
-            self.ws_connect.push(request)
+            self.publish(processor_info)
             time.sleep(1)
