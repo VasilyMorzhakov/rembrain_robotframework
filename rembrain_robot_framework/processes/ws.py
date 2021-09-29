@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import time
 import typing as T
 
 from rembrain_robot_framework import RobotProcess
@@ -34,6 +35,10 @@ class WsRobotProcess(RobotProcess):
         self.is_decode: bool = kwargs.get('is_decode', False)
         self.to_json: bool = kwargs.get('to_json', False)
 
+        # For push/push_loop we're sending a ping in an interval to keep the connection alive
+        self.keep_alive_interval: float = float(kwargs.get('keep_alive_interval', 1.0))
+        self.last_ping_time: float = None
+
         self.retry_push: T.Union[str, int, None] = kwargs.get('retry_push')
         if self.retry_push:
             self.retry_push = int(self.retry_push)
@@ -47,8 +52,18 @@ class WsRobotProcess(RobotProcess):
             password=self.password,
         )
 
+    def get_ping_request(self) -> WsRequest:
+        return WsRequest(
+            command=WsCommandType.PING,
+            exchange=self.exchange,
+            robot_name=self.robot_name,
+            username=self.username,
+            password=self.password,
+        )
+
     def run(self) -> None:
         logging.info(f"{self.__class__.__name__} started, name: {self.name}.")
+        self.last_ping_time = time.time()
 
         if self.command_type == WsCommandType.PULL:
             self._pull()
@@ -84,6 +99,7 @@ class WsRobotProcess(RobotProcess):
         request = self.get_ws_request()
 
         while True:
+            self._check_send_ping()
             request.message = self.consume()
             self.ws_connect.push(request, retry_times=self.retry_push)
 
@@ -93,4 +109,11 @@ class WsRobotProcess(RobotProcess):
         next(push_loop)
 
         while True:
+            self._check_send_ping()
             push_loop.send(self.consume())
+
+    def _check_send_ping(self):
+        now = time.time()
+        if now - self.last_ping_time >= self.keep_alive_interval:
+            self.ws_connect.push(self.get_ping_request())
+            self.last_ping_time = now
