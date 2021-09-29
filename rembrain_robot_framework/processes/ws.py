@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 import typing as T
@@ -31,6 +32,7 @@ class WsRobotProcess(RobotProcess):
         self.password: str = password if password else os.environ["ROBOT_PASSWORD"]
 
         self.is_decode: bool = kwargs.get('is_decode', False)
+        self.to_json: bool = kwargs.get('to_json', False)
 
         self.retry_push: T.Union[str, int, None] = kwargs.get('retry_push')
         if self.retry_push:
@@ -62,7 +64,7 @@ class WsRobotProcess(RobotProcess):
         ws_channel: T.Generator = self.ws_connect.pull(self.get_ws_request())
 
         while True:
-            response_data: T.Union[str, bytes] = next(ws_channel)
+            response_data: T.Union[str, bytes, dict] = next(ws_channel)
 
             if self.is_decode:
                 if not isinstance(response_data, bytes):
@@ -71,6 +73,9 @@ class WsRobotProcess(RobotProcess):
                     raise Exception(error_message)
 
                 response_data = response_data.decode(encoding="utf-8")
+
+            if self.to_json:
+                response_data = json.loads(response_data)
 
             self.publish(response_data)
 
