@@ -3,7 +3,7 @@ import logging
 from rembrain_robot_framework import RobotProcess
 
 # todo check it
-class StateReceiver(RobotProcess):
+class StateProcess(RobotProcess):
     def run(self):
         logging.info(f"{self.__class__.__name__} started, name: {self.name}.")
 
