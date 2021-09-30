@@ -7,7 +7,7 @@ from rembrain_robot_framework import RobotProcess
 
 
 # todo check it
-class PingSender(RobotProcess):
+class PingProcess(RobotProcess):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 

@@ -21,6 +21,7 @@ class CommandSender(RobotProcess):
         # )
         # ping_request: WsRequest = request.copy(update={"command": WsCommandType.PING})
         while True:
+            # todo remove condition?
             if self.consume_queues["ml_to_robot"].empty():
                 time.sleep(0.01)
                 self.publish({"command": WsCommandType.PING})
