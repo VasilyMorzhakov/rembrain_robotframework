@@ -1,12 +1,10 @@
 import json
 import logging
-import os
 import time
-from typing import Generator, Union
+from typing import Union
 
 from rembrain_robot_framework import RobotProcess
 from rembrain_robot_framework.pack import Unpacker
-from rembrain_robot_framework.ws import WsCommandType, WsDispatcher, WsRequest
 
 
 class VideoReceiver(RobotProcess):
@@ -16,18 +14,8 @@ class VideoReceiver(RobotProcess):
 
     def run(self):
         logging.info(f"{self.__class__.__name__} started, name: {self.name}.")
-
-        # ws_channel: Generator = self.ws_connect.pull(
-        #     WsRequest(
-        #         command=WsCommandType.PULL,
-        #         exchange="camera0",
-        #         robot_name=os.environ["ROBOT_NAME"],
-        #         username=os.environ["ROBOT_NAME"],
-        #         password=os.environ["ROBOT_PASSWORD"],
-        #     )
-        # )
-
         logging.info("active, start consuming")
+
         while True:
             response_data: Union[str, bytes] = self.consume()
             try:
