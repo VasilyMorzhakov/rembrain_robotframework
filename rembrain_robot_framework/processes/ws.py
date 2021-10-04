@@ -79,7 +79,6 @@ class WsRobotProcess(RobotProcess):
         else:
             raise Exception("Unknown type of ws command type.")
 
-    # todo what about time?
     def _pull(self) -> None:
         ws_channel: T.Generator = self.ws_connect.pull(self.get_ws_request())
 
@@ -99,7 +98,6 @@ class WsRobotProcess(RobotProcess):
 
             self.publish(response_data)
 
-    # todo what about time?
     def _push(self):
         request = self.get_ws_request()
 
@@ -108,7 +106,6 @@ class WsRobotProcess(RobotProcess):
             request.message = self.consume()
             self.ws_connect.push(request, retry_times=self.retry_push)
 
-    # todo what about time?
     def _push_loop(self):
         push_loop: T.Generator = self.ws_connect.push_loop(self.get_ws_request())
         next(push_loop)

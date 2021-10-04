@@ -18,7 +18,6 @@ class StateProcess(RobotProcess):
         # )
 
         while True:
-            # todo remember about is_decode
             status = self.consume()
 
             if status["state_machine"] == "NEED_ML":

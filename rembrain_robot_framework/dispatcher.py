@@ -82,7 +82,7 @@ class RobotDispatcher:
 
         for queue_name, bind_processes in consume_queues.items():
             for process in bind_processes:
-                queue = Queue(maxsize=1000)
+                queue = Queue(maxsize=30)
                 self.processes[process]["consume_queues"][queue_name] = queue
 
                 if queue_name not in publish_queues:
