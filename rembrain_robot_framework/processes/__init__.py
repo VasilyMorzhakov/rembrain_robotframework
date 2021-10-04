@@ -1,5 +1,5 @@
 from .amqp_worker import AmqpWorker
-from .command_sender import CommandSender
+from .command_timer import CommandTimer
 from .ping import PingProcess
 from .state import StateProcess
 from .stub import StubProcess
