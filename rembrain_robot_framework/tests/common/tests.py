@@ -14,7 +14,6 @@ from rembrain_robot_framework import RobotDispatcher, RobotProcess
 class P1(RobotProcess):
     def run(self) -> None:
         self.publish("hi")
-
         logging.info(self.name + " hi sent")
 
 

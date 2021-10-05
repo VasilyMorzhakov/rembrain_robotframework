@@ -1,34 +1,28 @@
-import glob
-import logging
-import time
 import os
+import re
+import shutil
+import time
 import unittest
 from contextlib import redirect_stderr
-import re
+
+import yaml
 
 from rembrain_robot_framework import RobotDispatcher
-from rembrain_robot_framework.tests.util import load_config, generate_process_dict
-from rembrain_robot_framework.tests.util.processes import FailingProcess
-
-process_map = {
-    "failing_process": FailingProcess
-}
+from rembrain_robot_framework.tests.log.processes.failing_process import FailingProcess
 
 
 class TestLogging(unittest.TestCase):
+    OUT_DIR_PATH = os.path.join(os.path.dirname(__file__), "out")
 
     @classmethod
     def setUpClass(cls) -> None:
         # Check that an out dir exists
-        cls.out_dir_path = os.path.join(os.path.dirname(__file__), "out")
-        if not os.path.exists(cls.out_dir_path):
-            os.makedirs(cls.out_dir_path)
+        if not os.path.exists(cls.OUT_DIR_PATH):
+            os.makedirs(cls.OUT_DIR_PATH)
 
     @classmethod
     def tearDownClass(cls) -> None:
-        files = glob.glob(f"{cls.out_dir_path}/*")
-        for f in files:
-            os.remove(f)
+        shutil.rmtree(cls.OUT_DIR_PATH)
 
     def test_crashing_doesnt_create_another_logger(self) -> None:
         """
@@ -36,16 +30,19 @@ class TestLogging(unittest.TestCase):
         Keeping it running for a couple failures
         Test passes if there are no count repeats in the end log result
         """
-        cfg = load_config(self, self.test_crashing_doesnt_create_another_logger.__name__)
-        processes = generate_process_dict(cfg, process_map)
-        output_file = os.path.join(self.out_dir_path, f"{self.test_crashing_doesnt_create_another_logger.__name__}_output.txt")
+        with open(os.path.join(os.path.dirname(__file__), "config.yaml")) as file:
+            config: dict = yaml.load(file, Loader=yaml.BaseLoader)
+
+        process_map = {"failing_process": FailingProcess}
+        processes = {p: {"process_class": process_map[p]} for p in config["processes"]}
+        output_file = os.path.join(self.OUT_DIR_PATH, "output.txt")
 
         # Assuming we're redirecting to stderr, if things change - gotta change here
         # for some reason, redirecting to io.StringIO redirects only one line
         # probably some multiprocessing issue.
         # For now working around it by writing out to an output file and then reading it
         with redirect_stderr(open(output_file, "w")):
-            dispatcher = RobotDispatcher(cfg, processes, in_cluster=False)
+            dispatcher = RobotDispatcher(config, processes, in_cluster=False)
             dispatcher.start_processes()
             time.sleep(15)
 
@@ -53,6 +50,7 @@ class TestLogging(unittest.TestCase):
             log_data = f.read()
             logged_counts = ""
             count_regex = r"Count: (\d)"
+
             for line in log_data.splitlines():
                 m = re.search(count_regex, line)
                 if m is not None:
