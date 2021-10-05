@@ -7,7 +7,6 @@ from rembrain_robot_framework import RobotProcess
 from rembrain_robot_framework.pack import Unpacker
 
 
-# it was VideoReceiver!!!!!
 class VideoUnpacker(RobotProcess):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
