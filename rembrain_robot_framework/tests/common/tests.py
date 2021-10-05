@@ -1,4 +1,3 @@
-import logging
 import os
 import time
 import typing as T
@@ -14,7 +13,7 @@ from rembrain_robot_framework import RobotDispatcher, RobotProcess
 class P1(RobotProcess):
     def run(self) -> None:
         self.publish("hi")
-        logging.info(self.name + " hi sent")
+        self.log.info(self.name + " hi sent")
 
 
 class P2(RobotProcess):
@@ -29,7 +28,7 @@ class P2(RobotProcess):
             record: str = self.consume()
             if record == self.to_expect:
                 self.shared.hi_received.value += 1
-                logging.info(f"{self.name} {record} received")
+                self.log.info(f"{self.name} {record} received")
 
 
 class P3(RobotProcess):
@@ -37,19 +36,19 @@ class P3(RobotProcess):
         rec: str = self.consume("messages1")
         if rec == "hi":
             self.shared.hi_received.value += 1
-            logging.info(self.name + " hi received")
+            self.log.info(self.name + " hi received")
 
         rec = self.consume("messages2")
         if rec == "hi":
             self.shared.hi_received.value += 1
-            logging.info(self.name + " hi received")
+            self.log.info(self.name + " hi received")
 
 
 class P4(RobotProcess):
     def run(self) -> None:
         self.publish(queue_name="messages1", message="hi1")
         self.publish(queue_name="messages2", message="hi2")
-        logging.info(self.name + " hi sent")
+        self.log.info(self.name + " hi sent")
 
 
 class AP1(RobotProcess):
@@ -60,7 +59,7 @@ class AP1(RobotProcess):
 
     def run(self) -> None:
         self.publish(queue_name=self.custom_queue_name, message=self.custom_test_message)
-        logging.info(self.name + " published message successfully.")
+        self.log.info(self.name + " published message successfully.")
 
 
 class AP2(RobotProcess):
@@ -71,7 +70,7 @@ class AP2(RobotProcess):
 
     def run(self) -> None:
         message: T.Any = self.consume(queue_name=self.custom_queue_name)
-        logging.info(f"{self.name} get message: {message}")
+        self.log.info(f"{self.name} get message: {message}")
         self.shared.success.value = message == self.custom_test_message
 
 

@@ -1,4 +1,3 @@
-import logging
 import time
 import typing as T
 from datetime import datetime, timezone
@@ -15,7 +14,7 @@ class VideoPacker(RobotProcess):
         self.packer = Packer(kwargs.get("pack_type"))
 
     def run(self):
-        logging.info(f"{self.__class__.__name__} started, name: {self.name}.")
+        self.log.info(f"{self.__class__.__name__} started, name: {self.name}.")
 
         while True:
             rgb, depth = self.consume()
@@ -26,5 +25,5 @@ class VideoPacker(RobotProcess):
 
             self.packets_sent += 1
             if self.packets_sent % 300 == 0:
-                logging.info(f"Current video sending rate is {300 / (time.time() - self.last_timed)} fps.")
+                self.log.info(f"Current video sending rate is {300 / (time.time() - self.last_timed)} fps.")
                 self.last_timed = time.time()

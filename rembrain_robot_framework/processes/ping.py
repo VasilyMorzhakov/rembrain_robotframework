@@ -1,4 +1,3 @@
-import logging
 import os
 import subprocess
 import time
@@ -16,10 +15,10 @@ class PingProcess(RobotProcess):
             self.container_id = docker_s[8: 8 + 12]
         except Exception as e:
             self.container_id = "ERROR"
-            logging.error(e, exc_info=True)
+            self.log.error(e, exc_info=True)
 
     def run(self):
-        logging.info(f"{self.__class__.__name__} started, name: {self.name}.")
+        self.log.info(f"{self.__class__.__name__} started, name: {self.name}.")
 
         while True:
             processor_info = {

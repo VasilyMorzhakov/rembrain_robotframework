@@ -2,6 +2,8 @@ import logging
 import os
 import ssl
 import typing as T
+from logging.handlers import QueueHandler, QueueListener
+from multiprocessing import Queue
 
 import pika
 from python_logging_rabbitmq import RabbitMQHandler
@@ -13,7 +15,7 @@ def get_log_handler(project_description: dict, in_cluster: bool = True) -> T.Any
     if in_cluster:
         if "RABBIT_ADDRESS" not in os.environ or "@" not in os.environ["RABBIT_ADDRESS"]:
             print("Warning, testing environment, web logging is not working")
-            return logging.StreamHandler()
+            return None
 
         credentials, host = os.environ["RABBIT_ADDRESS"].split("@")
         user, password = credentials.replace("amqp://", "").split(":")
@@ -44,7 +46,7 @@ def get_log_handler(project_description: dict, in_cluster: bool = True) -> T.Any
                 or ("ML_NAME" in os.environ and "ML_PASSWORD" in os.environ)
         ):
             print("Warning, testing environment, web logging is not working")
-            return logging.StreamHandler()
+            return None
 
         formatter = JsonFormatter()
         formatter.log_fields = project_description
@@ -54,22 +56,32 @@ def get_log_handler(project_description: dict, in_cluster: bool = True) -> T.Any
         return handler
 
 
-def set_logger(project_description: dict, in_cluster: bool = True) -> None:
-    main_logger: logging.Logger = logging.getLogger()
-    main_logger.setLevel(os.environ.get("LOGLEVEL", "INFO").upper())
+def get_console_handler() -> logging.StreamHandler:
+    console_handler = logging.StreamHandler()
+    format_string = "%(levelname)s:%(name)s:%(message)s"
+    console_handler.setFormatter(logging.Formatter(format_string))
+    return console_handler
 
-    # if it into cluster - it just uses rabbit directly, else - it uses web sockets.
-    if in_cluster:
-        if "RABBIT_ADDRESS" not in os.environ:
-            print("No rabbit address is supplied for this process, logging is not started.")
-            return
 
-        logging.getLogger("pika").setLevel(logging.WARNING)
+def setup_logging(project_description: dict, in_cluster: bool = True) -> T.Tuple[Queue, QueueListener]:
+    """
+    Sets up a QueueListener that listens to the main logging queue and passes data to the handlers
+    The handlers are generated here, there are three handlers:
+        - Rabbit handler for in-cluster use
+        - Websocket handler for robots and other processes running outside
+        - Console logging
+    Returns the queue for logging + the listener
+    Don't forget to start the listener
+    """
+    log_queue = Queue()
 
-    handler = get_log_handler(project_description, in_cluster)
-    # Don't add handlers of the type that have already been added
-    has_this_handler = main_logger.hasHandlers() and any(
-        (isinstance(handler, type(x)) for x in main_logger.handlers)
-    )
-    if not has_this_handler:
-        main_logger.addHandler(handler)
+    handlers = [
+        get_console_handler(),
+    ]
+    out_handler = get_log_handler(project_description, in_cluster)
+    if out_handler is not None:
+        handlers.append(out_handler)
+    listener = QueueListener(log_queue, *handlers)
+
+    return log_queue, listener
+

@@ -1,0 +1,8 @@
+processes:
+  failing_process:
+    fail_threshold: 50
+    sleep_interval: 0.1
+    keep_alive: false
+
+shared_objects:
+  ok: Value:int

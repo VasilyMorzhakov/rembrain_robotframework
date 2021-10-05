@@ -1,5 +1,4 @@
 import json
-import logging
 import os
 import time
 import typing as T
@@ -67,7 +66,7 @@ class WsRobotProcess(RobotProcess):
         )
 
     def run(self) -> None:
-        logging.info(f"{self.__class__.__name__} started, name: {self.name}.")
+        self.log.info(f"{self.__class__.__name__} started, name: {self.name}.")
         self.last_ping_time = time.time()
 
         if self.command_type == WsCommandType.PULL:
@@ -88,7 +87,7 @@ class WsRobotProcess(RobotProcess):
             if self.is_decode:
                 if not isinstance(response_data, bytes):
                     error_message = f"{self.__class__.__name__}: WS response is not bytes!"
-                    logging.error(error_message)
+                    self.log.error(error_message)
                     raise Exception(error_message)
 
                 response_data = response_data.decode(encoding="utf-8")

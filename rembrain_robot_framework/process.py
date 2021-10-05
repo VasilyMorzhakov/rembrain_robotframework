@@ -1,16 +1,22 @@
 import logging
 import typing as T
 from collections import namedtuple
+from logging.handlers import QueueHandler
 from multiprocessing import Queue
 
 
 class RobotProcess:
+
+    # Workaround for multiprocessing so we add logging only one time per process
+    _is_logger_initialized = False
+
     def __init__(
             self,
             name: str,
             shared_objects: dict,
             consume_queues: T.Dict[str, Queue],
             publish_queues: T.Dict[str, T.List[Queue]],
+            logging_queue: Queue,
             *args,
             **kwargs
     ):
@@ -21,6 +27,8 @@ class RobotProcess:
 
         self.debug: bool = False
         self.queues_to_clear: T.List[str] = []  # in case of exception this queues are cleared
+
+        self.log = logging.getLogger(f"{self.__class__.__name__} ({self.name})")
 
     def run(self) -> None:
         raise NotImplementedError()
@@ -38,7 +46,7 @@ class RobotProcess:
 
     def clear_queues(self) -> None:
         if len(self.queues_to_clear) > 0:
-            logging.info(f"Clearing of queues: {self.queues_to_clear}.")
+            self.log.info(f"Clearing of queues: {self.queues_to_clear}.")
 
             for queue in self.queues_to_clear:
                 self.clear_queue(queue)
@@ -55,12 +63,12 @@ class RobotProcess:
 
     def publish(self, message: T.Any, queue_name: T.Optional[str] = None, clear_on_overflow: bool = False) -> None:
         if len(self.publish_queues.keys()) == 0:
-            logging.error(f"Process \"{self.name}\" has no queues to write to.")
+            self.log.error(f"Process \"{self.name}\" has no queues to write to.")
             return
 
         if queue_name is None:
             if len(self.publish_queues.keys()) != 1:
-                logging.error(f"Process \"{self.name}\" has more than one write queue. Specify a write queue name.")
+                self.log.error(f"Process \"{self.name}\" has more than one write queue. Specify a write queue name.")
                 return
 
             queue_name = list(self.publish_queues.keys())[0]
@@ -74,12 +82,12 @@ class RobotProcess:
 
     def consume(self, queue_name: T.Optional[str] = None, clear_all_messages: bool = False) -> T.Any:
         if len(self.consume_queues.keys()) == 0:
-            logging.error(f"Process \"{self.name}\" has no queues to read from.")
+            self.log.error(f"Process \"{self.name}\" has no queues to read from.")
             return
 
         if queue_name is None:
             if len(self.consume_queues.keys()) != 1:
-                logging.error(f"Process \"{self.name}\" has more than one read queue. Specify a read queue name.")
+                self.log.error(f"Process \"{self.name}\" has more than one read queue. Specify a read queue name.")
                 return
 
             queue_name = list(self.consume_queues.keys())[0]

@@ -2,10 +2,11 @@ import logging
 import platform
 import time
 import typing as T
+from logging.handlers import QueueHandler
 from multiprocessing import Process, Queue, Manager
 
 from rembrain_robot_framework import utils
-from rembrain_robot_framework.utils import set_logger
+from rembrain_robot_framework.logger.utils import setup_logging
 
 
 class RobotDispatcher:
@@ -37,8 +38,18 @@ class RobotDispatcher:
                 "shared_objects": {},
             }
 
-        set_logger(self.project_description, in_cluster=self.in_cluster)
-        logging.info("RobotHost is configuring processes.")
+        # Set up logging
+        self.log_queue, self.log_listener = setup_logging(project_description, in_cluster)
+        self.log_listener.start()
+        self.log = logging.getLogger("RobotDispatcher")
+        # Clear any handlers that already existed
+        self.log.handlers.clear()
+        self.log.setLevel(logging.INFO)
+        self.log.addHandler(QueueHandler(self.log_queue))
+        # Don't propagate to root logger
+        self.log.propagate = False
+
+        self.log.info("RobotHost is configuring processes.")
 
         # compare processes and config
         if len(self.processes) != len(self.config["processes"]):
@@ -112,11 +123,11 @@ class RobotDispatcher:
             **kwargs,
     ) -> None:
         if process_name in self.process_pool:
-            logging.error(f"Error at creating new process, process {process_name} is already running.")
+            self.log.error(f"Error at creating new process, process {process_name} is already running.")
             raise Exception("Process already exists in pool.")
 
         if process_name in self.processes:
-            logging.error(f"Error at creating new process, process {process_name} already exists in processes.")
+            self.log.error(f"Error at creating new process, process {process_name} already exists in processes.")
             raise Exception("Process already exists in processes.")
 
         self.processes[process_name] = {
@@ -126,7 +137,7 @@ class RobotDispatcher:
         }
 
         self._run_process(process_name, **kwargs)
-        logging.info(f"New process {process_name} was  created successfully.")
+        self.log.info(f"New process {process_name} was  created successfully.")
 
     def add_shared_object(self, object_name: str, object_type: str) -> None:
         if object_name in self.shared_objects.keys():
@@ -136,14 +147,14 @@ class RobotDispatcher:
 
     def del_shared_object(self, object_name: str) -> None:
         if object_name not in self.shared_objects.keys():
-            logging.warning(f"Shared object {object_name} does not exist.")
+            self.log.warning(f"Shared object {object_name} does not exist.")
             return
 
         del self.shared_objects[object_name]
 
     def stop_process(self, process_name: str) -> None:
         if process_name not in self.process_pool.keys():
-            logging.error(f"Process {process_name} is not running.")
+            self.log.error(f"Process {process_name} is not running.")
             return
 
         process: Process = self.process_pool[process_name]
@@ -163,7 +174,7 @@ class RobotDispatcher:
                 q_size: int = queue.qsize()
 
                 if q_size > max_queue_size:
-                    logging.error(f"Queue {q_name} of process {p_name} has reached {q_size} messages.")
+                    self.log.error(f"Queue {q_name} of process {p_name} has reached {q_size} messages.")
                     time.sleep(5)
                     return True
 
@@ -172,7 +183,7 @@ class RobotDispatcher:
                     q_size: int = q.qsize()
 
                     if q_size > max_queue_size:
-                        logging.error(f"Queue {q_name} of process {p_name} has reached {q_size} messages.")
+                        self.log.error(f"Queue {q_name} of process {p_name} has reached {q_size} messages.")
                         time.sleep(5)
                         return True
 
@@ -180,7 +191,7 @@ class RobotDispatcher:
 
     def run(self, shared_stop_run: T.Any = None, max_queue_size: int = 1000) -> None:
         if platform.system() == "Darwin":
-            logging.warning("Checking of queue sizes on this system is not supported.")
+            self.log.warning("Checking of queue sizes on this system is not supported.")
 
         while True:
             if shared_stop_run is not None and shared_stop_run.value:
@@ -200,6 +211,7 @@ class RobotDispatcher:
                 "in_cluster": self.in_cluster,
                 "shared_objects": self.shared_objects,
                 "project_description": self.project_description,
+                "logging_queue": self.log_queue,
                 **self.processes[proc_name],
                 **kwargs,
             }

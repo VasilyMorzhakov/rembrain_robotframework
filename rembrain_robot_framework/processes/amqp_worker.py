@@ -1,5 +1,3 @@
-import logging
-
 from rembrain_robot_framework import RobotProcess
 
 
@@ -11,7 +9,7 @@ class AmqpWorker(RobotProcess):
         self.shared.update_config.value = False
 
     def run(self):
-        logging.info(f"{self.__class__.__name__} started, name: {self.name}.")
+        self.log.info(f"{self.__class__.__name__} started, name: {self.name}.")
 
         while True:
             # it receive decoded data!
@@ -20,4 +18,4 @@ class AmqpWorker(RobotProcess):
             if command["message"] == "update_config":
                 self.shared.update_config.value = True
             else:
-                logging.warning(f"Unprocessed command received: {command}")
+                self.log.warning(f"Unprocessed command received: {command}")
