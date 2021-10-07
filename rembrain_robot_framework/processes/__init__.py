@@ -1,4 +1,3 @@
-from .amqp_worker import AmqpWorker
 from .command_timer import CommandTimer
 from .ping import PingProcess
 from .state import StateProcess

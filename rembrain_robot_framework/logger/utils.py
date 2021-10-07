@@ -2,7 +2,7 @@ import logging
 import os
 import ssl
 import typing as T
-from logging.handlers import QueueHandler, QueueListener
+from logging.handlers import QueueListener
 from multiprocessing import Queue
 
 import pika
@@ -59,6 +59,7 @@ def get_log_handler(project_description: dict, in_cluster: bool = True) -> T.Any
 def get_console_handler() -> logging.StreamHandler:
     console_handler = logging.StreamHandler()
     format_string = "%(levelname)s:%(name)s:%(message)s"
+
     console_handler.setFormatter(logging.Formatter(format_string))
     return console_handler
 
@@ -74,14 +75,11 @@ def setup_logging(project_description: dict, in_cluster: bool = True) -> T.Tuple
     Don't forget to start the listener
     """
     log_queue = Queue()
+    handlers = [get_console_handler()]
 
-    handlers = [
-        get_console_handler(),
-    ]
     out_handler = get_log_handler(project_description, in_cluster)
     if out_handler is not None:
         handlers.append(out_handler)
+
     listener = QueueListener(log_queue, *handlers)
-
     return log_queue, listener
-

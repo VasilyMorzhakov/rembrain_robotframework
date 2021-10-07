@@ -9,6 +9,7 @@ from rembrain_robot_framework.pack import Packer
 class VideoPacker(RobotProcess):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+
         self.packets_sent = 0
         self.last_timed: float = time.time()
         self.packer = Packer(kwargs.get("pack_type"))
