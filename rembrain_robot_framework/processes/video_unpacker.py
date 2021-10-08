@@ -24,7 +24,7 @@ class VideoUnpacker(RobotProcess):
                         self.shared.camera["camera"] = json.loads(camera)
                         self.publish((rgb, depth16, camera), clear_on_overflow=True)
                     else:
-                        self.log.error(f"VideoReceiver(processor): WS response is not bytes! Response={response_data}.")
+                        self.log.error(f"VideoUnpacker: WS response is not bytes! Response={response_data}.")
             except Exception as e:
                 self.log.error(f"Error in video_receiver {e}.")
 

@@ -2,7 +2,7 @@ import logging
 import platform
 import time
 import typing as T
-from logging.handlers import QueueHandler
+from logging.handlers import QueueHandler, QueueListener
 from multiprocessing import Process, Queue, Manager
 
 from rembrain_robot_framework import utils
@@ -38,16 +38,10 @@ class RobotDispatcher:
                 "shared_objects": {},
             }
 
-        # Set up logging
-        self.log_queue, self.log_listener = setup_logging(project_description, in_cluster)
-        self.log_listener.start()
-        self.log = logging.getLogger("RobotDispatcher")
-        # Clear any handlers that already existed
-        self.log.handlers.clear()
-        self.log.setLevel(logging.INFO)
-        self.log.addHandler(QueueHandler(self.log_queue))
-        # Don't propagate to root logger
-        self.log.propagate = False
+        self.log_queue: T.Optional[Queue] = None
+        self.log_listener: T.Optional[QueueListener] = None
+        self.log: T.Optional[logging.Logger] = None
+        self.set_logging(project_description, in_cluster)
 
         self.log.info("RobotHost is configuring processes.")
 
@@ -110,6 +104,21 @@ class RobotDispatcher:
             name: utils.generate(obj, self.manager) for name, obj in self.config["shared_objects"].items()
         }
 
+    def set_logging(self, project_description: dict, in_cluster: bool) -> None:
+        # Set up logging
+        self.log_queue, self.log_listener = setup_logging(project_description, in_cluster)
+        self.log_listener.start()
+
+        self.log = logging.getLogger("RobotDispatcher")
+
+        # Clear any handlers that have already existed
+        self.log.handlers.clear()
+        self.log.setLevel(logging.INFO)
+        self.log.addHandler(QueueHandler(self.log_queue))
+
+        # Don't propagate to root logger
+        self.log.propagate = False
+
     def start_processes(self) -> None:
         for process_name in self.processes.keys():
             self._run_process(process_name)
@@ -157,9 +166,10 @@ class RobotDispatcher:
             self.log.error(f"Process {process_name} is not running.")
             return
 
-        process: Process = self.process_pool[process_name]
+        process: Process= self.process_pool[process_name]
         if process.is_alive():
             process.terminate()
+            time.sleep(2)
             process.join()
 
         del self.process_pool[process_name]

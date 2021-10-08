@@ -1,12 +1,10 @@
 import logging
 import typing as T
 from collections import namedtuple
-from logging.handlers import QueueHandler
 from multiprocessing import Queue
 
 
 class RobotProcess:
-
     # Workaround for multiprocessing so we add logging only one time per process
     _is_logger_initialized = False
 

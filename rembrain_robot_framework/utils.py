@@ -8,8 +8,7 @@ from functools import wraps
 from logging.handlers import QueueHandler
 from multiprocessing import Value, Lock, Manager
 
-from typing import TYPE_CHECKING
-if TYPE_CHECKING:
+if T.TYPE_CHECKING:
     from rembrain_robot_framework.process import RobotProcess
 
 
@@ -48,6 +47,7 @@ def keep_alive(start_process_func: T.Callable) -> T.Callable:
         # So any logger that is created inside the process will use this handler
         log_queue = kwargs["logging_queue"]
         log_level = kwargs.get("log_level", "INFO").upper()
+
         root_logger = logging.getLogger()
         root_logger.setLevel(log_level)
         root_logger.handlers.clear()
@@ -75,7 +75,7 @@ def keep_alive(start_process_func: T.Callable) -> T.Callable:
 
 @keep_alive
 def start_process(process_class: T.Type[RobotProcess], *args, **kwargs) -> None:
-    process: RobotProcess = None
+    process: T.Optional[RobotProcess] = None
 
     try:
         process = process_class(*args, **kwargs)
