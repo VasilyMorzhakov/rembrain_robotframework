@@ -10,7 +10,7 @@ with open(os.path.join(os.path.dirname(__file__), 'requirements.txt')) as f:
 
 setuptools.setup(
     name="rembrain_robot_framework",
-    version="0.0.14",
+    version="0.0.15",
     author="Rembrain",
     author_email="info@rembrain.ai",
     description="Rembrain Robot Framework",
