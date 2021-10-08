@@ -27,10 +27,6 @@ class TestLogging(unittest.TestCase):
         process_map = {"failing_process": FailingProcess}
         processes = {p: {"process_class": process_map[p]} for p in config["processes"]}
 
-        # Assuming we're redirecting to stderr, if things change - gotta change here
-        # for some reason, redirecting to io.StringIO redirects only one line
-        # probably some multiprocessing issue.
-        # For now working around it by writing out to an output file and then reading it
         std_errors = StringIO()
         with redirect_stderr(std_errors):
             dispatcher = RobotDispatcher(config, processes, in_cluster=False)
@@ -55,6 +51,12 @@ class TestLogging(unittest.TestCase):
         self.assertIn("0, 1, 2, 3", logged_counts)
 
     def test_logging_to_websocket_works(self):
+        """
+        Check that logging to websocket/remote server works for RobotProcess and RobotDispatcher
+        Set up an "echo" websocket server that keeps all received messages
+        Then mock out WEBSOCKET_GATE_URL so all logs get sent to this ws server
+        Run the dispatcher and then get logged messages in the end
+        """
         ws_port = "15735"
         config: dict = self._read_config_file("config2.yaml")
         process_map = {"failing_process": FailingProcess}
