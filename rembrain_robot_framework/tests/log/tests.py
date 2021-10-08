@@ -35,7 +35,8 @@ class TestLogging(unittest.TestCase):
         with redirect_stderr(std_errors):
             dispatcher = RobotDispatcher(config, processes, in_cluster=False)
             dispatcher.start_processes()
-            time.sleep(5)
+            # Wait for more than 10 or so seconds because process restart takes 5 seconds
+            time.sleep(15)
 
         # Cleanup: bring back environment
         dispatcher.stop_process("failing_process")
@@ -54,7 +55,6 @@ class TestLogging(unittest.TestCase):
         self.assertIn("0, 1, 2, 3", logged_counts)
 
     def test_logging_to_websocket_works(self):
-        return
         ws_port = "15735"
         config: dict = self._read_config_file("config2.yaml")
         process_map = {"failing_process": FailingProcess}
@@ -72,7 +72,8 @@ class TestLogging(unittest.TestCase):
             "ROBOT_NAME": "framework_test",
             "ROBOT_PASSWORD": "framework_test",
         }
-        with mock.patch.dict('os.environ', env_overrides):
+
+        with mock.patch.dict("os.environ", env_overrides):
             # Run the Dispatcher
             dispatcher = RobotDispatcher(config, processes, in_cluster=False)
             dispatcher.start_processes()
@@ -88,9 +89,6 @@ class TestLogging(unittest.TestCase):
             print("Closing")
             close_flag.value = True
             p.join()
-
-        # Cleanup: bring back environment
-        dispatcher.stop_process("failing_process")
 
         # Check that Count messages are in the log output
         messages = list(map(lambda m: m["message"]["message"], logs))

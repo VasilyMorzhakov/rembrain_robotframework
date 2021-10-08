@@ -22,15 +22,11 @@ class WebsocketServer:
                 await websocket.send(json.dumps(self.messages))
             else:
                 self.messages.append(json.loads(message))
-
-            await websocket.send(message)
+                await websocket.send(message)
 
     async def run(self) -> None:
         print("Starting websocket server")
         async with websockets.serve(self.handle_msg, "127.0.0.1", self.ws_port):
-            if self.close_flag.value:
-                return
-
             await asyncio.Future()
 
     async def check_close(self) -> None:
@@ -45,5 +41,6 @@ class WebsocketServer:
         self.close_flag = close_flag
 
         check_task = loop.create_task(self.check_close())
-        loop.create_task(self.run())
+        # do not remove the task assignment or it gets dropped
+        server_task = loop.create_task(self.run())
         loop.run_until_complete(check_task)
