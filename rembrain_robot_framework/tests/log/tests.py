@@ -106,7 +106,4 @@ class TestLogging(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    try:
-        unittest.main()
-    except EOFError:
-        print("Q"*200)
+    unittest.main()
