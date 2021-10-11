@@ -166,7 +166,7 @@ class RobotDispatcher:
             self.log.error(f"Process {process_name} is not running.")
             return
 
-        process: Process= self.process_pool[process_name]
+        process: Process = self.process_pool[process_name]
         if process.is_alive():
             process.terminate()
             time.sleep(2)

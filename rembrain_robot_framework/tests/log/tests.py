@@ -34,10 +34,9 @@ class TestLogging(unittest.TestCase):
             # Wait for more than 10 or so seconds because process restart takes 5 seconds
             time.sleep(15)
 
-        # Cleanup: bring back environment
         dispatcher.stop_process("failing_process")
-        std_errors.seek(0)
 
+        std_errors.seek(0)
         log_data = std_errors.read()
         logged_counts = ""
         count_regex = r"Count: (\d)"
@@ -57,14 +56,16 @@ class TestLogging(unittest.TestCase):
         Then mock out WEBSOCKET_GATE_URL so all logs get sent to this ws server
         Run the dispatcher and then get logged messages in the end
         """
+
         ws_port = "15735"
+        test_message = "It's test message!"
         config: dict = self._read_config_file("config2.yaml")
+
         process_map = {"failing_process": FailingProcess}
         processes = {p: {"process_class": process_map[p]} for p in config["processes"]}
-
-        # Run the websocket server
         close_flag = Value('b', False)
-        ws_server = WebsocketServer(ws_port)
+
+        ws_server = WebsocketServer(ws_port, test_message)
         p = Process(target=ws_server.start, args=(close_flag,))
         p.start()
         time.sleep(2.0)
@@ -84,7 +85,7 @@ class TestLogging(unittest.TestCase):
             # Get logged messages back from the websocket
             ws = websocket.WebSocket()
             ws.connect(os.environ["WEBSOCKET_GATE_URL"])
-            ws.send(WebsocketServer.GET_DATA_TEXT)
+            ws.send(test_message)
             logs = json.loads(ws.recv())
 
             # Close the websocket

@@ -104,10 +104,10 @@ class RobotProcess:
             consume_queue_name: T.Optional[str] = None
     ) -> bool:
         if publish_queue_name is None and consume_queue_name is None:
-            raise Exception(f"None of params was got!")
+            raise Exception("None of params was got!")
 
         if publish_queue_name and consume_queue_name:
-            raise Exception(f"Only one of params must set!")
+            raise Exception("Only one of params must set!")
 
         if consume_queue_name:
             return self.consume_queues[consume_queue_name].full()

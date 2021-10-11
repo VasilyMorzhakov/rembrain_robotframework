@@ -8,17 +8,17 @@ import websockets
 
 
 class WebsocketServer:
-    GET_DATA_TEXT = "get_data"
-
-    def __init__(self, ws_port: str):
+    def __init__(self, ws_port: str, test_message):
+        self.test_message: str = test_message
         self.ws_port: str = ws_port
+
         self.exec_thread: T.Optional[Thread] = None
         self.close_flag: T.Optional[Value] = None
         self.messages: T.List[T.Any] = []
 
     async def handle_msg(self, websocket: websockets.WebSocketServerProtocol, path: str) -> None:
         async for message in websocket:
-            if message == self.GET_DATA_TEXT:
+            if message == self.test_message:
                 await websocket.send(json.dumps(self.messages))
             else:
                 self.messages.append(json.loads(message))
