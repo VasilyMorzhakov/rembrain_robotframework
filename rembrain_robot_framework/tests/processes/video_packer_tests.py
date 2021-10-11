@@ -45,4 +45,3 @@ def test_correct_video_packer(mocker, vp_fx):
     assert loop_reset_exception in str(exc_info.value)
     assert isinstance(test_mock_result, bytes)
     assert len(test_mock_result) > 100
-
