@@ -14,7 +14,6 @@ class RobotProcess:
             shared_objects: dict,
             consume_queues: T.Dict[str, Queue],
             publish_queues: T.Dict[str, T.List[Queue]],
-            logging_queue: Queue,
             *args,
             **kwargs
     ):

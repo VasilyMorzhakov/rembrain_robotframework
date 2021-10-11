@@ -1,12 +1,11 @@
 import os
 import time
 import typing as T
-import unittest
 
 import numpy as np
-import yaml
 
 from rembrain_robot_framework import RobotDispatcher, RobotProcess
+from rembrain_robot_framework.tests.utils import get_config
 
 
 class P1(RobotProcess):
@@ -53,28 +52,20 @@ class P2(RobotProcess):
         self.shared.finished_correctly.value += 1
 
 
-class TestUnderLoad(unittest.TestCase):
-    def test_shared_objects_save_type(self) -> None:
-        print("Test: shared objects save type.")
-        processes = {
-            **{f"p1_{i}": {"process_class": P1, "keep_alive": False} for i in range(5)},
-            **{f"p2_{i}": {"process_class": P2, "keep_alive": False} for i in range(5)}
-        }
+def test_shared_objects_save_type() -> None:
+    config: T.Any = get_config(os.path.join(os.path.dirname(__file__), "config.yaml"))
+    processes = {
+        **{f"p1_{i}": {"process_class": P1, "keep_alive": False} for i in range(5)},
+        **{f"p2_{i}": {"process_class": P2, "keep_alive": False} for i in range(5)}
+    }
 
-        with open(os.path.join(os.path.dirname(__file__), "config.yaml")) as file:
-            config: T.Any = yaml.load(file, Loader=yaml.BaseLoader)
+    robot_dispatcher = RobotDispatcher(config, processes)
+    robot_dispatcher.start_processes()
 
-        robot_dispatcher = RobotDispatcher(config, processes)
-        robot_dispatcher.start_processes()
+    for _ in range(60):
+        time.sleep(5)
+        if robot_dispatcher.shared_objects["finished"].value:
+            break
 
-        for _ in range(60):
-            time.sleep(5)
-            if robot_dispatcher.shared_objects["finished"].value:
-                break
-
-        time.sleep(5.0)
-        self.assertEqual(robot_dispatcher.shared_objects["finished_correctly"].value, 10)
-
-
-if __name__ == "__main__":
-    unittest.main()
+    time.sleep(5.0)
+    assert robot_dispatcher.shared_objects["finished_correctly"].value, 10
