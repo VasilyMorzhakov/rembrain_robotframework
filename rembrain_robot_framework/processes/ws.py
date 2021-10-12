@@ -75,14 +75,12 @@ class WsRobotProcess(RobotProcess):
             self._push()
         elif self.command_type == WsCommandType.PUSH_LOOP:
             self._push_loop()
-        else:
-            raise Exception("Unknown type of ws command type.")
 
     def _pull(self) -> None:
         ws_channel: T.Generator = self.ws_connect.pull(self.get_ws_request())
 
         while True:
-            response_data: T.Union[str, bytes, dict] = next(ws_channel)
+            response_data: T.Union[str, bytes] = next(ws_channel)
 
             if self.is_decode:
                 if not isinstance(response_data, bytes):

@@ -28,9 +28,14 @@ def vp_fx():
 
 
 def test_correct_video_packer(mocker, vp_fx):
-    return
-    vp = VideoPacker(name="video_packer", shared_objects={"camera": vp_fx[2]}, consume_queues={}, publish_queues={},
-                     pack_type=1)
+    vp = VideoPacker(
+        name="video_packer",
+        shared_objects={"camera": vp_fx[2]},
+        consume_queues={},
+        publish_queues={},
+        pack_type=PackType.JPG_PNG
+    )
+
     test_mock_result = None
     loop_reset_exception = 'AssertionError for reset loop!'
 
@@ -48,9 +53,9 @@ def test_correct_video_packer(mocker, vp_fx):
     assert isinstance(test_mock_result, bytes)
     assert len(test_mock_result) > 100
 
+
 # todo think about it
 def qtest_correct_full_pack_jpg(mocker, vp_fx):
-    return
     vp = VideoPacker(
         name="video_packer",
         shared_objects={"camera": vp_fx[2]},
@@ -96,6 +101,7 @@ def qtest_correct_full_pack_jpg(mocker, vp_fx):
     assert isinstance(test_unpacker_result, tuple)
     assert len(test_unpacker_result) == 3
     assert np.sqrt(np.mean(np.square(test_unpacker_result[0] - vp_fx[0]))) < 5
+
 
 # todo think about it
 def qtest_correct_full_pack_png(mocker, vp_fx):
