@@ -7,6 +7,7 @@ class StateProcess(RobotProcess):
 
         while True:
             status = self.consume()
+            self.log.debug(f"Got status: {status}")
             if status["state_machine"] == "NEED_ML" and not self.shared.ask_for_ml.value:
                 self.log.info("ask_for_ml.value=True")
 

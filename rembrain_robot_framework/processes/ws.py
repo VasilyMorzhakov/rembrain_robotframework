@@ -82,6 +82,8 @@ class WsRobotProcess(RobotProcess):
         while True:
             response_data: T.Union[str, bytes] = next(ws_channel)
 
+            self.log.debug(f"Got data: {response_data}")
+
             if self.is_decode:
                 if not isinstance(response_data, bytes):
                     error_message = f"{self.__class__.__name__}: WS response is not bytes!"
@@ -92,6 +94,8 @@ class WsRobotProcess(RobotProcess):
 
             if self.to_json:
                 response_data = json.loads(response_data)
+
+            self.log.debug(f"Publishing data to queue: {response_data}")
 
             self.publish(response_data)
 
