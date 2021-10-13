@@ -10,7 +10,7 @@ from unittest import mock
 import websocket
 
 from rembrain_robot_framework import RobotDispatcher
-from rembrain_robot_framework.tests.log.processes.failing_process import FailingProcess
+from rembrain_robot_framework.tests.log.processes import FailingProcess
 from rembrain_robot_framework.tests.log.websocket_server import WebsocketServer
 from rembrain_robot_framework.tests.utils import get_config
 
@@ -27,12 +27,13 @@ def test_crashing_doesnt_create_another_logger() -> None:
 
     std_errors = StringIO()
     with redirect_stderr(std_errors):
-        dispatcher = RobotDispatcher(config, processes, in_cluster=False)
-        dispatcher.start_processes()
+        robot_dispatcher = RobotDispatcher(config, processes, in_cluster=False)
+        robot_dispatcher.start_processes()
         # Wait for more than 10 or so seconds because process restart takes 5 seconds
         time.sleep(15)
 
-    dispatcher.stop_process("failing_process")
+    robot_dispatcher.stop_process("failing_process")
+    robot_dispatcher.log_listener.stop()
 
     std_errors.seek(0)
     log_data = std_errors.read()
@@ -77,8 +78,8 @@ def test_logging_to_websocket_works() -> None:
 
     with mock.patch.dict("os.environ", env_overrides):
         # Run the Dispatcher
-        dispatcher = RobotDispatcher(config, processes, in_cluster=False)
-        dispatcher.start_processes()
+        robot_dispatcher = RobotDispatcher(config, processes, in_cluster=False)
+        robot_dispatcher.start_processes()
         time.sleep(5)
 
         # Get logged messages back from the websocket
@@ -91,6 +92,7 @@ def test_logging_to_websocket_works() -> None:
         print("Closing")
         close_flag.value = True
         p.join()
+        robot_dispatcher.log_listener.stop()
 
     # Check that Count messages are in the log output
     messages = list(map(lambda m: m["message"]["message"], logs))

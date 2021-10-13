@@ -169,7 +169,6 @@ class RobotDispatcher:
         process: Process = self.process_pool[process_name]
         if process.is_alive():
             process.terminate()
-            time.sleep(2)
             process.join()
 
         del self.process_pool[process_name]
