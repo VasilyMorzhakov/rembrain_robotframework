@@ -10,6 +10,8 @@ from rembrain_robot_framework.logger.utils import setup_logging
 
 
 class RobotDispatcher:
+    DEFAULT_QUEUE_SIZE = 30
+
     def __init__(
             self,
             config: T.Any = None,
@@ -35,6 +37,7 @@ class RobotDispatcher:
         if self.config is None:
             self.config = {
                 "processes": {},
+                "queues_sizes": {},
                 "shared_objects": {},
             }
 
@@ -87,7 +90,11 @@ class RobotDispatcher:
 
         for queue_name, bind_processes in consume_queues.items():
             for process in bind_processes:
-                queue = Queue(maxsize=30)
+                queue_size = int(
+                    self.config.get("queues_sizes", {}).get(queue_name, self.DEFAULT_QUEUE_SIZE)
+                )
+
+                queue = Queue(maxsize=queue_size)
                 self.processes[process]["consume_queues"][queue_name] = queue
 
                 if queue_name not in publish_queues:
@@ -174,7 +181,7 @@ class RobotDispatcher:
         del self.process_pool[process_name]
         del self.processes[process_name]
 
-    def check_queues_overflow(self, max_queue_size: int = 1000) -> bool:
+    def check_queues_overflow(self) -> bool:
         if platform.system() == "Darwin":
             return False
 
@@ -182,7 +189,7 @@ class RobotDispatcher:
             for q_name, queue in process["consume_queues"].items():
                 q_size: int = queue.qsize()
 
-                if q_size > max_queue_size:
+                if q_size > queue._maxsize:
                     self.log.error(f"Queue {q_name} of process {p_name} has reached {q_size} messages.")
                     time.sleep(5)
                     return True
@@ -191,14 +198,14 @@ class RobotDispatcher:
                 for q in queues:
                     q_size: int = q.qsize()
 
-                    if q_size > max_queue_size:
+                    if q_size > q._maxsize:
                         self.log.error(f"Queue {q_name} of process {p_name} has reached {q_size} messages.")
                         time.sleep(5)
                         return True
 
         return False
 
-    def run(self, shared_stop_run: T.Any = None, max_queue_size: int = 1000) -> None:
+    def run(self, shared_stop_run: T.Any = None) -> None:
         if platform.system() == "Darwin":
             self.log.warning("Checking of queue sizes on this system is not supported.")
 
@@ -206,7 +213,7 @@ class RobotDispatcher:
             if shared_stop_run is not None and shared_stop_run.value:
                 break
 
-            if self.check_queues_overflow(max_queue_size):
+            if self.check_queues_overflow():
                 break
 
             time.sleep(2)

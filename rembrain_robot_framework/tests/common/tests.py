@@ -31,6 +31,7 @@ def robot_dispatcher_fx(request) -> RobotDispatcher:
 def test_queues_are_the_same(robot_dispatcher_fx: RobotDispatcher) -> None:
     time.sleep(3.0)
     assert robot_dispatcher_fx.shared_objects["hi_received"].value, 4
+    assert robot_dispatcher_fx.processes["p2"]["consume_queues"]["messages"]._maxsize == 20
 
 
 @pytest.mark.parametrize(
@@ -44,6 +45,8 @@ def test_queues_are_the_same(robot_dispatcher_fx: RobotDispatcher) -> None:
 def test_input_queues_different(robot_dispatcher_fx: RobotDispatcher) -> None:
     time.sleep(3.0)
     assert robot_dispatcher_fx.shared_objects["hi_received"].value, 2
+    assert robot_dispatcher_fx.processes["p3"]["consume_queues"]["messages1"]._maxsize == 50
+    assert robot_dispatcher_fx.processes["p3"]["consume_queues"]["messages2"]._maxsize == 30
 
 
 @pytest.mark.parametrize(

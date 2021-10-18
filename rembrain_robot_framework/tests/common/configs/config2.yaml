@@ -7,6 +7,9 @@ processes:
     consume:
       - messages1
       - messages2
-    
+
+queues_sizes:
+  messages1: 50
+
 shared_objects:
   hi_received: Value:int

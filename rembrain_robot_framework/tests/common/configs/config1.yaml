@@ -8,5 +8,8 @@ processes:
   p2_new:
     consume: messages
 
+queues_sizes:
+  messages: 20
+
 shared_objects:
   hi_received: Value:int
