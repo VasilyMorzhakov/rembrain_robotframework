@@ -182,28 +182,29 @@ class RobotDispatcher:
         del self.processes[process_name]
 
     def check_queues_overflow(self) -> bool:
+        is_overflow = False
         if platform.system() == "Darwin":
-            return False
+            return is_overflow
 
         for p_name, process in self.processes.items():
             for q_name, queue in process["consume_queues"].items():
                 q_size: int = queue.qsize()
 
-                if q_size > queue._maxsize:
+                if queue._maxsize - q_size <= int(queue._maxsize * 0.1):
                     self.log.error(f"Queue {q_name} of process {p_name} has reached {q_size} messages.")
                     time.sleep(5)
-                    return True
+                    is_overflow = True
 
             for q_name, queues in process["publish_queues"].items():
                 for q in queues:
                     q_size: int = q.qsize()
 
-                    if q_size > q._maxsize:
+                    if q._maxsize - q_size <= int(q._maxsize * 0.1):
                         self.log.error(f"Queue {q_name} of process {p_name} has reached {q_size} messages.")
                         time.sleep(5)
-                        return True
+                        is_overflow = True
 
-        return False
+        return is_overflow
 
     def run(self, shared_stop_run: T.Any = None) -> None:
         if platform.system() == "Darwin":
@@ -213,9 +214,7 @@ class RobotDispatcher:
             if shared_stop_run is not None and shared_stop_run.value:
                 break
 
-            if self.check_queues_overflow():
-                break
-
+            self.check_queues_overflow()
             time.sleep(2)
 
     def _run_process(self, proc_name: str, **kwargs) -> None:
