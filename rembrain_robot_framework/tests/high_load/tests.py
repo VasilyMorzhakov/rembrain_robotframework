@@ -3,9 +3,9 @@ import time
 import typing as T
 
 import numpy as np
+from envyaml import EnvYAML
 
 from rembrain_robot_framework import RobotDispatcher, RobotProcess
-from rembrain_robot_framework.tests.utils import get_config
 
 
 class P1(RobotProcess):
@@ -53,7 +53,7 @@ class P2(RobotProcess):
 
 
 def test_shared_objects_save_type() -> None:
-    config: T.Any = get_config(os.path.join(os.path.dirname(__file__), "config.yaml"))
+    config: T.Any = EnvYAML(os.path.join(os.path.dirname(__file__), "config.yaml"))
     processes = {
         **{f"p1_{i}": {"process_class": P1, "keep_alive": False} for i in range(5)},
         **{f"p2_{i}": {"process_class": P2, "keep_alive": False} for i in range(5)}

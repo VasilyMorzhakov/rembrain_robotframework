@@ -2,15 +2,15 @@ import os
 from multiprocessing import Queue
 
 import pytest
+from envyaml import EnvYAML
 
 from rembrain_robot_framework import RobotDispatcher
 from rembrain_robot_framework.tests.common.processes import *
-from rembrain_robot_framework.tests.utils import get_config
 
 
 @pytest.fixture()
 def robot_dispatcher_fx(request) -> RobotDispatcher:
-    config: T.Any = get_config(os.path.join(os.path.dirname(__file__), "configs", request.param[0]))
+    config: T.Any = EnvYAML(os.path.join(os.path.dirname(__file__), "configs", request.param[0]))
     robot_dispatcher = RobotDispatcher(config, request.param[1])
     robot_dispatcher.start_processes()
 

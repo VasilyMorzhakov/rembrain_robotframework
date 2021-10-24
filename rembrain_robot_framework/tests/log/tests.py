@@ -8,11 +8,11 @@ from multiprocessing import Process, Value
 from unittest import mock
 
 import websocket
+from envyaml import EnvYAML
 
 from rembrain_robot_framework import RobotDispatcher
 from rembrain_robot_framework.tests.log.processes import FailingProcess
 from rembrain_robot_framework.tests.log.websocket_server import WebsocketServer
-from rembrain_robot_framework.tests.utils import get_config
 
 
 def test_crashing_doesnt_create_another_logger() -> None:
@@ -21,7 +21,7 @@ def test_crashing_doesnt_create_another_logger() -> None:
     Keeping it running for a couple failures
     Test passes if there are no count repeats in the end log result
     """
-    config: dict = get_config(os.path.join(os.path.dirname(__file__), "configs", "config1.yaml"))
+    config = EnvYAML(os.path.join(os.path.dirname(__file__), "configs", "config1.yaml"))
     process_map = {"failing_process": FailingProcess}
     processes = {p: {"process_class": process_map[p]} for p in config["processes"]}
 
@@ -61,7 +61,7 @@ def test_logging_to_websocket_works() -> None:
     test_message = "It's test message!"
     close_flag = Value('b', False)
 
-    config: dict = get_config(os.path.join(os.path.dirname(__file__), "configs", "config2.yaml"))
+    config = EnvYAML(os.path.join(os.path.dirname(__file__), "configs", "config2.yaml"))
     process_map = {"failing_process": FailingProcess}
     processes = {p: {"process_class": process_map[p]} for p in config["processes"]}
 
