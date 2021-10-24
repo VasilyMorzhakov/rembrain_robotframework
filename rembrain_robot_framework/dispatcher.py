@@ -192,7 +192,6 @@ class RobotDispatcher:
 
                 if queue._maxsize - q_size <= int(queue._maxsize * 0.1):
                     self.log.error(f"Queue {q_name} of process {p_name} has reached {q_size} messages.")
-                    time.sleep(5)
                     is_overflow = True
 
             for q_name, queues in process["publish_queues"].items():
@@ -201,8 +200,10 @@ class RobotDispatcher:
 
                     if q._maxsize - q_size <= int(q._maxsize * 0.1):
                         self.log.error(f"Queue {q_name} of process {p_name} has reached {q_size} messages.")
-                        time.sleep(5)
                         is_overflow = True
+
+        if is_overflow:
+            time.sleep(5)
 
         return is_overflow
 
