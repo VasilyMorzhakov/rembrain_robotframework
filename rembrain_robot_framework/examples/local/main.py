@@ -19,7 +19,7 @@ def run_dispatcher():
     project_description = {
         "project": "brainless_robot",
         "subsystem": "local_test_robot",
-        "robot": os.environ["ROBOT_NAME"]
+        "robot": "local_example_robot"
     }
 
     robot_dispatcher = RobotDispatcher(
