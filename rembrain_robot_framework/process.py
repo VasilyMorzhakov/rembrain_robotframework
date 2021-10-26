@@ -5,8 +5,6 @@ from multiprocessing import Queue
 
 
 class RobotProcess:
-    # Workaround for multiprocessing so we add logging only one time per process
-    _is_logger_initialized = False
 
     def __init__(
             self,

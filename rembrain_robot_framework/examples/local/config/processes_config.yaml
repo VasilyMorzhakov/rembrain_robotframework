@@ -1,5 +1,19 @@
 processes:
-# todo add processes
+  gui:
+    keep_alive: false
+    consume:
+      - image_orig
+      - image_processed
+
+  image_capture:
+    publish:
+      - image_orig
+
+  processor:
+    publish:
+      - image_processed
+    consume:
+      - image_orig
 
 shared_objects:
-# todo add shared objects
+  exit_flag: "Value:bool"

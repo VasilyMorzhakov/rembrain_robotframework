@@ -5,7 +5,8 @@ import setuptools
 with open("README.md") as f:
     long_description = f.read()
 
-with open(os.path.join(os.path.dirname(__file__), 'config', 'requirements.txt')) as f:
+with open(os.path.join(os.path.dirname(__file__), 'config',
+                       'requirements', 'base.txt')) as f:
     requirements = [i.strip() for i in f]
 
 setuptools.setup(

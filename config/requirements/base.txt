@@ -3,7 +3,7 @@ opencv-contrib-python
 pika
 python-json-logger
 python-logging-rabbitmq
-envyaml==1.9.210927
+envyaml
 websocket-client
 pydantic
 wheel
