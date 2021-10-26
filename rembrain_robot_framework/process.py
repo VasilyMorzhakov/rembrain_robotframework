@@ -2,6 +2,7 @@ import logging
 import typing as T
 from collections import namedtuple
 from multiprocessing import Queue
+from deprecated import deprecated
 
 
 class RobotProcess:
@@ -16,9 +17,9 @@ class RobotProcess:
             **kwargs
     ):
         self.name: str = name
-        self.consume_queues: T.Dict[str, Queue] = consume_queues  # queues for reading
-        self.publish_queues: T.Dict[str, T.List[Queue]] = publish_queues  # queues for writing
-        self.shared: T.Any = namedtuple('_', shared_objects.keys())(**shared_objects)
+        self._consume_queues: T.Dict[str, Queue] = consume_queues  # queues for reading
+        self._publish_queues: T.Dict[str, T.List[Queue]] = publish_queues  # queues for writing
+        self._shared: T.Any = namedtuple('_', shared_objects.keys())(**shared_objects)
 
         self.debug: bool = False
         self.queues_to_clear: T.List[str] = []  # in case of exception this queues are cleared
@@ -27,6 +28,23 @@ class RobotProcess:
 
     def run(self) -> None:
         raise NotImplementedError()
+
+    @property
+    @deprecated(version="0.0.18", reason="You should not access raw queues, use is_empty/is_full methods instead",
+                action="once")
+    def consume_queues(self):
+        return self._consume_queues
+
+    @property
+    @deprecated(version="0.0.18", reason="You should not access raw queues, use is_empty/is_full methods instead",
+                action="once")
+    def publish_queues(self):
+        return self._publish_queues
+
+    @property
+    def shared(self):
+        # TODO review this method to get logging of shared object usage
+        return self._shared
 
     def free_resources(self) -> None:
         """
@@ -47,28 +65,28 @@ class RobotProcess:
                 self.clear_queue(queue)
 
     def clear_queue(self, queue: str) -> None:
-        if queue in self.consume_queues:
-            while not self.consume_queues[queue].empty():
-                self.consume_queues[queue].get(timeout=2.0)
+        if queue in self._consume_queues:
+            while not self._consume_queues[queue].empty():
+                self._consume_queues[queue].get(timeout=2.0)
 
-        elif queue in self.publish_queues:
-            for q in self.publish_queues[queue]:
+        elif queue in self._publish_queues:
+            for q in self._publish_queues[queue]:
                 while not q.empty():
                     q.get(timeout=2.0)
 
     def publish(self, message: T.Any, queue_name: T.Optional[str] = None, clear_on_overflow: bool = False) -> None:
-        if len(self.publish_queues.keys()) == 0:
+        if len(self._publish_queues.keys()) == 0:
             self.log.error(f"Process \"{self.name}\" has no queues to write to.")
             return
 
         if queue_name is None:
-            if len(self.publish_queues.keys()) != 1:
+            if len(self._publish_queues.keys()) != 1:
                 self.log.error(f"Process \"{self.name}\" has more than one write queue. Specify a write queue name.")
                 return
 
-            queue_name = list(self.publish_queues.keys())[0]
+            queue_name = list(self._publish_queues.keys())[0]
 
-        for q in self.publish_queues[queue_name]:
+        for q in self._publish_queues[queue_name]:
             if clear_on_overflow:
                 while q.full():
                     q.get()
@@ -76,21 +94,21 @@ class RobotProcess:
             q.put(message)
 
     def consume(self, queue_name: T.Optional[str] = None, clear_all_messages: bool = False) -> T.Any:
-        if len(self.consume_queues.keys()) == 0:
+        if len(self._consume_queues.keys()) == 0:
             self.log.error(f"Process \"{self.name}\" has no queues to read from.")
             return
 
         if queue_name is None:
-            if len(self.consume_queues.keys()) != 1:
+            if len(self._consume_queues.keys()) != 1:
                 self.log.error(f"Process \"{self.name}\" has more than one read queue. Specify a read queue name.")
                 return
 
-            queue_name = list(self.consume_queues.keys())[0]
+            queue_name = list(self._consume_queues.keys())[0]
 
-        message: str = self.consume_queues[queue_name].get()
+        message: str = self._consume_queues[queue_name].get()
         if clear_all_messages:
-            while not self.consume_queues[queue_name].empty():
-                message = self.consume_queues[queue_name].get()
+            while not self._consume_queues[queue_name].empty():
+                message = self._consume_queues[queue_name].get()
 
         return message
 
@@ -107,10 +125,30 @@ class RobotProcess:
             raise Exception("Only one of params must set!")
 
         if consume_queue_name:
-            return self.consume_queues[consume_queue_name].full()
+            # TODO check if it's used anywhere
+            return self._consume_queues[consume_queue_name].full()
 
-        for q in self.publish_queues[publish_queue_name]:
+        for q in self._publish_queues[publish_queue_name]:
             if q.full():
                 return True
 
         return False
+
+    def is_empty(self, consume_queue_name: T.Optional[str] = None):
+        """
+        checks if inter-process queue is empty
+        It's only possible to check a consumer queue because there is no sense in checking publishing queues
+
+        :param consume_queue_name: Name of an input queue. If it's none - check the only one queue
+        that is set as input in config
+        :type consume_queue_name: str
+        :rtype: Bool
+        """
+        if len(self._consume_queues.keys()) == 0:
+            raise Exception(f"Process \"{self.name}\" has no queues to read from.")
+
+        if consume_queue_name is None:
+            if len(self._consume_queues.keys()) != 1:
+                raise Exception(f"Process \"{self.name}\" has more than one read queue. Specify a consume queue name.")
+            consume_queue_name = list(self._consume_queues.keys())[0]
+        return self._consume_queues[consume_queue_name].empty()

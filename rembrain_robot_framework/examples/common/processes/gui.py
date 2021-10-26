@@ -41,7 +41,7 @@ class GUIProcess(RobotProcess):
         self.shared.exit_flag.value = True
 
     def try_redraw_image(self, queue_name: str, canvas_elem: sg.Canvas) -> None:
-        if self.consume_queues[queue_name].empty():
+        if self.is_empty(queue_name):
             return
         raw_image: np.ndarray = self.consume(queue_name)
         img = Image.fromarray(raw_image)

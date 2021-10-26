@@ -7,3 +7,4 @@ envyaml
 websocket-client
 pydantic
 wheel
+Deprecated
