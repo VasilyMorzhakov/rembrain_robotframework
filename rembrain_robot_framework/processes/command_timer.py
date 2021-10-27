@@ -14,4 +14,4 @@ class CommandTimer(RobotProcess):
             command["timestamp"] = datetime.now(timezone.utc).timestamp()
 
             self.log.info(f"message to send: {command}")
-            self.publish(command)
+            self.publish(json.dumps(command).encode('utf-8'))
