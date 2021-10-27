@@ -30,14 +30,10 @@ class RobotProcess:
         raise NotImplementedError()
 
     @property
-    @deprecated(version="0.0.18", reason="You should not access raw queues, use is_empty/is_full methods instead",
-                action="once")
     def consume_queues(self):
         return self._consume_queues
 
     @property
-    @deprecated(version="0.0.18", reason="You should not access raw queues, use is_empty/is_full methods instead",
-                action="once")
     def publish_queues(self):
         return self._publish_queues
 
