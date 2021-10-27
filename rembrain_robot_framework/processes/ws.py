@@ -130,6 +130,6 @@ class WsRobotProcess(RobotProcess):
     def _check_send_ping_pl(self, loop: T.Generator) -> None:
         now: float = time.time()
         if now - self.last_ping_time >= self.keep_alive_interval:
-            loop.send(self.get_ws_request(WsCommandType.PING))
+            loop.send('{"command":"ping"}')
             self.last_ping_time = now
 
