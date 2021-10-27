@@ -11,7 +11,7 @@ with open(os.path.join(os.path.dirname(__file__), 'config',
 
 setuptools.setup(
     name="rembrain_robot_framework",
-    version="0.0.18",
+    version="0.0.19",
     author="Rembrain",
     author_email="info@rembrain.ai",
     description="Rembrain Robot Framework",
