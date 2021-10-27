@@ -103,20 +103,33 @@ class WsRobotProcess(RobotProcess):
         request = self.get_ws_request()
 
         while True:
-            self._check_send_ping()
-            request.message = self.consume()
-            self.ws_connect.push(request, retry_times=self.retry_push)
+            if self.is_empty():
+                self._check_send_ping()
+                time.sleep(0.001)
+            else:
+                request.message = self.consume()
+                self.ws_connect.push(request, retry_times=self.retry_push)
 
     def _push_loop(self):
         push_loop: T.Generator = self.ws_connect.push_loop(self.get_ws_request())
         next(push_loop)
 
         while True:
-            self._check_send_ping()
-            push_loop.send(self.consume())
+            if self.is_empty():
+                self._check_send_ping_pl(push_loop)
+                time.sleep(0.001)
+            else:
+                push_loop.send(self.consume())
 
     def _check_send_ping(self) -> None:
         now: float = time.time()
         if now - self.last_ping_time >= self.keep_alive_interval:
             self.ws_connect.push(self.get_ws_request(WsCommandType.PING))
             self.last_ping_time = now
+
+    def _check_send_ping_pl(self, loop: T.Generator) -> None:
+        now: float = time.time()
+        if now - self.last_ping_time >= self.keep_alive_interval:
+            loop.send(self.get_ws_request(WsCommandType.PING))
+            self.last_ping_time = now
+
