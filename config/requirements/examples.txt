@@ -1,4 +1,0 @@
--r base.txt
-yolov5
-PySimpleGUI
-Pillow

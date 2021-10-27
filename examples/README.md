@@ -16,13 +16,9 @@ This allows the processor to be run on an external machine that is able to proce
 
 ## Running examples
 
-Tk is required in order to run PySimpleGUI for the gui process, so make sure it is installed in your system
-
-First make sure to install the requirements file by running this command in the repository root
-
-
+Tk and git are required for installation (git to get the framework package from GitHub, Tk for PySimpleGUI)
 ```shell
-pip3 install -r config/requirements/examples.txt
+pip3 install -r requirements.txt
 ```
 
 After that each project can be run via running the `main.py` file

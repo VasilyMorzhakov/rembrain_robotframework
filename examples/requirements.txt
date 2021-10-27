@@ -1,0 +1,4 @@
+git+https://github.com/VasilyMorzhakov/rembrain_robotframework
+yolov5
+PySimpleGUI
+Pillow

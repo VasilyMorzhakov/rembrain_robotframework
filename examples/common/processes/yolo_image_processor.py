@@ -7,9 +7,11 @@ class YoloImageProcessor(RobotProcess):
     def __init__(self, *args, **kwargs):
         super(YoloImageProcessor, self).__init__(*args, **kwargs)
 
+        device = kwargs.get("device", "cpu")
+
         # To prevent importing pytorch/etc in main process
         import yolov5
-        self.model = yolov5.load("yolov5n.pt")
+        self.model = yolov5.load("yolov5n.pt", device)
 
     def run(self) -> None:
         self.log.info("Hello from image processor!")

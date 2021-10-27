@@ -2,9 +2,9 @@ import os
 from envyaml import EnvYAML
 
 from rembrain_robot_framework import RobotDispatcher
-from rembrain_robot_framework.examples.common.processes.gui import GUIProcess
-from rembrain_robot_framework.examples.common.processes.image_capture import ImageCapture
-from rembrain_robot_framework.examples.common.processes.yolo_image_processor import YoloImageProcessor
+from examples.common.processes.gui import GUIProcess
+from examples.common.processes.image_capture import ImageCapture
+from examples.common.processes.yolo_image_processor import YoloImageProcessor
 
 
 def run_dispatcher():

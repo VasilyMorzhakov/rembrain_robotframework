@@ -3,5 +3,7 @@
 *.DS_Store
 /.idea/
 !example.env
+venv/
+yolo*.pt
 
 **/tests/**/out/
