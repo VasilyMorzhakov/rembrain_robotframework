@@ -1,0 +1,35 @@
+processes:
+  orig_receiver:
+    command_type: pull
+    exchange: "image_original"
+    publish:
+      - to_unpack
+
+  video_unpacker:
+    consume:
+      - to_unpack
+    publish:
+      - image_orig
+
+  processor:
+    device: "cpu"
+    consume:
+      - image_orig
+    publish:
+      - to_pack
+
+  video_packer:
+    pack_type: JPG_PNG
+    consume:
+      - to_pack
+    publish:
+      - image_processed
+
+  processed_pusher:
+    command_type: push_loop
+    exchange: "image_processed"
+    consume:
+      - image_processed
+
+shared_objects:
+  camera: "dict"

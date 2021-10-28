@@ -17,8 +17,6 @@ class GUIProcess(RobotProcess):
         }
 
     def run(self) -> None:
-        self.log.info("HI!")
-
         canvas_orig = sg.Canvas(size=(533, 400))
         canvas_processed = sg.Canvas(size=(533, 400))
 
@@ -26,7 +24,7 @@ class GUIProcess(RobotProcess):
             [sg.Text("Original", size=(76, 1)), sg.Text("Processed")],
             [canvas_orig, canvas_processed]
         ]
-        window = sg.Window("Local example", layout, location=(0, 0))
+        window = sg.Window("Local example", layout, location=(10, 10))
 
         while True:
             event, values = window.read(timeout=10)
@@ -43,7 +41,10 @@ class GUIProcess(RobotProcess):
     def try_redraw_image(self, queue_name: str, canvas_elem: sg.Canvas) -> None:
         if self.is_empty(queue_name):
             return
-        raw_image: np.ndarray = self.consume(queue_name)
+        raw_image: T.Union[tuple, np.ndarray] = self.consume(queue_name)
+        # If we got depth data included - discard it
+        if type(raw_image) is tuple:
+            raw_image = raw_image[0]
         img = Image.fromarray(raw_image)
         img = img.resize(canvas_elem.get_size())
         self.tk_images[queue_name] = ImageTk.PhotoImage(img)

@@ -1,10 +1,12 @@
 import os
 from envyaml import EnvYAML
 
+# Adding the repository root to the sys path so exports work properly
+import sys
+sys.path.append(os.path.abspath(os.path.join(__file__, "..", "..", "..")))
+
+from examples.common.processes import GUIProcess, ImageCapture, YoloImageProcessor
 from rembrain_robot_framework import RobotDispatcher
-from examples.common.processes.gui import GUIProcess
-from examples.common.processes.image_capture import ImageCapture
-from examples.common.processes.yolo_image_processor import YoloImageProcessor
 
 
 def run_dispatcher():
@@ -17,9 +19,9 @@ def run_dispatcher():
     config = EnvYAML(os.path.join(os.path.dirname(__file__), "config", "processes_config.yaml"))
     processes = {p: {"process_class": process_map[p]} for p in config["processes"]}
     project_description = {
-        "project": "brainless_robot",
-        "subsystem": "local_test_robot",
-        "robot": "local_example_robot"
+        "project": "rembrain_robotframework_examples",
+        "subsystem": "local_example",
+        "robot": "local_example_robot",
     }
 
     robot_dispatcher = RobotDispatcher(

@@ -1,0 +1,46 @@
+processes:
+  gui:
+    keep_alive: false
+    consume:
+      - image_orig
+      - image_processed
+
+  image_capture:
+    publish:
+      - image_orig
+
+  depth_mixin:
+    consume:
+      - image_orig
+    publish:
+      - to_pack
+
+  video_packer:
+    pack_type: JPG_PNG
+    consume:
+      - to_pack
+    publish:
+      - to_push
+
+  orig_pusher:
+    command_type: push_loop
+    exchange: "image_original"
+    consume:
+      - to_push
+
+  processed_receiver:
+    command_type: pull
+    exchange: "image_processed"
+    publish:
+      - to_unpack
+
+  video_unpacker:
+    consume:
+      - to_unpack
+    publish:
+      - image_processed
+
+
+shared_objects:
+  camera: "dict"
+  exit_flag: "Value:bool"
