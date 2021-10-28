@@ -2,8 +2,11 @@
 
 Instructions will be soon.
 
-For linting:
+#### Lint
 `pycodestyle . --config=config/.pycodestyle`
 
-For tests:
+#### Tests:
 `pytest -c config/pytest.ini`
+
+#### Examples
+Instructions [here](examples/README.md)

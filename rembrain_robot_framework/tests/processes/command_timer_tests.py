@@ -14,9 +14,9 @@ def test_correct_command_timer(mocker, command_timer_fx):
     test_mock_result = {}
     loop_reset_exception = 'AssertionError for reset loop!'
 
-    def publish(message, *args):
+    def publish(message: bytes, *args):
         nonlocal test_mock_result
-        test_mock_result = message
+        test_mock_result = json.loads(message.decode())
         raise AssertionError(loop_reset_exception)
 
     mocker.patch.object(command_timer_fx, 'consume', return_value=json.dumps({'some_data': 777}))

@@ -2,11 +2,9 @@ import logging
 import typing as T
 from collections import namedtuple
 from multiprocessing import Queue
-from deprecated import deprecated
 
 
 class RobotProcess:
-
     def __init__(
             self,
             name: str,
@@ -145,6 +143,8 @@ class RobotProcess:
 
         if consume_queue_name is None:
             if len(self._consume_queues.keys()) != 1:
-                raise Exception(f"Process \"{self.name}\" has more than one read queue. Specify a consume queue name.")
+                raise Exception(f"Process '{self.name}' has more than one read queue. Specify a consume queue name.")
+
             consume_queue_name = list(self._consume_queues.keys())[0]
+
         return self._consume_queues[consume_queue_name].empty()
