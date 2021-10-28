@@ -13,7 +13,6 @@ class VideoUnpacker(RobotProcess):
 
     def run(self):
         self.log.info(f"{self.__class__.__name__} started, name: {self.name}.")
-        self.log.info("active, start consuming")
 
         while True:
             response_data: Union[str, bytes] = self.consume()

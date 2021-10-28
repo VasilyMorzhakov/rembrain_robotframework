@@ -117,7 +117,8 @@ class WsDispatcher:
                         self.ws.send(data)
                         data = yield
                     else:
-                        raise Exception("Unknown type of data.")
+                        raise Exception(f"Data type {type(data)} is invalid. "
+                                        f"You can only send either binary data, or string service messages")
 
             except Exception:
                 print(f"WsDispatcher ERROR: SEND '{WsCommandType.PUSH_LOOP}' command failed. Reason: {format_exc()}.")
