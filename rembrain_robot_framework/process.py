@@ -106,6 +106,12 @@ class RobotProcess:
 
         return message
 
+    def has_consume_queue(self, queue_name: str) -> bool:
+        return queue_name in self._consume_queues
+
+    def has_publish_queue(self, queue_name: str) -> bool:
+        return queue_name in self._publish_queues
+
     def is_full(
             self,
             *,
