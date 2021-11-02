@@ -1,5 +1,5 @@
 amqp
-opencv-contrib-python
+opencv-python==4.0.0.21
 pika
 python-json-logger
 python-logging-rabbitmq
