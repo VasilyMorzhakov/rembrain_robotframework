@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import logging
 import time
 import typing as T
@@ -7,9 +5,6 @@ from ctypes import c_bool, c_int, c_float, c_char_p
 from functools import wraps
 from logging.handlers import QueueHandler
 from multiprocessing import Value, Lock, Manager
-
-if T.TYPE_CHECKING:
-    from rembrain_robot_framework.process import RobotProcess
 
 
 def generate(name: str, manager: Manager) -> T.Any:
@@ -74,8 +69,8 @@ def keep_alive(start_process_func: T.Callable) -> T.Callable:
 
 
 @keep_alive
-def start_process(process_class: T.Type[RobotProcess], *args, **kwargs) -> None:
-    process: T.Optional[RobotProcess] = None
+def start_process(process_class, *args, **kwargs) -> None:
+    process = None
 
     try:
         process = process_class(*args, **kwargs)
