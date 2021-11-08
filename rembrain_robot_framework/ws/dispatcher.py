@@ -5,20 +5,22 @@ import typing as T
 from threading import Thread
 from traceback import format_exc
 
-import websocket
 
 from rembrain_robot_framework.ws import WsCommandType, WsRequest
 
 
 class WsDispatcher:
     def __init__(self):
+        global websocket
+        import websocket
         self.ws: T.Optional[websocket.WebSocket] = None
         self._reader: T.Optional[Thread] = None
 
     def open(self) -> None:
         if not self.ws or not self.ws.connected:
             self.ws = websocket.WebSocket()
-            self.ws.connect(os.environ["WEBSOCKET_GATE_URL"])
+            self.ws.connect(os.environ["WEBSOCKET_GATE_URL"],timeout=0.5)
+            self.ws.settimeout(10.0)
             self._end_silent_reader()
 
     def close(self) -> None:
