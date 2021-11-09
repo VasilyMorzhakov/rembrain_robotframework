@@ -4,7 +4,7 @@ import time
 import typing as T
 from threading import Thread
 from traceback import format_exc
-
+import stopit
 
 from rembrain_robot_framework.ws import WsCommandType, WsRequest
 
@@ -19,7 +19,17 @@ class WsDispatcher:
     def open(self) -> None:
         if not self.ws or not self.ws.connected:
             self.ws = websocket.WebSocket()
-            self.ws.connect(os.environ["WEBSOCKET_GATE_URL"],timeout=0.5)
+
+            connected_passed=False
+            for i in range(3):
+                with stopit.ThreadingTimeout(0.5) as to_ctx_mgr:
+                    self.ws.connect(os.environ["WEBSOCKET_GATE_URL"])
+                if to_ctx_mgr:
+                    connected_passed=True
+                    break
+            if not connected_passed:
+                raise Exception("websocket.connect timeouted 3 times")
+
             self.ws.settimeout(10.0)
             self._end_silent_reader()
 
