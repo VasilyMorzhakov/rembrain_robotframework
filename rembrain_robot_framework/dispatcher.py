@@ -10,7 +10,7 @@ from rembrain_robot_framework.logger.utils import setup_logging
 
 
 class RobotDispatcher:
-    DEFAULT_QUEUE_SIZE = 30
+    DEFAULT_QUEUE_SIZE = 50
 
     def __init__(
             self,

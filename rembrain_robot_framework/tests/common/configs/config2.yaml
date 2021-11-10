@@ -9,7 +9,7 @@ processes:
       - messages2
 
 queues_sizes:
-  messages1: 50
+  messages1: 10
 
 shared_objects:
   hi_received: Value:int
