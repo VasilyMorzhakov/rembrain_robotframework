@@ -1,18 +1,18 @@
+import logging
 import os
 import socket
 import time
 import typing as T
 from threading import Thread
 from traceback import format_exc
+
 import stopit
 import websocket
-import logging
 
 from rembrain_robot_framework.ws import WsCommandType, WsRequest
 
 
 class WsDispatcher:
-
     CONNECTION_RETRIES = 3
 
     def __init__(self, propagate_log=True, proc_name=""):
@@ -29,14 +29,11 @@ class WsDispatcher:
             # Turn on SO_REUSEADDR so we can reuse hung sockets
             self.ws = websocket.WebSocket(sockopt=((socket.SOL_SOCKET, socket.SO_REUSEADDR, 1),))
 
-            is_connected = False
             for i in range(self.CONNECTION_RETRIES):
-                with stopit.ThreadingTimeout(0.5) as to_ctx_mgr:
+                with stopit.ThreadingTimeout(0.5):
                     self.ws.connect(os.environ["WEBSOCKET_GATE_URL"])
-                if to_ctx_mgr:
-                    is_connected = True
                     break
-            if not is_connected:
+            else:
                 err_msg = f"websocket.connect failed to connect after {self.CONNECTION_RETRIES} retries"
                 self.log.error(err_msg)
                 raise Exception(err_msg)
