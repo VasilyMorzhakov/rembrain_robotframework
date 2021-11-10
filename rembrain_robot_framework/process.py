@@ -136,7 +136,7 @@ class RobotProcess:
 
     def is_empty(self, consume_queue_name: T.Optional[str] = None):
         """
-        checks if inter-process queue is empty
+        Checks inter-process queue is empty.
         It's only possible to check a consumer queue because there is no sense in checking publishing queues
 
         :param consume_queue_name: Name of an input queue. If it's none - check the only one queue

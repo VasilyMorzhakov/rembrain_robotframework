@@ -40,6 +40,7 @@ def run_dispatcher():
 
 
 if __name__ == "__main__":
+    # todo remove it! - it is hardcode
     if not os.environ.get("WEBSOCKET_GATE_URL"):
         os.environ["WEBSOCKET_GATE_URL"] = "wss://monitor-dev.rembrain.ai:5443"
 

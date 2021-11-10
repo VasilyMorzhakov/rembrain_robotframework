@@ -1,9 +1,10 @@
+import typing as T
+
+import PySimpleGUI as sg
 import numpy as np
+from PIL import ImageTk, Image
 
 from rembrain_robot_framework import RobotProcess
-import PySimpleGUI as sg
-from PIL import ImageTk, Image
-import typing as T
 
 
 class GUIProcess(RobotProcess):
@@ -28,7 +29,6 @@ class GUIProcess(RobotProcess):
 
         while True:
             event, values = window.read(timeout=10)
-
             if event in (sg.WIN_CLOSED, 'Exit'):
                 break
 
@@ -41,10 +41,13 @@ class GUIProcess(RobotProcess):
     def try_redraw_image(self, queue_name: str, canvas_elem: sg.Canvas) -> None:
         if self.is_empty(queue_name):
             return
+
         raw_image: T.Union[tuple, np.ndarray] = self.consume(queue_name)
+
         # If we got depth data included - discard it
         if type(raw_image) is tuple:
             raw_image = raw_image[0]
+
         img = Image.fromarray(raw_image)
         img = img.resize(canvas_elem.get_size())
         self.tk_images[queue_name] = ImageTk.PhotoImage(img)

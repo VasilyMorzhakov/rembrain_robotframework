@@ -1,4 +1,3 @@
-import logging
 import os
 import socket
 import time
@@ -9,6 +8,7 @@ from traceback import format_exc
 import stopit
 import websocket
 
+from rembrain_robot_framework.logger import get_propagate_logger
 from rembrain_robot_framework.ws import WsCommandType, WsRequest
 
 
@@ -22,10 +22,11 @@ class WsDispatcher:
         """
         self.ws: T.Optional[websocket.WebSocket] = None
         self._reader: T.Optional[Thread] = None
-        self.log = self._get_logger(propagate_log, proc_name)
+        self.log = get_propagate_logger(propagate_log, proc_name)
 
     def open(self) -> None:
         if not self.ws or not self.ws.connected:
+
             # Turn on SO_REUSEADDR so we can reuse hung sockets
             for i in range(self.CONNECTION_RETRIES):
                 with stopit.ThreadingTimeout(0.5):
@@ -33,10 +34,11 @@ class WsDispatcher:
                     self.ws.connect(os.environ["WEBSOCKET_GATE_URL"])
                     break
             else:
-                err_msg = f"websocket.connect failed to connect after {self.CONNECTION_RETRIES} retries"
+                err_msg = f"Method 'websocket.connect()' failed to connect after {self.CONNECTION_RETRIES} retries"
                 self.log.error(err_msg)
                 raise Exception(err_msg)
 
+            # todo remove it ?
             self.ws.settimeout(10.0)
             self._end_silent_reader()
 
@@ -45,8 +47,7 @@ class WsDispatcher:
             if self.ws:
                 self.ws.close()
         except Exception:
-            err_msg = f"WsDispatcher ERROR: ws CLOSE failed. Reason: {format_exc()}."
-            self.log.error(err_msg)
+            self.log.error(f"WsDispatcher: ws close failed. Reason: {format_exc()}.")
 
         self.ws = None
         self._end_silent_reader()
@@ -101,8 +102,7 @@ class WsDispatcher:
                     time.sleep(5.0)
 
             except Exception:
-                err_msg = f"WsDispatcher ERROR: Send '{WsCommandType.PUSH}' command failed. Reason: {format_exc()}."
-                self.log.error(err_msg)
+                self.log.error(f"WsDispatcher: Send '{WsCommandType.PUSH}' command failed. Reason: {format_exc()}.")
                 self.close()
 
         # todo try to remove this code
@@ -124,6 +124,7 @@ class WsDispatcher:
                 self.open()
                 self.ws.send(request.json())
                 self.ws.recv()
+
                 # todo does it need ?
                 self.ws.settimeout(1.0)
 
@@ -139,13 +140,15 @@ class WsDispatcher:
                         self.ws.send(data)
                         data = yield
                     else:
-                        err_msg = f"Data type {type(data)} is invalid. " \
-                                  f"You can only send either binary data, or string service messages"
+                        err_msg = (
+                            f"Data type {type(data)} is invalid. "
+                            f"You can only send either binary data, or string messages."
+                        )
                         self.log.error(err_msg)
                         raise Exception(err_msg)
 
             except Exception:
-                err_msg = f"WsDispatcher ERROR: SEND '{WsCommandType.PUSH_LOOP}' command failed. Reason: {format_exc()}."
+                err_msg = f"WsDispatcher: Send '{WsCommandType.PUSH_LOOP}' command failed. Reason: {format_exc()}."
                 self.log.error(err_msg)
                 self.close()
                 time.sleep(2.0)
@@ -169,16 +172,3 @@ class WsDispatcher:
                 self.ws.recv()
             except:
                 pass
-
-    @staticmethod
-    def _get_logger(propagate: bool, proc_name: str) -> logging.Logger:
-        pid = os.getpid()
-        logger = logging.getLogger(f"{__name__} ({proc_name}:{pid})")
-        logger.propagate = propagate
-        # If this is not a propagating logger, then set it up with just a StreamHandler
-        if not propagate:
-            logger.setLevel(logging.INFO)
-            for handler in logger.handlers:
-                logger.removeHandler(handler)
-            logger.addHandler(logging.StreamHandler())
-        return logger

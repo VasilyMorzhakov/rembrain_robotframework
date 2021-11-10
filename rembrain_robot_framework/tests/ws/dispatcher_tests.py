@@ -58,29 +58,3 @@ def test_correct_ws_push_loop(mocker, ws_dispatcher_fx: WsDispatcher, ws_request
     mocker.patch.multiple(ws_dispatcher_fx.ws, send=ws_send)
     push_loop.send(ws_test_data)
     assert ws_test_data == test_response
-
-#
-# def _tr(i):
-#     ws = WsDispatcher()
-#     ws.open()
-#     _tr.l[i] = ws.ws.connected
-#     while True:
-#         ws.ws.ping()
-#         sleep(2)
-#
-#
-# _tr.l = {}
-#
-#
-# def test_process_loading() -> None:
-#     from unittest import mock
-#
-#     connect_counts = 20
-#     env_overrides = {"WEBSOCKET_GATE_URL": "wss://monitor-dev.rembrain.ai:5443", }
-#
-#     with mock.patch.dict("os.environ", env_overrides):
-#         for i in range(1, connect_counts + 1):
-#             Process(target=_tr, daemon=True, args=(i,)).start()
-#
-#     sleep(30)
-#     assert len(_tr.l) == connect_counts
