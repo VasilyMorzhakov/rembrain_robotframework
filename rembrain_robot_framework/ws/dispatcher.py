@@ -27,10 +27,9 @@ class WsDispatcher:
     def open(self) -> None:
         if not self.ws or not self.ws.connected:
             # Turn on SO_REUSEADDR so we can reuse hung sockets
-            self.ws = websocket.WebSocket(sockopt=((socket.SOL_SOCKET, socket.SO_REUSEADDR, 1),))
-
             for i in range(self.CONNECTION_RETRIES):
                 with stopit.ThreadingTimeout(0.5):
+                    self.ws = websocket.WebSocket(sockopt=((socket.SOL_SOCKET, socket.SO_REUSEADDR, 1),))
                     self.ws.connect(os.environ["WEBSOCKET_GATE_URL"])
                     break
             else:
