@@ -35,7 +35,7 @@ class WsRobotProcess(RobotProcess):
         if self.command_type not in WsCommandType.ALL_VALUES or self.command_type == WsCommandType.PING:
             raise Exception("Unknown/disallowed command type.")
 
-        self.ws_connect = WsDispatcher()
+        self.ws_connect = WsDispatcher(proc_name=self.name)
         self.exchange: str = exchange
 
         self.robot_name: str = robot_name if robot_name else os.environ["ROBOT_NAME"]

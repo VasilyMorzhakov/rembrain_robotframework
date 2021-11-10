@@ -24,7 +24,8 @@ class LogHandler(logging.Handler):
             self.addFilter(FieldFilter(self.fields, True))
 
         self.logs_queue = queue.Queue()
-        self.ws_connect = WsDispatcher()
+        # Disable logs so we don't lockup in a loop by accident
+        self.ws_connect = WsDispatcher(propagate_log=False)
         Thread(target=self._send_to_ws, daemon=True).start()
 
     def emit(self, record: logging.LogRecord) -> None:
