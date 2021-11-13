@@ -8,3 +8,4 @@ websocket-client
 pydantic
 wheel
 stopit
+hanging-threads

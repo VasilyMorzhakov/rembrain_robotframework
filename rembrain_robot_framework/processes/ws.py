@@ -5,7 +5,10 @@ import typing as T
 
 from rembrain_robot_framework import RobotProcess
 from rembrain_robot_framework.ws import WsDispatcher, WsRequest, WsCommandType
+import hanging_threads
 
+# Per-process singleton so we don't monitor multiple times
+monitoring_thread = None
 
 class WsRobotProcess(RobotProcess):
     def __init__(
@@ -30,6 +33,12 @@ class WsRobotProcess(RobotProcess):
         :param kwargs:
         """
         super().__init__(*args, **kwargs)
+
+        global monitoring_thread
+        if monitoring_thread is not None:
+            self.log.info("Restarting monitoring thead")
+            monitoring_thread.stop()
+        monitoring_thread = hanging_threads.start_monitoring(seconds_frozen=5, test_interval=100)
 
         self.command_type: str = command_type
         if self.command_type not in WsCommandType.ALL_VALUES or self.command_type == WsCommandType.PING:
