@@ -1,3 +1,4 @@
+import logging
 import os
 import socket
 import time
@@ -23,7 +24,7 @@ class WsDispatcher:
 
         self.ws: T.Optional[websocket.WebSocket] = None
         self._reader: T.Optional[Thread] = None
-        self.log = get_propagate_logger(propagate_log, proc_name)
+        self.log = self._get_logger(propagate_log, proc_name)
 
     def open(self) -> None:
         if not self.ws or not self.ws.connected:
@@ -173,3 +174,17 @@ class WsDispatcher:
                 self.ws.recv()
             except:
                 pass
+
+    @staticmethod
+    def _get_logger(propagate: bool, proc_name: str) -> logging.Logger:
+        pid = os.getpid()
+        logger = logging.getLogger(f"{__name__} ({proc_name}:{pid})")
+        logger.propagate = propagate
+        # If this is not a propagating logger, then set it up with just a StreamHandler
+        if not propagate:
+            logger.setLevel(logging.INFO)
+            for handler in logger.handlers:
+                logger.removeHandler(handler)
+            logger.addHandler(logging.StreamHandler())
+        return logger
+
