@@ -82,4 +82,3 @@ def setup_logging(project_description: dict, in_cluster: bool = True) -> T.Tuple
 
     listener = QueueListener(log_queue, *handlers)
     return log_queue, listener
-
