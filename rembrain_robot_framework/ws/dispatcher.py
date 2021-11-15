@@ -175,6 +175,11 @@ class WsDispatcher:
 
     @staticmethod
     def _get_logger(propagate: bool, proc_name: str) -> logging.Logger:
+        """
+        Since WsDispatcher is used inside the websocket logger (See LogHandler class in `logger/handler.py`),
+            we need to make sure we don't accidentally have an error loop where it breaks inside the logging framework.
+        So to handle that, we turn off propagation to the root logger and create a simple StreamHandler logger
+        """
         pid = os.getpid()
         logger = logging.getLogger(f"{__name__} ({proc_name}:{pid})")
         logger.propagate = propagate
