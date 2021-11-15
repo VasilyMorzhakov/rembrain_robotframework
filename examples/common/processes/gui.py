@@ -16,6 +16,7 @@ class GUIProcess(RobotProcess):
             "image_orig": None,
             "image_processed": None
         }
+        self._title = kwargs.get("title", "Rembrain robotframework example")
 
     def run(self) -> None:
         canvas_orig = sg.Canvas(size=(533, 400))
@@ -25,7 +26,7 @@ class GUIProcess(RobotProcess):
             [sg.Text("Original", size=(76, 1)), sg.Text("Processed")],
             [canvas_orig, canvas_processed]
         ]
-        window = sg.Window("Local example", layout, location=(10, 10))
+        window = sg.Window(self._title, layout, location=(10, 10))
 
         while True:
             event, values = window.read(timeout=10)

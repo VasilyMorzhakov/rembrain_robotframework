@@ -1,5 +1,6 @@
 processes:
   gui:
+    title: "Rembrain robotframework example (Local)"
     keep_alive: false
     consume:
       - image_orig
