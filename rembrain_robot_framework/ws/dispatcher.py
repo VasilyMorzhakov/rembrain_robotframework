@@ -8,7 +8,6 @@ from traceback import format_exc
 import stopit
 import websocket
 
-from rembrain_robot_framework.logger import get_propagate_logger
 from rembrain_robot_framework.ws import WsCommandType, WsRequest
 
 
@@ -20,6 +19,8 @@ class WsDispatcher:
         :param propagate_log: whether to propagate the logs to the root logger
             if False, then a separate logger is created that just writes to the stderr
         """
+        from rembrain_robot_framework.logger import get_propagate_logger
+
         self.ws: T.Optional[websocket.WebSocket] = None
         self._reader: T.Optional[Thread] = None
         self.log = get_propagate_logger(propagate_log, proc_name)
