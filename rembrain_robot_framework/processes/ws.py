@@ -138,4 +138,4 @@ class WsRobotProcess(RobotProcess):
 
             self.last_ping_time = now
 
-        time.sleep(0.001)
+        time.sleep(self.keep_alive_interval / 5)
