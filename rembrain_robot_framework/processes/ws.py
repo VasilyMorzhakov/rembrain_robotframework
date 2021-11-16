@@ -34,11 +34,11 @@ class WsRobotProcess(RobotProcess):
         """
         super().__init__(*args, **kwargs)
 
-        global monitoring_thread
-        if monitoring_thread is not None:
-            self.log.info("Restarting monitoring thead")
-            monitoring_thread.stop()
-        monitoring_thread = hanging_threads.start_monitoring(seconds_frozen=5, test_interval=100)
+        # global monitoring_thread
+        # if monitoring_thread is not None:
+        #     self.log.info("Restarting monitoring thead")
+        #     monitoring_thread.stop()
+        # monitoring_thread = hanging_threads.start_monitoring(seconds_frozen=5, test_interval=100)
 
         self.command_type: str = command_type
         if self.command_type not in WsCommandType.ALL_VALUES or self.command_type == WsCommandType.PING:
@@ -138,4 +138,5 @@ class WsRobotProcess(RobotProcess):
 
             self.last_ping_time = now
 
-        time.sleep(self.keep_alive_interval / 5)
+        # This MUST be low because ping polling goes in the same thread as data sending/receiving
+        time.sleep(0.001)
