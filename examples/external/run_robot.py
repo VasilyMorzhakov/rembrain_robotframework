@@ -1,16 +1,15 @@
 import os
-
-# Adding the repository root to the sys path so exports work properly
 import sys
-
-sys.path.append(os.path.abspath(os.path.join(__file__, "..", "..", "..")))
 
 from envyaml import EnvYAML
 
-from examples.common.processes import ImageCapture, GUIProcess, DepthMixin
-from examples.external.config_gui import query_env_vars
-from rembrain_robot_framework import RobotDispatcher
-from rembrain_robot_framework.processes import WsRobotProcess, VideoPacker, VideoUnpacker
+# Adding the repository root to the sys path so exports work properly
+sys.path.append(os.path.abspath(os.path.join(__file__, "..", "..", "..")))
+
+from examples.common.processes import ImageCapture, GUIProcess, DepthMixin  # noqa: E402
+from examples.external.config_gui import query_env_vars  # noqa: E402
+from rembrain_robot_framework import RobotDispatcher  # noqa: E402
+from rembrain_robot_framework.processes import WsRobotProcess, VideoPacker, VideoUnpacker  # noqa: E402
 
 
 def run_dispatcher():

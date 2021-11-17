@@ -36,7 +36,6 @@ def test_correct_ws_push(mocker, ws_proc_params_fx):
     mocker.patch.object(ws_proc, 'is_empty', return_value=False)
     mocker.patch.object(ws_proc.ws_connect, 'push', push)
 
-
     with pytest.raises(AssertionError) as exc_info:
         ws_proc.run()
 

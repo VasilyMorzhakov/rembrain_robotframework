@@ -1,12 +1,13 @@
 import os
+import sys
+
 from envyaml import EnvYAML
 
 # Adding the repository root to the sys path so exports work properly
-import sys
 sys.path.append(os.path.abspath(os.path.join(__file__, "..", "..", "..")))
 
-from examples.common.processes import GUIProcess, ImageCapture, YoloImageProcessor
-from rembrain_robot_framework import RobotDispatcher
+from examples.common.processes import GUIProcess, ImageCapture, YoloImageProcessor  # noqa: E402
+from rembrain_robot_framework import RobotDispatcher  # noqa: E402
 
 
 def run_dispatcher():

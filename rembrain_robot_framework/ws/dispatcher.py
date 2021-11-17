@@ -178,16 +178,19 @@ class WsDispatcher:
         """
         Since WsDispatcher is used inside the websocket logger (See LogHandler class in `logger/handler.py`),
             we need to make sure we don't accidentally have an error loop where it breaks inside the logging framework.
-        So to handle that, we turn off propagation to the root logger and create a simple StreamHandler logger
+        So to handle that, we turn off propagation to the root logger and create a simple StreamHandler logger.
         """
         pid = os.getpid()
         logger = logging.getLogger(f"{__name__} ({proc_name}:{pid})")
         logger.propagate = propagate
+
         # If this is not a propagating logger, then set it up with just a StreamHandler
         if not propagate:
             logger.setLevel(logging.INFO)
+
             for handler in logger.handlers:
                 logger.removeHandler(handler)
-            logger.addHandler(logging.StreamHandler())
-        return logger
 
+            logger.addHandler(logging.StreamHandler())
+
+        return logger
