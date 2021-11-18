@@ -168,6 +168,8 @@ class RobotProcess:
         You can look at the available arguments in the StackMonitor constructor
         """
         if type(monitor_args) is bool:
+            if not monitor_args:
+                return
             self._stack_monitor = StackMonitor()
         else:
             self._stack_monitor = StackMonitor(**monitor_args)
