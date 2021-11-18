@@ -107,9 +107,10 @@ class RobotDispatcher:
                         self.processes[process_]["publish_queues"][queue_name] = [queue]
 
         # shared objects
-        self.shared_objects = {
-            name: utils.generate(obj, self.manager) for name, obj in self.config["shared_objects"].items()
-        }
+        if 'shared_objects' in self.config.keys():
+            self.shared_objects = {
+                name: utils.generate(obj, self.manager) for name, obj in self.config["shared_objects"].items()
+            }
 
     def set_logging(self, project_description: dict, in_cluster: bool) -> None:
         # Set up logging
