@@ -35,7 +35,7 @@ class WsRobotProcess(RobotProcess):
         if self.command_type not in WsCommandType.ALL_VALUES or self.command_type == WsCommandType.PING:
             raise Exception("Unknown/disallowed command type.")
 
-        self.ws_connect = WsDispatcher()
+        self.ws_connect = WsDispatcher(proc_name=self.name)
         self.exchange: str = exchange
 
         self.robot_name: str = robot_name if robot_name else os.environ["ROBOT_NAME"]
@@ -96,40 +96,37 @@ class WsRobotProcess(RobotProcess):
                 response_data = json.loads(response_data)
 
             self.log.debug(f"Publishing data to queue: {response_data}")
-
             self.publish(response_data)
 
-    def _push(self):
+    def _push(self) -> None:
         request = self.get_ws_request()
 
         while True:
             if self.is_empty():
-                self._check_send_ping()
-                time.sleep(0.001)
+                self._ping()
             else:
                 request.message = self.consume()
                 self.ws_connect.push(request, retry_times=self.retry_push)
 
-    def _push_loop(self):
+    def _push_loop(self) -> None:
         push_loop: T.Generator = self.ws_connect.push_loop(self.get_ws_request())
         next(push_loop)
 
         while True:
             if self.is_empty():
-                self._check_send_ping_pl(push_loop)
-                time.sleep(0.001)
+                self._ping(push_loop)
             else:
                 push_loop.send(self.consume())
 
-    def _check_send_ping(self) -> None:
+    def _ping(self, push_loop: T.Optional[T.Generator] = None) -> None:
         now: float = time.time()
+
         if now - self.last_ping_time >= self.keep_alive_interval:
-            self.ws_connect.push(self.get_ws_request(WsCommandType.PING))
+            if push_loop:
+                push_loop.send(json.dumps({"command": WsCommandType.PING}))
+            else:
+                self.ws_connect.push(self.get_ws_request(WsCommandType.PING))
+
             self.last_ping_time = now
 
-    def _check_send_ping_pl(self, loop: T.Generator) -> None:
-        now: float = time.time()
-        if now - self.last_ping_time >= self.keep_alive_interval:
-            loop.send('{"command":"ping"}')
-            self.last_ping_time = now
-
+        time.sleep(0.001)

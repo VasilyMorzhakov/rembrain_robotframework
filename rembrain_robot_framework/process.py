@@ -15,13 +15,12 @@ class RobotProcess:
             **kwargs
     ):
         self.name: str = name
+
         self._consume_queues: T.Dict[str, Queue] = consume_queues  # queues for reading
         self._publish_queues: T.Dict[str, T.List[Queue]] = publish_queues  # queues for writing
+
         self._shared: T.Any = namedtuple('_', shared_objects.keys())(**shared_objects)
-
-        self.debug: bool = False
         self.queues_to_clear: T.List[str] = []  # in case of exception this queues are cleared
-
         self.log = logging.getLogger(f"{self.__class__.__name__} ({self.name})")
 
     def run(self) -> None:
@@ -136,7 +135,7 @@ class RobotProcess:
 
     def is_empty(self, consume_queue_name: T.Optional[str] = None):
         """
-        checks if inter-process queue is empty
+        Checks inter-process queue is empty.
         It's only possible to check a consumer queue because there is no sense in checking publishing queues
 
         :param consume_queue_name: Name of an input queue. If it's none - check the only one queue

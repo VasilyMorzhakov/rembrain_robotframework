@@ -59,7 +59,6 @@ def get_log_handler(project_description: dict, in_cluster: bool = True) -> T.Any
 def get_console_handler() -> logging.StreamHandler:
     console_handler = logging.StreamHandler()
     format_string = "%(levelname)s:%(name)s:%(message)s"
-
     console_handler.setFormatter(logging.Formatter(format_string))
     return console_handler
 

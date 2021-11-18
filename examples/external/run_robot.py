@@ -1,15 +1,15 @@
 import os
-
-# Adding the repository root to the sys path so exports work properly
 import sys
-sys.path.append(os.path.abspath(os.path.join(__file__, "..", "..", "..")))
 
 from envyaml import EnvYAML
 
-from examples.common.processes import ImageCapture, GUIProcess, DepthMixin
-from examples.external.config_gui import query_env_vars
-from rembrain_robot_framework import RobotDispatcher
-from rembrain_robot_framework.processes import WsRobotProcess, VideoPacker, VideoUnpacker
+# Adding the repository root to the sys path so exports work properly
+sys.path.append(os.path.abspath(os.path.join(__file__, "..", "..", "..")))
+
+from examples.common.processes import ImageCapture, GUIProcess, DepthMixin  # noqa: E402
+from examples.external.config_gui import query_env_vars  # noqa: E402
+from rembrain_robot_framework import RobotDispatcher  # noqa: E402
+from rembrain_robot_framework.processes import WsRobotProcess, VideoPacker, VideoUnpacker  # noqa: E402
 
 
 def run_dispatcher():
@@ -40,9 +40,12 @@ def run_dispatcher():
 
 
 if __name__ == "__main__":
+    # todo remove it! - it is hardcode
     if not os.environ.get("WEBSOCKET_GATE_URL"):
         os.environ["WEBSOCKET_GATE_URL"] = "wss://monitor-dev.rembrain.ai:5443"
+
     required_vars = ["WEBSOCKET_GATE_URL", "ROBOT_NAME", "ROBOT_PASSWORD"]
     if not query_env_vars(required_vars):
         sys.exit(0)
+
     run_dispatcher()

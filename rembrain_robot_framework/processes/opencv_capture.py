@@ -1,6 +1,6 @@
 import time
+
 import cv2
-import os
 
 from rembrain_robot_framework import RobotProcess
 
@@ -11,11 +11,12 @@ class ImageCapture(RobotProcess):
         self.FPS_limit = kwargs.get("FPS_limit", 5)
 
     def run(self) -> None:
-        cap = cv2.VideoCapture(0)
+        vc_data = cv2.VideoCapture(0)
         while True:
-            ret, img = cap.read()
-            if not ret:
+            status, img = vc_data.read()
+            if not status:
                 break
+
             img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
             self.publish(img)
             time.sleep(1.0 / self.FPS_limit)

@@ -31,8 +31,9 @@ def test_correct_ws_push(mocker, ws_proc_params_fx):
         test_mock_result = request
         raise AssertionError(loop_reset_exception)
 
-    mocker.patch.object(ws_proc, '_check_send_ping')
+    mocker.patch.object(ws_proc, '_ping')
     mocker.patch.object(ws_proc, 'consume', return_value=test_data)
+    mocker.patch.object(ws_proc, 'is_empty', return_value=False)
     mocker.patch.object(ws_proc.ws_connect, 'push', push)
 
     with pytest.raises(AssertionError) as exc_info:
@@ -55,8 +56,9 @@ def test_correct_ws_push_loop(mocker, ws_proc_params_fx):
         test_mock_result = yield
         raise AssertionError(loop_reset_exception)
 
-    mocker.patch.object(ws_proc, '_check_send_ping')
+    mocker.patch.object(ws_proc, '_ping')
     mocker.patch.object(ws_proc, 'consume', return_value=test_data)
+    mocker.patch.object(ws_proc, 'is_empty', return_value=False)
     mocker.patch.object(ws_proc.ws_connect, 'push_loop', push_loop)
 
     with pytest.raises(AssertionError) as exc_info:

@@ -10,7 +10,7 @@ from rembrain_robot_framework.logger.utils import setup_logging
 
 
 class RobotDispatcher:
-    DEFAULT_QUEUE_SIZE = 30
+    DEFAULT_QUEUE_SIZE = 50
 
     def __init__(
             self,
@@ -191,7 +191,7 @@ class RobotDispatcher:
                 q_size: int = queue.qsize()
 
                 if queue._maxsize - q_size <= int(queue._maxsize * 0.1):
-                    self.log.error(f"Queue {q_name} of process {p_name} has reached {q_size} messages.")
+                    self.log.warning(f"Consume queue {q_name} of process {p_name} has reached {q_size} messages.")
                     is_overflow = True
 
             for q_name, queues in process["publish_queues"].items():
@@ -199,7 +199,7 @@ class RobotDispatcher:
                     q_size: int = q.qsize()
 
                     if q._maxsize - q_size <= int(q._maxsize * 0.1):
-                        self.log.error(f"Queue {q_name} of process {p_name} has reached {q_size} messages.")
+                        self.log.warning(f"Publish queue {q_name} of process {p_name} has reached {q_size} messages.")
                         is_overflow = True
 
         if is_overflow:

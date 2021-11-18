@@ -5,13 +5,12 @@ import setuptools
 with open("README.md") as f:
     long_description = f.read()
 
-with open(os.path.join(os.path.dirname(__file__), 'config',
-                       'requirements', 'base.txt')) as f:
+with open(os.path.join(os.path.dirname(__file__), 'config', 'requirements', 'base.txt')) as f:
     requirements = [i.strip() for i in f]
 
 setuptools.setup(
     name="rembrain_robot_framework",
-    version="0.0.19",
+    version="0.0.25",
     author="Rembrain",
     author_email="info@rembrain.ai",
     description="Rembrain Robot Framework",

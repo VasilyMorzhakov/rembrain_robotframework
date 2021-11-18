@@ -2,46 +2,19 @@ import json
 
 import numpy as np
 import pytest
-from pydantic import BaseModel
 from pytest_mock import MockerFixture
 
 from rembrain_robot_framework.pack import PackType
 from rembrain_robot_framework.processes import VideoPacker, VideoUnpacker
-
-
-class ImgData(BaseModel):
-    image: np.ndarray
-    depth: np.ndarray
-    camera: dict
-
-    class Config:
-        arbitrary_types_allowed = True
+from rembrain_robot_framework.tests.utils import Image
 
 
 @pytest.fixture()
 def img_data_fx():
-    x = 200
-    y = 100
-    camera = {
-        "fx": 1000,
-        "fy": 1000,
-        "ppx": 640,
-        "ppy": 360,
-        "width": 1280,
-        "height": 720,
-    }
-
-    color_image: np.ndarray = np.zeros((720, 1280, 3))
-    color_image[y: y + 100, x: x + 100, 2] = 1
-    color_image = (color_image * 255).astype(np.uint8)
-
-    depth_image: np.ndarray = np.zeros((360, 640), dtype=np.uint16)
-    depth_image[y // 2: y // 2 + 50, x // 2: x // 2 + 50] = 2000
-
-    return ImgData(image=color_image, depth=depth_image, camera=camera)
+    return Image.get_data()
 
 
-def test_correct_video_packer(mocker: MockerFixture, img_data_fx: ImgData) -> None:
+def test_correct_video_packer(mocker: MockerFixture, img_data_fx: Image) -> None:
     vp = VideoPacker(
         name="video_packer",
         shared_objects={"camera": img_data_fx.camera},
@@ -58,7 +31,7 @@ def test_correct_video_packer(mocker: MockerFixture, img_data_fx: ImgData) -> No
         mock_result = message
         raise AssertionError(loop_reset_exception)
 
-    mocker.patch.object(vp, 'consume', return_value=(img_data_fx.image, img_data_fx.depth))
+    mocker.patch.object(vp, 'consume', return_value=(img_data_fx.rgb, img_data_fx.depth))
     mocker.patch.object(vp, 'publish', publish)
     with pytest.raises(AssertionError) as exc_info:
         vp.run()
@@ -68,7 +41,7 @@ def test_correct_video_packer(mocker: MockerFixture, img_data_fx: ImgData) -> No
     assert len(mock_result) > 100
 
 
-def test_correct_full_pack_jpg(mocker: MockerFixture, img_data_fx: ImgData) -> None:
+def test_correct_full_pack_jpg(mocker: MockerFixture, img_data_fx: Image) -> None:
     vp = VideoPacker(
         name="video_packer",
         shared_objects={"camera": img_data_fx.camera},
@@ -84,7 +57,7 @@ def test_correct_full_pack_jpg(mocker: MockerFixture, img_data_fx: ImgData) -> N
         test_packer_result = message
         raise AssertionError
 
-    mocker.patch.object(vp, 'consume', return_value=(img_data_fx.image, img_data_fx.depth))
+    mocker.patch.object(vp, 'consume', return_value=(img_data_fx.rgb, img_data_fx.depth))
     mocker.patch.object(vp, 'publish', publish)
     try:
         vp.run()
@@ -115,12 +88,12 @@ def test_correct_full_pack_jpg(mocker: MockerFixture, img_data_fx: ImgData) -> N
     assert loop_reset_exception in str(exc_info.value)
     assert isinstance(test_unpacker_result, tuple)
     assert len(test_unpacker_result) == 3
-    assert np.sqrt(np.mean(np.square(test_unpacker_result[0] - img_data_fx.image))) < 5
+    assert np.sqrt(np.mean(np.square(test_unpacker_result[0] - img_data_fx.rgb))) < 5
     assert test_unpacker_result[1] is None
     assert 'time' in json.loads(test_unpacker_result[2])
 
 
-def test_correct_full_pack_png(mocker: MockerFixture, img_data_fx: ImgData) -> None:
+def test_correct_full_pack_png(mocker: MockerFixture, img_data_fx: Image) -> None:
     vp = VideoPacker(
         name="video_packer",
         shared_objects={"camera": img_data_fx.camera},
@@ -136,7 +109,7 @@ def test_correct_full_pack_png(mocker: MockerFixture, img_data_fx: ImgData) -> N
         test_packer_result = message
         raise AssertionError
 
-    mocker.patch.object(vp, 'consume', return_value=(img_data_fx.image, img_data_fx.depth))
+    mocker.patch.object(vp, 'consume', return_value=(img_data_fx.rgb, img_data_fx.depth))
     mocker.patch.object(vp, 'publish', publish)
     try:
         vp.run()
@@ -166,6 +139,6 @@ def test_correct_full_pack_png(mocker: MockerFixture, img_data_fx: ImgData) -> N
     assert loop_reset_exception in str(exc_info.value)
     assert isinstance(test_unpacker_result, tuple)
     assert len(test_unpacker_result) == 3
-    assert np.sqrt(np.mean(np.square(test_unpacker_result[0] - img_data_fx.image))) < 5
+    assert np.sqrt(np.mean(np.square(test_unpacker_result[0] - img_data_fx.rgb))) < 5
     assert (test_unpacker_result[1] == img_data_fx.depth).all()
     assert 'time' in test_unpacker_result[2]
