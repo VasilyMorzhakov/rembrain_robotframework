@@ -26,7 +26,7 @@ class WsDispatcher:
 
     def open(self) -> None:
         if not self.ws or not self.ws.connected:
-
+            self.log.info("Opening websocket connection")
             # Turn on SO_REUSEADDR so we can reuse hung sockets
             for i in range(self.CONNECTION_RETRIES):
                 with stopit.ThreadingTimeout(0.5):
@@ -45,6 +45,7 @@ class WsDispatcher:
     def close(self) -> None:
         try:
             if self.ws:
+                self.log.info("Closing websocket connection")
                 self.ws.close()
         except Exception:
             self.log.error(f"WsDispatcher: ws close failed. Reason: {format_exc()}.")
