@@ -2,6 +2,9 @@ import logging
 import typing as T
 from collections import namedtuple
 from multiprocessing import Queue
+from uuid import uuid4
+
+from rembrain_robot_framework.models.personal_data import PersonalQueueData
 
 
 class RobotProcess:
@@ -11,6 +14,7 @@ class RobotProcess:
             shared_objects: dict,
             consume_queues: T.Dict[str, Queue],
             publish_queues: T.Dict[str, T.List[Queue]],
+            system_queues: T.Dict[str, Queue],
             *args,
             **kwargs
     ):
@@ -18,8 +22,10 @@ class RobotProcess:
 
         self._consume_queues: T.Dict[str, Queue] = consume_queues  # queues for reading
         self._publish_queues: T.Dict[str, T.List[Queue]] = publish_queues  # queues for writing
-
+        self._system_queues: T.Dict[str, Queue] = system_queues
+        self._received_personal_data = {}
         self._shared: T.Any = namedtuple('_', shared_objects.keys())(**shared_objects)
+
         self.queues_to_clear: T.List[str] = []  # in case of exception this queues are cleared
         self.log = logging.getLogger(f"{self.__class__.__name__} ({self.name})")
 
@@ -67,7 +73,8 @@ class RobotProcess:
                 while not q.empty():
                     q.get(timeout=2.0)
 
-    def publish(self, message: T.Any, queue_name: T.Optional[str] = None, clear_on_overflow: bool = False) -> None:
+    def publish(self, message: T.Any, queue_name: T.Optional[str] = None, clear_on_overflow: bool = False,
+                is_personal: bool = False) -> T.Optional[str]:
         if len(self._publish_queues.keys()) == 0:
             self.log.error(f"Process \"{self.name}\" has no queues to write to.")
             return
@@ -79,12 +86,19 @@ class RobotProcess:
 
             queue_name = list(self._publish_queues.keys())[0]
 
+        personal_id: T.Optional[str] = None
+        if is_personal:
+            personal_id = str(uuid4())
+            message = PersonalQueueData(id=personal_id, process_sender=self.name, data=message)
+
         for q in self._publish_queues[queue_name]:
             if clear_on_overflow:
                 while q.full():
                     q.get()
 
             q.put(message)
+
+        return personal_id
 
     def consume(self, queue_name: T.Optional[str] = None, clear_all_messages: bool = False) -> T.Any:
         if len(self._consume_queues.keys()) == 0:
@@ -153,3 +167,21 @@ class RobotProcess:
             consume_queue_name = list(self._consume_queues.keys())[0]
 
         return self._consume_queues[consume_queue_name].empty()
+
+    def publish_to_system_queue(self, id_, proccess_name, message):
+        self._system_queues[proccess_name].put({
+            "id": {...}
+        })
+
+    def consume_from_system_queue(self, personal_id: str):
+        if personal_id in self._received_personal_data:
+            data = self._received_personal_data[personal_id]
+            del self._received_personal_data[personal_id]
+            return data
+
+        while True:
+            message = self._system_queues[self.name].get()
+            if message.id == personal_id:
+                return message.content
+            else:
+                self._received_personal_data[message.id] = message.content

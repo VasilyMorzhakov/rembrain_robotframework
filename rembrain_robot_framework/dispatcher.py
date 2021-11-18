@@ -111,6 +111,9 @@ class RobotDispatcher:
             name: utils.generate(obj, self.manager) for name, obj in self.config["shared_objects"].items()
         }
 
+        # system processes queues(dict): process_name (key) => personal process queue (value)
+        self.system_queues = {p: Queue(maxsize=self.DEFAULT_QUEUE_SIZE) for p in self.processes}
+
     def set_logging(self, project_description: dict, in_cluster: bool) -> None:
         # Set up logging
         self.log_queue, self.log_listener = setup_logging(project_description, in_cluster)
@@ -228,6 +231,7 @@ class RobotDispatcher:
                 "shared_objects": self.shared_objects,
                 "project_description": self.project_description,
                 "logging_queue": self.log_queue,
+                "system_queues": self.system_queues,
                 **self.processes[proc_name],
                 **kwargs,
             }
