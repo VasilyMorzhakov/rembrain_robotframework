@@ -25,8 +25,8 @@ class RobotProcess:
         self.queues_to_clear: T.List[str] = []  # in case of exception this queues are cleared
         self.log = logging.getLogger(f"{self.__class__.__name__} ({self.name})")
         self._stack_monitor: T.Optional[StackMonitor] = None
-        if "monitoring" in kwargs:
-            self._init_monitoring(kwargs["monitoring"])
+        if "monitoring" in kwargs and kwargs['monitoring']:
+            self._init_monitoring(self.name)
 
     def run(self) -> None:
         raise NotImplementedError()
@@ -161,17 +161,11 @@ class RobotProcess:
 
         return self._consume_queues[consume_queue_name].empty()
 
-    def _init_monitoring(self, monitor_args: T.Union[bool, dict]):
+    def _init_monitoring(self, name):
         """
         Initializes stack monitoring
         This feature will sample the stacks of all threads in the process for a period, then log them out
-        You can look at the available arguments in the StackMonitor constructor
         """
-        if type(monitor_args) is bool:
-            if not monitor_args:
-                return
-            self._stack_monitor = StackMonitor()
-        else:
-            self._stack_monitor = StackMonitor(**monitor_args)
+        self._stack_monitor = StackMonitor(name)
         self._stack_monitor.start_monitoring()
 
