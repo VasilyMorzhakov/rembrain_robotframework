@@ -3,7 +3,7 @@ import typing as T
 from pydantic.main import BaseModel
 
 
-class PersonalQueueData(BaseModel):
+class PersonalMessage(BaseModel):
     id: str
-    process_sender: str
+    client_process: str
     data: T.Any

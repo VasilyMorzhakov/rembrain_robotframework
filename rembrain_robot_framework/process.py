@@ -4,7 +4,7 @@ from collections import namedtuple
 from multiprocessing import Queue
 from uuid import uuid4
 
-from rembrain_robot_framework.models.personal_data import PersonalQueueData
+from rembrain_robot_framework.models.personal_message import PersonalMessage
 
 
 class RobotProcess:
@@ -23,7 +23,7 @@ class RobotProcess:
         self._consume_queues: T.Dict[str, Queue] = consume_queues  # queues for reading
         self._publish_queues: T.Dict[str, T.List[Queue]] = publish_queues  # queues for writing
         self._system_queues: T.Dict[str, Queue] = system_queues
-        self._received_personal_data = {}
+        self._received_personal_messages = {}
         self._shared: T.Any = namedtuple('_', shared_objects.keys())(**shared_objects)
 
         self.queues_to_clear: T.List[str] = []  # in case of exception this queues are cleared
@@ -89,7 +89,7 @@ class RobotProcess:
         personal_id: T.Optional[str] = None
         if is_personal:
             personal_id = str(uuid4())
-            message = PersonalQueueData(id=personal_id, process_sender=self.name, data=message)
+            message = PersonalMessage(id=personal_id, client_process=self.name, data=message)
 
         for q in self._publish_queues[queue_name]:
             if clear_on_overflow:
@@ -168,20 +168,23 @@ class RobotProcess:
 
         return self._consume_queues[consume_queue_name].empty()
 
-    def publish_to_system_queue(self, id_, proccess_name, message):
-        self._system_queues[proccess_name].put({
-            "id": {...}
-        })
+    def publish_to_system_queue(self, id_, client_process, data):
+        self._system_queues[client_process].put(
+            PersonalMessage(id=id_, client_process=client_process, data=data)
+        )
 
-    def consume_from_system_queue(self, personal_id: str):
-        if personal_id in self._received_personal_data:
-            data = self._received_personal_data[personal_id]
-            del self._received_personal_data[personal_id]
-            return data
+    def consume_from_system_queue(self, personal_id: str) -> T.Any:
+        if personal_id in self._received_personal_messages:
+            message: PersonalMessage = self._received_personal_messages[personal_id]
+            del self._received_personal_messages[personal_id]
+            return message.data
 
         while True:
-            message = self._system_queues[self.name].get()
+            if len(self._received_personal_messages) > 50:
+                raise Exception(f"Overflow of personal messages for '{self.name}'!")
+
+            message: PersonalMessage = self._system_queues[self.name].get()
             if message.id == personal_id:
-                return message.content
+                return message.data
             else:
-                self._received_personal_data[message.id] = message.content
+                self._received_personal_messages[message.id] = message.data
