@@ -18,6 +18,8 @@ class WebsocketServer:
 
     async def handle_msg(self, websocket: websockets.WebSocketServerProtocol, path: str) -> None:
         async for message in websocket:
+            if type(message) is bytes:
+                message = message.decode("utf-8")
             if message == self.test_message:
                 await websocket.send(json.dumps(self.messages))
             else:
