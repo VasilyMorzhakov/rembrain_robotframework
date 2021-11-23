@@ -95,6 +95,6 @@ def test_logging_to_websocket_works() -> None:
         robot_dispatcher.log_listener.stop()
 
     # Check that Count messages are in the log output
-    messages = list(map(lambda m: m["message"], logs))
+    messages = list(map(lambda m: m.get("message"), logs))
     assert "RobotHost is configuring processes." in messages
     assert "Count: 0" in messages

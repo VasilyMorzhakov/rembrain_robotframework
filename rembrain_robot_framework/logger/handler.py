@@ -26,6 +26,9 @@ class LogHandler(logging.Handler):
 
         self.logs_queue = queue.Queue()
 
+        self.last_ping_time = time.time()
+        self.keep_alive_interval = 1.0
+
         # Disable logs so we don't lockup in a loop by accident
         self.ws_connect = WsDispatcher(propagate_log=False)
         Thread(target=self._send_to_ws, daemon=True).start()
@@ -83,4 +86,13 @@ class LogHandler(logging.Handler):
                     self.ws_connect.close()
                     loop = self.ws_connect.push_loop(request)
             else:
-                time.sleep(0.1)
+                self._ping(loop)
+
+    def _ping(self, push_loop: T.Generator) -> None:
+        now: float = time.time()
+
+        if now - self.last_ping_time >= self.keep_alive_interval:
+            push_loop.send(json.dumps({"command": WsCommandType.PING}))
+            self.last_ping_time = now
+
+        time.sleep(0.001)
