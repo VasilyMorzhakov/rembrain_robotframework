@@ -192,6 +192,9 @@ class WsDispatcher:
             for handler in logger.handlers:
                 logger.removeHandler(handler)
 
-            logger.addHandler(logging.StreamHandler())
+            handler = logging.StreamHandler()
+            formatter = logging.Formatter("%(levelname)s:%(name)s:%(message)s")
+            handler.setFormatter(formatter)
+            logger.addHandler(handler)
 
         return logger
