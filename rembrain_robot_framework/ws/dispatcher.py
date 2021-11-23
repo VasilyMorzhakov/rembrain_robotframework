@@ -126,9 +126,6 @@ class WsDispatcher:
                 self.ws.send(request.json())
                 self.ws.recv()
 
-                # todo does it need ?
-                self.ws.settimeout(1.0)
-
                 self._start_silent_reader()
                 while True:
                     if not data:
