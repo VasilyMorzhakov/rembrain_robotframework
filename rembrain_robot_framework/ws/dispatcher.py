@@ -13,7 +13,9 @@ from rembrain_robot_framework.ws import WsCommandType, WsRequest
 
 
 class WsDispatcher:
+    # Parameters for establishing connection with the websocket server
     CONNECTION_RETRIES = 3
+    CONNECTION_TIMEOUT = 1.0
 
     def __init__(self, propagate_log=True, proc_name=""):
         """
@@ -29,7 +31,7 @@ class WsDispatcher:
             self.log.info("Opening websocket connection")
             # Turn on SO_REUSEADDR so we can reuse hung sockets
             for i in range(self.CONNECTION_RETRIES):
-                with stopit.ThreadingTimeout(0.5):
+                with stopit.ThreadingTimeout(self.CONNECTION_TIMEOUT):
                     self.ws = websocket.WebSocket(sockopt=((socket.SOL_SOCKET, socket.SO_REUSEADDR, 1),))
                     self.ws.connect(os.environ["WEBSOCKET_GATE_URL"])
                     break
@@ -38,8 +40,6 @@ class WsDispatcher:
                 self.log.error(err_msg)
                 raise Exception(err_msg)
 
-            # todo remove it ?
-            self.ws.settimeout(10.0)
             self._end_silent_reader()
 
     def close(self) -> None:
