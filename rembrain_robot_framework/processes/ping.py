@@ -1,3 +1,4 @@
+import json
 import os
 import subprocess
 import time
@@ -6,6 +7,10 @@ from rembrain_robot_framework import RobotProcess
 
 
 class PingProcess(RobotProcess):
+    """
+    For use only in Docker
+    Out: Info about the process to the queue (pushed every second), Data is a binary json-encoded dict
+    """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -27,5 +32,6 @@ class PingProcess(RobotProcess):
                 "active": self.shared.processor_active.value,
                 "id": self.container_id
             }
-            self.publish(processor_info)
+            to_send = json.dumps(processor_info).encode("utf-8")
+            self.publish(to_send)
             time.sleep(1)
