@@ -7,6 +7,7 @@ from multiprocessing import Process, Queue, Manager
 
 from rembrain_robot_framework import utils
 from rembrain_robot_framework.logger.utils import setup_logging
+from rembrain_robot_framework.services.watcher import Watcher
 
 
 class RobotDispatcher:
@@ -33,6 +34,7 @@ class RobotDispatcher:
             if "publish_queues" not in p:
                 p["publish_queues"] = {}
 
+        # todo think about hard typing  for field in "config"
         self.config = config
         if self.config is None:
             self.config = {
@@ -47,6 +49,9 @@ class RobotDispatcher:
         self.set_logging(project_description, in_cluster)
 
         self.log.info("RobotHost is configuring processes.")
+
+        if "processes" not in self.config or not isinstance(self.config["processes"], dict):
+            raise Exception("'Config' params  are incorrect. Please, check config file.")
 
         # compare processes and config
         if len(self.processes) != len(self.config["processes"]):
@@ -107,12 +112,16 @@ class RobotDispatcher:
                         self.processes[process_]["publish_queues"][queue_name] = [queue]
 
         # shared objects
-        self.shared_objects = {
-            name: utils.generate(obj, self.manager) for name, obj in self.config["shared_objects"].items()
-        }
+        if "shared_objects" in self.config and self.config["shared_objects"]:
+            self.shared_objects = {
+                name: utils.generate(obj, self.manager) for name, obj in self.config["shared_objects"].items()
+            }
 
         # system processes queues(dict): process_name (key) => personal process queue (value)
         self.system_queues = {p: Queue(maxsize=self.DEFAULT_QUEUE_SIZE) for p in self.processes}
+
+        # for heartbeat
+        self.watcher = Watcher(self.in_cluster)
 
     def set_logging(self, project_description: dict, in_cluster: bool) -> None:
         # Set up logging
@@ -232,6 +241,7 @@ class RobotDispatcher:
                 "project_description": self.project_description,
                 "logging_queue": self.log_queue,
                 "system_queues": self.system_queues,
+                "watcher": self.watcher,
                 **self.processes[proc_name],
                 **kwargs,
             }

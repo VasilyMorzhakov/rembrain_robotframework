@@ -5,6 +5,7 @@ from multiprocessing import Queue
 from uuid import uuid4
 
 from rembrain_robot_framework.models.personal_message import PersonalMessage
+from rembrain_robot_framework.services.watcher import Watcher
 
 
 class RobotProcess:
@@ -15,6 +16,7 @@ class RobotProcess:
             consume_queues: T.Dict[str, Queue],
             publish_queues: T.Dict[str, T.List[Queue]],
             system_queues: T.Dict[str, Queue],
+            watcher: Watcher,
             *args,
             **kwargs
     ):
@@ -22,12 +24,15 @@ class RobotProcess:
 
         self._consume_queues: T.Dict[str, Queue] = consume_queues  # queues for reading
         self._publish_queues: T.Dict[str, T.List[Queue]] = publish_queues  # queues for writing
+
+        self._shared: T.Any = namedtuple('_', shared_objects.keys())(**shared_objects)
+
         self._system_queues: T.Dict[str, Queue] = system_queues
         self._received_personal_messages = {}
-        self._shared: T.Any = namedtuple('_', shared_objects.keys())(**shared_objects)
 
         self.queues_to_clear: T.List[str] = []  # in case of exception this queues are cleared
         self.log = logging.getLogger(f"{self.__class__.__name__} ({self.name})")
+        self.watcher: Watcher = watcher
 
     def run(self) -> None:
         raise NotImplementedError()
@@ -188,3 +193,6 @@ class RobotProcess:
                 return message.data
             else:
                 self._received_personal_messages[message.id] = message.data
+
+    def heartbeat(self, message: str):
+        self.watcher.notify(message)
