@@ -2,6 +2,7 @@ import logging
 import typing as T
 from collections import namedtuple
 from multiprocessing import Queue
+from threading import Thread
 from uuid import uuid4
 
 from rembrain_robot_framework.models.personal_message import PersonalMessage
@@ -107,11 +108,13 @@ class RobotProcess:
 
     def consume(self, queue_name: T.Optional[str] = None, clear_all_messages: bool = False) -> T.Any:
         if len(self._consume_queues.keys()) == 0:
+            # todo maybe there should be exception here?
             self.log.error(f"Process \"{self.name}\" has no queues to read from.")
             return
 
         if queue_name is None:
             if len(self._consume_queues.keys()) != 1:
+                # todo maybe there should be exception here?
                 self.log.error(f"Process \"{self.name}\" has more than one read queue. Specify a read queue name.")
                 return
 
@@ -173,9 +176,9 @@ class RobotProcess:
 
         return self._consume_queues[consume_queue_name].empty()
 
-    def publish_to_system_queue(self, id_, client_process, data):
+    def publish_to_system_queue(self, personal_id: str, client_process: str, data: T.Any) -> None:
         self._system_queues[client_process].put(
-            PersonalMessage(id=id_, client_process=client_process, data=data)
+            PersonalMessage(id=personal_id, client_process=client_process, data=data)
         )
 
     def consume_from_system_queue(self, personal_id: str) -> T.Any:
@@ -185,6 +188,7 @@ class RobotProcess:
             return message.data
 
         while True:
+            # todo exception or logging?
             if len(self._received_personal_messages) > 50:
                 raise Exception(f"Overflow of personal messages for '{self.name}'!")
 
@@ -195,4 +199,4 @@ class RobotProcess:
                 self._received_personal_messages[message.id] = message.data
 
     def heartbeat(self, message: str):
-        self.watcher.notify(message)
+        Thread(target=self.watcher.notify, daemon=True, args=(message,)).start()
