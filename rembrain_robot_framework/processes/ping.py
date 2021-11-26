@@ -6,6 +6,10 @@ from rembrain_robot_framework import RobotProcess
 
 
 class PingProcess(RobotProcess):
+    """
+    For use only in Docker
+    Out: Info about the process to the queue (pushed every second)
+    """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 

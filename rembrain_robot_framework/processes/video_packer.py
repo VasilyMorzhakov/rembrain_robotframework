@@ -7,6 +7,12 @@ from rembrain_robot_framework.pack import Packer
 
 
 class VideoPacker(RobotProcess):
+    """
+    In: Tuple of two images (numpy raw pixel arrays)
+    *ASSUMES THAT THERE'S A SHARED CAMERA FIELD*
+    Does: Packs the two images + camera data into a single package using a packer specified in pack_type
+    Out: Binary package of the two frames + camera
+    """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
