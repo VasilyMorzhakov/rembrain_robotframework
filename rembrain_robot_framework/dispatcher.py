@@ -23,7 +23,11 @@ class RobotDispatcher:
         self.shared_objects = {}
         self.process_pool = {}
         self.in_cluster: bool = in_cluster
-        self.project_description = {} if project_description is None else project_description
+
+        if "description" in config and config["description"]:
+            self.project_description = config["description"]
+        else:
+            self.project_description = {} if project_description is None else project_description
 
         self.manager = Manager()
         self.processes = {} if processes is None else processes

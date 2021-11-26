@@ -24,15 +24,8 @@ def run_dispatcher():
 
     config = EnvYAML(os.path.join(os.path.dirname(__file__), "config", "processor_config.yaml"))
     processes = {p: {"process_class": process_map[p]} for p in config["processes"]}
-    project_description = {
-        "project": "rembrain_robotframework_examples",
-        "subsystem": "remote_example_processor",
-        "robot": os.environ["ROBOT_NAME"]
-    }
 
-    robot_dispatcher = RobotDispatcher(
-        config, processes, project_description=project_description, in_cluster=False
-    )
+    robot_dispatcher = RobotDispatcher(config, processes, in_cluster=False)
     robot_dispatcher.start_processes()
     robot_dispatcher.run()
     robot_dispatcher.log_listener.stop()

@@ -1,11 +1,13 @@
 import os
 from multiprocessing import Queue
+from unittest import mock
 
 import pytest
 from envyaml import EnvYAML
 from pytest_mock import MockerFixture
 
 from rembrain_robot_framework import RobotDispatcher
+from rembrain_robot_framework.processes import StubProcess
 from rembrain_robot_framework.tests.common.processes import *
 
 
@@ -120,7 +122,7 @@ def test_add_custom_processes() -> None:
 
 @pytest.mark.parametrize(
     'robot_dispatcher_class_fx',
-    (("config_empty.yaml", {}), ("config_without_data.yaml", {})),
+    (("config_empty.yaml",), ("config_without_data.yaml",)),
     indirect=True
 )
 def test_empty_config(robot_dispatcher_class_fx: tuple):
@@ -143,3 +145,18 @@ def test_system_queue(robot_dispatcher_fx: RobotDispatcher) -> None:
     assert robot_dispatcher_fx.shared_objects["request"]["id"] == robot_dispatcher_fx.shared_objects["response"]["id"]
     assert robot_dispatcher_fx.shared_objects["request"]["data"] == SysP1.TEST_MESSAGE
     assert robot_dispatcher_fx.shared_objects["response"]["data"] == SysP2.TEST_MESSAGE
+
+
+def test_description_from_config() -> None:
+    robot_name = "test_description_robot"
+
+    with mock.patch.dict("os.environ", {"ROBOT_NAME": robot_name}):
+        config: T.Any = EnvYAML(os.path.join(os.path.dirname(__file__), "configs", "config_with_description.yaml"))
+        rd = RobotDispatcher(config, {"p1": {"process_class": StubProcess, "keep_alive": False}})
+
+        assert all((i in ("project", "subsystem", "robot") for i in rd.project_description))
+        assert rd.project_description["project"] == "test_project"
+        assert rd.project_description["subsystem"] == "test_subsystem"
+        assert rd.project_description["robot"] == robot_name
+
+        rd.log_listener.stop()

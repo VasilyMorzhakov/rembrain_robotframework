@@ -1,13 +1,10 @@
 import os
 import time
 import typing as T
-from threading import Thread
-from traceback import format_exc
 
 import pika
 from pika import BlockingConnection
 
-from rembrain_robot_framework import RobotDispatcher
 from rembrain_robot_framework.ws import WsDispatcher, WsRequest, WsCommandType
 
 

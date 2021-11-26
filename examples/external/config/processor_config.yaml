@@ -33,3 +33,9 @@ processes:
 
 shared_objects:
   camera: "dict"
+
+
+description:
+  project: rembrain_robotframework_examples
+  subsystem: remote_example_processor
+  robot: ${ROBOT_NAME}
