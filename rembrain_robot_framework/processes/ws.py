@@ -1,136 +1,161 @@
+import asyncio
 import json
 import os
 import time
 import typing as T
 
+import websockets
+
 from rembrain_robot_framework import RobotProcess
-from rembrain_robot_framework.ws import WsDispatcher, WsRequest, WsCommandType
+from rembrain_robot_framework.ws import WsCommandType, WsRequest
 
 
 class WsRobotProcess(RobotProcess):
-    """
-    Process that connects to a websocketgate server and communicates with it
-    Can either pull or push data
-    """
-    def __init__(
-            self,
-            command_type: str,
-            exchange: str,
-            robot_name: T.Optional[str] = None,
-            username: T.Optional[str] = None,
-            password: T.Optional[str] = None,
-            *args,
-            **kwargs
-    ):
-        """
-        Process for working with websockets.
-        It allows send to ws from queue and vice verse.
-        :param command_type: value of WsCommandType
-        :param exchange: name of exchange for RabbitMQ
-        :param robot_name:robot_name
-        :param username:robot_name
-        :param password:robot_name
-        :param args:
-        :param kwargs:
-        """
-        super().__init__(*args, **kwargs)
 
-        self.command_type: str = command_type
+    # Functions to handle binary data coming from pull commands
+    _data_type_parse_fns: T.Dict[str, T.Callable[[bytes], T.Any]] = {
+        "json": lambda b: json.loads(b.decode("utf-8")),
+        "str": lambda b: b.decode("utf-8"),
+        "string": lambda b: b.decode("utf-8"),
+        "bytes": lambda b: b,
+        "binary": lambda b: b,
+    }
+
+    def __init__(self, *args, **kwargs):
+        super(WsRobotProcess, self).__init__(*args, **kwargs)
+
+        self.command_type: str = kwargs["command_type"]
+        if self.command_type == WsCommandType.PUSH_LOOP:
+            self.log.warning("Command type push_loop is now the same as push, change your config "
+                             "since push_loop is deprecated")
+            self.command_type = WsCommandType.PUSH
         if self.command_type not in WsCommandType.ALL_VALUES or self.command_type == WsCommandType.PING:
-            raise Exception("Unknown/disallowed command type.")
+            raise RuntimeError("Unknown/disallowed command type")
 
-        self.ws_connect = WsDispatcher(proc_name=self.name)
-        self.exchange: str = exchange
+        # TODO: delete this after push ACTUALLY becomes push-loop, and not the other way around
+        if self.command_type == WsCommandType.PUSH:
+            self.command_type = WsCommandType.PUSH_LOOP
 
-        self.robot_name: str = robot_name if robot_name else os.environ["ROBOT_NAME"]
-        self.username: str = username if username else os.environ["ROBOT_NAME"]
-        self.password: str = password if password else os.environ["ROBOT_PASSWORD"]
+        self.ws_url: str = kwargs.get("url", os.environ["WEBSOCKET_GATE_URL"])
+        self.exchange: str = kwargs["exchange"]
+        self.robot_name: str = kwargs.get("robot_name", os.environ["ROBOT_NAME"])
+        self.username: str = kwargs.get("username", os.environ["ROBOT_NAME"])
+        self.password: str = kwargs.get("password", os.environ["ROBOT_PASSWORD"])
 
-        self.is_decode: bool = kwargs.get('is_decode', False)
-        self.to_json: bool = kwargs.get('to_json', False)
+        # Data type handling for pull commands
+        self.data_type: str = kwargs.get("data_type", "binary").lower()
+        if self.data_type not in self._data_type_parse_fns:
+            raise RuntimeError(f"Data type {self.data_type} is not in allowed types."
+                               f"\r\nPlease use one of following: {', '.join(self._data_type_parse_fns.keys())}")
+        self._parse_fn = self._data_type_parse_fns[self.data_type]
 
-        # For push/push_loop we're sending a ping in an interval to keep the connection alive
-        self.keep_alive_interval: float = float(kwargs.get('keep_alive_interval', 1.0))
-        self.last_ping_time: T.Optional[float] = None
+        self.ping_interval: float = float(kwargs.get("ping_interval", 1.0))
 
-        self.retry_push: T.Union[str, int, None] = kwargs.get('retry_push')
-        if self.retry_push:
-            self.retry_push = int(self.retry_push)
+    def run(self) -> None:
+        self.log.info(f"{self.__class__.__name__} started, name: {self.name}")
 
-    def get_ws_request(self, command_type: T.Optional[str] = None) -> WsRequest:
+        if self.command_type == WsCommandType.PULL:
+            asyncio.run(self._pull())
+        elif self.command_type == WsCommandType.PUSH_LOOP:
+            asyncio.run(self._push())
+
+    async def _pull(self) -> None:
+        async def _pull_fn(ws):
+            while True:
+                data = await ws.recv()
+                self._publish_if_not_ping(data)
+        await self._connect_ws(_pull_fn)
+
+    def _publish_if_not_ping(self, data: T.Union[str, bytes]):
+        """
+        Handles incoming data from websocket
+        If it's in binary, then it's a data packet that should be handled according to the process's data_type
+        If it's a string, then it's a control packet
+        """
+        if type(data) is bytes:
+            parsed = self._parse_fn(data)
+            self.publish(parsed)
+        # Strings are received only for control packets - right now it's only pings
+        if type(data) is str:
+            if data == WsCommandType.PING:
+                return
+            else:
+                raise RuntimeError(f"Got non-ping string data from websocket, this shouldn't be happening"
+                                   f"\r\nData: {data}")
+
+    async def _push(self) -> None:
+        async def _push_fn(ws):
+            """
+            This one has three long running function:
+            - one for sending pings in keep_alive interval
+            - one for consuming from queue and publishing
+            - one for receiving and dropping any packages coming from the websocket
+            """
+            async def _ping():
+                """Sends out ping packet ever self.ping_interval seconds"""
+                control_packet = json.dumps({"command": WsCommandType.PING})
+                while True:
+                    await ws.send(control_packet)
+                    await asyncio.sleep(self.ping_interval)
+
+            async def _get_then_send():
+                """Gets data to send from the consume_queue (MUST be binary) and sends it to websocket"""
+                while True:
+                    if not self.is_empty():
+                        data = self.consume()
+                        if type(data) is not bytes:
+                            raise RuntimeError("Data sent to ws should be binary")
+                        await ws.send(data)
+                    else:
+                        await asyncio.sleep(0.01)
+
+            async def _recv_sink():
+                """Receive and drop incoming packets"""
+                while True:
+                    await ws.recv()
+
+            await asyncio.wait(
+                [_ping(), _get_then_send(), _recv_sink()],
+                return_when=asyncio.FIRST_COMPLETED
+            )
+        await self._connect_ws(_push_fn)
+
+    async def _connect_ws(self, handler_fn) -> None:
+        """
+        Connects to the websocket, sends control packet
+        then runs handler_fn that then uses the websocket however it needs
+        """
+        # Reconnects in a loop with exponential backoff
+        async for ws in websockets.connect(self.ws_url):
+            try:
+                self.log.info("Sending control packet")
+                await ws.send(self.get_control_packet().json())
+                await handler_fn(ws)
+                self.log.info("Handler function exited, will reconnect and repeat")
+            except websockets.ConnectionClosedError as e:
+                msg = "Connection closed with error."
+                if e.rcvd is not None:
+                    msg += f" Reason: {e.rcvd.reason}"
+                self.log.error(msg)
+                time.sleep(5.0)
+                self.log.info("Reconnecting")
+                continue
+            except websockets.ConnectionClosedOK as e:
+                msg = "Connection closed."
+                if e.rcvd is not None:
+                    msg += f" Reason: {e.rcvd.reason}"
+                self.log.info(msg)
+                time.sleep(3.0)
+                self.log.info("Reconnecting")
+                continue
+
+    def get_control_packet(self, command_type: T.Optional[WsCommandType] = None) -> WsRequest:
         if command_type is None:
             command_type = self.command_type
-
         return WsRequest(
             command=command_type,
             exchange=self.exchange,
             robot_name=self.robot_name,
             username=self.username,
-            password=self.password,
+            password=self.password
         )
-
-    def run(self) -> None:
-        self.log.info(f"{self.__class__.__name__} started, name: {self.name}.")
-        self.last_ping_time = time.time()
-
-        if self.command_type == WsCommandType.PULL:
-            self._pull()
-        elif self.command_type == WsCommandType.PUSH:
-            self._push()
-        elif self.command_type == WsCommandType.PUSH_LOOP:
-            self._push_loop()
-
-    def _pull(self) -> None:
-        ws_channel: T.Generator = self.ws_connect.pull(self.get_ws_request())
-
-        while True:
-            response_data: T.Union[str, bytes] = next(ws_channel)
-
-            self.log.debug(f"Got data: {response_data}")
-
-            if self.is_decode:
-                if not isinstance(response_data, bytes):
-                    error_message = f"{self.__class__.__name__}: WS response is not bytes!"
-                    self.log.error(error_message)
-                    raise Exception(error_message)
-
-                response_data = response_data.decode(encoding="utf-8")
-
-            if self.to_json:
-                response_data = json.loads(response_data)
-
-            self.log.debug(f"Publishing data to queue: {response_data}")
-            self.publish(response_data)
-
-    def _push(self) -> None:
-        request = self.get_ws_request()
-
-        while True:
-            if self.is_empty():
-                self._ping()
-            else:
-                request.message = self.consume()
-                self.ws_connect.push(request, retry_times=self.retry_push)
-
-    def _push_loop(self) -> None:
-        push_loop: T.Generator = self.ws_connect.push_loop(self.get_ws_request())
-        next(push_loop)
-
-        while True:
-            if self.is_empty():
-                self._ping(push_loop)
-            else:
-                push_loop.send(self.consume())
-
-    def _ping(self, push_loop: T.Optional[T.Generator] = None) -> None:
-        now: float = time.time()
-
-        if now - self.last_ping_time >= self.keep_alive_interval:
-            if push_loop:
-                push_loop.send(json.dumps({"command": WsCommandType.PING}))
-            else:
-                self.ws_connect.push(self.get_ws_request(WsCommandType.PING))
-
-            self.last_ping_time = now
-
-        time.sleep(0.001)
