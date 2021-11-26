@@ -1,0 +1,9 @@
+processes:
+  sys_p1:
+    publish: messages
+  sys_p2:
+    consume: messages
+
+shared_objects:
+  request: dict
+  response: dict

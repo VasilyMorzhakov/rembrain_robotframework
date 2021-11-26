@@ -1,13 +1,17 @@
 import os
 from multiprocessing import Queue
+from unittest import mock
 
 import pytest
 from envyaml import EnvYAML
+from pytest_mock import MockerFixture
 
 from rembrain_robot_framework import RobotDispatcher
+from rembrain_robot_framework.processes import StubProcess
 from rembrain_robot_framework.tests.common.processes import *
 
 
+# first way
 @pytest.fixture()
 def robot_dispatcher_fx(request) -> RobotDispatcher:
     config: T.Any = EnvYAML(os.path.join(os.path.dirname(__file__), "configs", request.param[0]))
@@ -17,6 +21,18 @@ def robot_dispatcher_fx(request) -> RobotDispatcher:
     yield robot_dispatcher
 
     robot_dispatcher.log_listener.stop()
+
+
+# second way
+@pytest.fixture()
+def robot_dispatcher_class_fx(request, mocker: MockerFixture) -> RobotDispatcher:
+    config: T.Any = EnvYAML(os.path.join(os.path.dirname(__file__), "configs", request.param[0]))
+
+    def set_logging(self, *args):
+        self.log = type("MOCK_LOG", (object,), {"info": lambda x: ..., })
+
+    mocker.patch.object(RobotDispatcher, 'set_logging', set_logging)
+    yield RobotDispatcher, config
 
 
 @pytest.mark.parametrize(
@@ -30,7 +46,7 @@ def robot_dispatcher_fx(request) -> RobotDispatcher:
 )
 def test_queues_are_the_same(robot_dispatcher_fx: RobotDispatcher) -> None:
     time.sleep(3.0)
-    assert robot_dispatcher_fx.shared_objects["hi_received"].value, 4
+    assert robot_dispatcher_fx.shared_objects["hi_received"].value == 4
     assert robot_dispatcher_fx.processes["p2"]["consume_queues"]["messages"]._maxsize == 20
 
 
@@ -44,7 +60,7 @@ def test_queues_are_the_same(robot_dispatcher_fx: RobotDispatcher) -> None:
 )
 def test_input_queues_different(robot_dispatcher_fx: RobotDispatcher) -> None:
     time.sleep(3.0)
-    assert robot_dispatcher_fx.shared_objects["hi_received"].value, 2
+    assert robot_dispatcher_fx.shared_objects["hi_received"].value == 2
     assert robot_dispatcher_fx.processes["p3"]["consume_queues"]["messages1"]._maxsize == 10
     assert robot_dispatcher_fx.processes["p3"]["consume_queues"]["messages2"]._maxsize == 50
 
@@ -59,7 +75,7 @@ def test_input_queues_different(robot_dispatcher_fx: RobotDispatcher) -> None:
 )
 def test_output_queues_different(robot_dispatcher_fx: RobotDispatcher) -> None:
     time.sleep(3.0)
-    assert robot_dispatcher_fx.shared_objects["hi_received"].value, 2
+    assert robot_dispatcher_fx.shared_objects["hi_received"].value == 2
 
 
 @pytest.mark.parametrize(
@@ -71,7 +87,7 @@ def test_output_queues_different(robot_dispatcher_fx: RobotDispatcher) -> None:
 )
 def test_performance(robot_dispatcher_fx: RobotDispatcher) -> None:
     time.sleep(20.0)
-    assert robot_dispatcher_fx.shared_objects["ok"].value, 1
+    assert robot_dispatcher_fx.shared_objects["ok"].value == 1
 
 
 def test_add_custom_processes() -> None:
@@ -99,6 +115,48 @@ def test_add_custom_processes() -> None:
     )
 
     time.sleep(3.0)
-    assert robot_dispatcher.shared_objects["success"].value, True
+    assert robot_dispatcher.shared_objects["success"].value
 
     robot_dispatcher.log_listener.stop()
+
+
+@pytest.mark.parametrize(
+    'robot_dispatcher_class_fx',
+    (("config_empty.yaml",), ("config_without_data.yaml",)),
+    indirect=True
+)
+def test_empty_config(robot_dispatcher_class_fx: tuple):
+    class_, config = robot_dispatcher_class_fx
+    with pytest.raises(Exception) as exc_info:
+        class_(config, {})
+
+    assert "'Config' params  are incorrect. Please, check config file." in str(exc_info.value)
+
+
+@pytest.mark.parametrize(
+    'robot_dispatcher_fx',
+    (("config_with_system_queues.yaml", {
+        "sys_p1": {"process_class": SysP1, "keep_alive": False},
+        "sys_p2": {"process_class": SysP2, "keep_alive": False}
+    }),), indirect=True
+)
+def test_system_queue(robot_dispatcher_fx: RobotDispatcher) -> None:
+    time.sleep(5.0)
+    assert robot_dispatcher_fx.shared_objects["request"]["id"] == robot_dispatcher_fx.shared_objects["response"]["id"]
+    assert robot_dispatcher_fx.shared_objects["request"]["data"] == SysP1.TEST_MESSAGE
+    assert robot_dispatcher_fx.shared_objects["response"]["data"] == SysP2.TEST_MESSAGE
+
+
+def test_description_from_config() -> None:
+    robot_name = "test_description_robot"
+
+    with mock.patch.dict("os.environ", {"ROBOT_NAME": robot_name}):
+        config: T.Any = EnvYAML(os.path.join(os.path.dirname(__file__), "configs", "config_with_description.yaml"))
+        rd = RobotDispatcher(config, {"p1": {"process_class": StubProcess, "keep_alive": False}})
+
+        assert all((i in ("project", "subsystem", "robot") for i in rd.project_description))
+        assert rd.project_description["project"] == "test_project"
+        assert rd.project_description["subsystem"] == "test_subsystem"
+        assert rd.project_description["robot"] == robot_name
+
+        rd.log_listener.stop()

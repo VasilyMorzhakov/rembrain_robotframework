@@ -45,3 +45,8 @@ processes:
 shared_objects:
   camera: "dict"
   exit_flag: "Value:bool"
+
+description:
+  project: rembrain_robotframework_examples
+  subsystem: remote_example_robot
+  robot: ${ROBOT_NAME}
