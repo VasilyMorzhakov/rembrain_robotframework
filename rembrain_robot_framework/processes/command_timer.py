@@ -5,11 +5,6 @@ from rembrain_robot_framework import RobotProcess
 
 
 class CommandTimer(RobotProcess):
-    """
-    In: JSON-serialized dictionary
-    Does: Adds a timestamp field
-    Out: JSON-serialized dictionary *binary encoded*
-    """
     def run(self):
         self.log.info(f"{self.__class__.__name__} started, name: {self.name}.")
 

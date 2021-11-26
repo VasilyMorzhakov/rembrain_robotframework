@@ -6,12 +6,6 @@ from rembrain_robot_framework import RobotProcess
 
 
 class ImageCapture(RobotProcess):
-    """
-    Does: Captures image from the webcam
-    Out: Pushes image to the assigned publish queue
-    Args:
-        - FPS_limit: maximum capture FPS
-    """
     def __init__(self, *args, **kwargs):
         super(ImageCapture, self).__init__(*args, **kwargs)
         self.FPS_limit = kwargs.get("FPS_limit", 5)
