@@ -3,11 +3,16 @@ import json
 import pytest
 
 from rembrain_robot_framework.processes import CommandTimer
+from rembrain_robot_framework.services.watcher import Watcher
 
 
 @pytest.fixture()
 def command_timer_fx():
-    return CommandTimer(name='command_timer', shared_objects={}, consume_queues={}, publish_queues={})
+    return CommandTimer(
+        name='command_timer', shared_objects={},
+        consume_queues={}, publish_queues={},
+        system_queues={}, watcher=Watcher(False)
+    )
 
 
 def test_correct_command_timer(mocker, command_timer_fx):

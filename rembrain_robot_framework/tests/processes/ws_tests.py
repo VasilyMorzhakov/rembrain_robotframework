@@ -3,6 +3,7 @@ import json
 import pytest
 
 from rembrain_robot_framework.processes import WsRobotProcess
+from rembrain_robot_framework.services.watcher import Watcher
 from rembrain_robot_framework.ws import WsCommandType, WsRequest
 
 
@@ -13,15 +14,18 @@ def ws_proc_params_fx():
         'shared_objects': {},
         'consume_queues': {},
         'publish_queues': {},
+        'system_queues': {},
+        'watcher': Watcher(False),
         'exchange': 'test_ws_robot_process',
         'robot_name': 'tester',
         'username': 'tester',
         'password': 'tester'
+
     }
 
 
 def test_correct_ws_push(mocker, ws_proc_params_fx):
-    ws_proc = WsRobotProcess(**ws_proc_params_fx, command_type=WsCommandType.PUSH)
+    ws_proc = WsRobotProcess(**ws_proc_params_fx, command_type=WsCommandType.PUSH, )
     test_mock_result = None
     test_data = {'some_data': 777}
     loop_reset_exception = 'AssertionError for reset loop!'

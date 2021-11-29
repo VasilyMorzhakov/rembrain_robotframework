@@ -24,7 +24,7 @@ class RobotDispatcher:
         self.process_pool = {}
         self.in_cluster: bool = in_cluster
 
-        if "description" in config and config["description"]:
+        if config and config.get("description"):
             self.project_description = config["description"]
         else:
             self.project_description = {} if project_description is None else project_description
