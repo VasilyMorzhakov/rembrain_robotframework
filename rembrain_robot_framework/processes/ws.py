@@ -39,8 +39,8 @@ class WsRobotProcess(RobotProcess):
         self.ws_url: str = kwargs.get("url", os.environ["WEBSOCKET_GATE_URL"])
         self.exchange: str = kwargs["exchange"]
         self.robot_name: str = kwargs.get("robot_name", os.environ["ROBOT_NAME"])
-        self.username: str = kwargs.get("username", os.environ["ROBOT_NAME"])
-        self.password: str = kwargs.get("password", os.environ["ROBOT_PASSWORD"])
+        self.username: str = kwargs.get("username", os.environ["RRF_USERNAME"])
+        self.password: str = kwargs.get("password", os.environ["RRF_PASSWORD"])
 
         # Data type handling for pull commands
         self.data_type: str = kwargs.get("data_type", "binary").lower()
@@ -104,7 +104,7 @@ class WsRobotProcess(RobotProcess):
                     if not self.is_empty():
                         data = self.consume()
                         if type(data) is not bytes:
-                            raise RuntimeError("Data sent to ws should be binary")
+                            raise RuntimeError("Data to send to ws should be binary")
                         await ws.send(data)
                     else:
                         await asyncio.sleep(0.01)
@@ -112,12 +112,10 @@ class WsRobotProcess(RobotProcess):
             async def _recv_sink():
                 """Receive and drop incoming packets"""
                 while True:
-                    await ws.recv()
+                    data = await ws.recv()
+                    self.log.debug(f"Got data from websocket: {data}")
 
-            await asyncio.wait(
-                [_ping(), _get_then_send(), _recv_sink()],
-                return_when=asyncio.FIRST_COMPLETED
-            )
+            await asyncio.gather(_ping(), _get_then_send(), _recv_sink())
         await self._connect_ws(_push_fn)
 
     async def _connect_ws(self, handler_fn) -> None:
