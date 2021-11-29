@@ -20,7 +20,7 @@ class RobotDispatcher:
             in_cluster: bool = True,
     ):
         self.shared_objects = {}
-        self.process_pool = {}
+        self.process_pool: T.Dict[str, Process] = {}
         self.in_cluster: bool = in_cluster
         self.project_description = {} if project_description is None else project_description
 
@@ -129,7 +129,10 @@ class RobotDispatcher:
 
     def start_processes(self) -> None:
         for process_name in self.processes.keys():
+            self.log.info(f"Starting process {process_name}")
             self._run_process(process_name)
+            proc = self.process_pool[process_name]
+            self.log.info(f"Process on PID {proc.pid} started")
 
     def add_process(
             self,
