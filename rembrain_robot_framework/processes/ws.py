@@ -125,7 +125,8 @@ class WsRobotProcess(RobotProcess):
         then runs handler_fn that then uses the websocket however it needs
         """
         # Reconnects in a loop with exponential backoff
-        async for ws in websockets.connect(self.ws_url, logger=WebsocketsLogAdapter(self.log, {})):
+        async for ws in websockets.connect(self.ws_url, logger=WebsocketsLogAdapter(self.log, {}),
+                                           open_timeout=1.5):
             try:
                 self.log.info("Sending control packet")
                 await ws.send(self.get_control_packet().json())
