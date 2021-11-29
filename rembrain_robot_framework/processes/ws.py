@@ -95,6 +95,8 @@ class WsRobotProcess(RobotProcess):
             async def _ping():
                 """Sends out ping packet ever self.ping_interval seconds"""
                 control_packet = json.dumps({"command": WsCommandType.PING})
+                # Wait for a bit for the regular connection to be established so we don't get dropped
+                await asyncio.sleep(1.5)
                 while True:
                     await ws.send(control_packet)
                     await asyncio.sleep(self.ping_interval)
