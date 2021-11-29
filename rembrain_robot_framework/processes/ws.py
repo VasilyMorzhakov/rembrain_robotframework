@@ -1,5 +1,6 @@
 import asyncio
 import json
+import logging
 import os
 import time
 import typing as T
@@ -124,7 +125,7 @@ class WsRobotProcess(RobotProcess):
         then runs handler_fn that then uses the websocket however it needs
         """
         # Reconnects in a loop with exponential backoff
-        async for ws in websockets.connect(self.ws_url):
+        async for ws in websockets.connect(self.ws_url, logger=WebsocketsLogAdapter(self.log, {})):
             try:
                 self.log.info("Sending control packet")
                 await ws.send(self.get_control_packet().json())
@@ -157,3 +158,14 @@ class WsRobotProcess(RobotProcess):
             username=self.username,
             password=self.password
         )
+
+
+class WebsocketsLogAdapter(logging.LoggerAdapter):
+    def process(self, msg, kwargs):
+        """
+        Websockets adds its own LoggingAdapter that adds an unpicklable websocket class,
+        We have to get rid of it so we can pass log messages accross processes
+        """
+        if "websocket" in kwargs["extra"]:
+            del(kwargs["extra"]["websocket"])
+        return msg, kwargs
