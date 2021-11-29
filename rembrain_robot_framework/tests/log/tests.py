@@ -73,7 +73,8 @@ def test_logging_to_websocket_works() -> None:
     env_overrides = {
         "WEBSOCKET_GATE_URL": f"ws://127.0.0.1:{ws_port}",
         "ROBOT_NAME": "framework_test",
-        "ROBOT_PASSWORD": "framework_test",
+        "RRF_USERNAME": "framework_test",
+        "RRF_PASSWORD": "framework_test",
     }
 
     with mock.patch.dict("os.environ", env_overrides):

@@ -45,8 +45,8 @@ class Watcher:
             command=WsCommandType.PUSH,
             exchange=self.EXCHANGE,
             robot_name=os.environ["ROBOT_NAME"],
-            username=os.environ["ROBOT_NAME"],
-            password=os.environ["ROBOT_PASSWORD"],
+            username=os.environ["RRF_USERNAME"],
+            password=os.environ["RRF_PASSWORD"],
             message=message
         ))
 

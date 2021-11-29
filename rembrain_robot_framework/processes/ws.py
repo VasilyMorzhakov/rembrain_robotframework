@@ -43,8 +43,8 @@ class WsRobotProcess(RobotProcess):
         self.exchange: str = exchange
 
         self.robot_name: str = robot_name if robot_name else os.environ["ROBOT_NAME"]
-        self.username: str = username if username else os.environ["ROBOT_NAME"]
-        self.password: str = password if password else os.environ["ROBOT_PASSWORD"]
+        self.username: str = username if username else os.environ["RRF_USERNAME"]
+        self.password: str = password if password else os.environ["RRF_PASSWORD"]
 
         self.is_decode: bool = kwargs.get('is_decode', False)
         self.to_json: bool = kwargs.get('to_json', False)

@@ -33,9 +33,9 @@ class LogHandler(logging.Handler):
         try:
             formatted_record = self._get_formatted_record(record)
 
-            if "ROBOT_PASSWORD" in os.environ:
-                username: str = os.environ["ROBOT_NAME"]
-                password: str = os.environ["ROBOT_PASSWORD"]
+            if "RRF_USERNAME" in os.environ:
+                username: str = os.environ["RRF_USERNAME"]
+                password: str = os.environ["RRF_PASSWORD"]
             else:
                 username: str = os.environ["ML_NAME"]
                 password: str = os.environ["ML_PASSWORD"]

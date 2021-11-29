@@ -37,7 +37,7 @@ if __name__ == "__main__":
     if not os.environ.get("WEBSOCKET_GATE_URL"):
         os.environ["WEBSOCKET_GATE_URL"] = "wss://monitor-dev.rembrain.ai:5443"
 
-    required_vars = ["WEBSOCKET_GATE_URL", "ROBOT_NAME", "ROBOT_PASSWORD"]
+    required_vars = ["WEBSOCKET_GATE_URL", "ROBOT_NAME", "RRF_USERNAME", "RRF_PASSWORD"]
     if not query_env_vars(required_vars):
         sys.exit(0)
 
