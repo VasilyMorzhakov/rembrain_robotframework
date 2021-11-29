@@ -105,7 +105,9 @@ class WsRobotProcess(RobotProcess):
                 """Gets data to send from the consume_queue (MUST be binary) and sends it to websocket"""
                 while True:
                     if not self.is_empty():
+                        self.log.debug("Getting data")
                         data = self.consume()
+                        self.log.debug("Sending data")
                         if type(data) is not bytes:
                             raise RuntimeError("Data to send to ws should be binary")
                         await ws.send(data)
