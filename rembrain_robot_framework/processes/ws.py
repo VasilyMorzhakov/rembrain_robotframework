@@ -51,6 +51,7 @@ class WsRobotProcess(RobotProcess):
         self._parse_fn = self._data_type_parse_fns[self.data_type]
 
         self.ping_interval: float = float(kwargs.get("ping_interval", 1.0))
+        self.log.info("Init done")
 
     def run(self) -> None:
         self.log.info(f"{self.__class__.__name__} started, name: {self.name}")
