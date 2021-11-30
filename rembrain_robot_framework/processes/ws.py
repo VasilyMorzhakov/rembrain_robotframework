@@ -50,7 +50,8 @@ class WsRobotProcess(RobotProcess):
                                f"\r\nPlease use one of following: {', '.join(self._data_type_parse_fns.keys())}")
         self._parse_fn = self._data_type_parse_fns[self.data_type]
 
-        self.ping_interval: float = float(kwargs.get("ping_interval", 1.0))
+        self.ping_interval = float(kwargs.get("ping_interval", 1.0))
+        self.connection_timeout = float(kwargs.get("connection_timeout", 0.5))
         self.log.info("Init done")
 
     def run(self) -> None:
@@ -129,30 +130,32 @@ class WsRobotProcess(RobotProcess):
         Connects to the websocket, sends control packet
         then runs handler_fn that then uses the websocket however it needs
         """
-        # Reconnects in a loop with exponential backoff
-        async for ws in websockets.connect(self.ws_url, logger=WebsocketsLogAdapter(self.log, {}),
-                                           open_timeout=1.5):
+        for i in range(5):
             try:
+                ws = await asyncio.wait_for(websockets.connect(self.ws_url, logger=WebsocketsLogAdapter(self.log, {})),
+                                            self.connection_timeout)
                 self.log.info("Sending control packet")
                 await ws.send(self.get_control_packet().json())
                 await handler_fn(ws)
-                self.log.info("Handler function exited, will reconnect and repeat")
+                self.log.info("Handler function exited")
+                return
+            except asyncio.TimeoutError:
+                self.log.warning(f"Couldn't connect to websocket server in {self.connection_timeout}")
+                continue
             except websockets.ConnectionClosedError as e:
                 msg = "Connection closed with error."
                 if e.rcvd is not None:
                     msg += f" Reason: {e.rcvd.reason}"
                 self.log.error(msg)
-                time.sleep(5.0)
-                self.log.info("Reconnecting")
-                continue
+                return
             except websockets.ConnectionClosedOK as e:
                 msg = "Connection closed."
                 if e.rcvd is not None:
                     msg += f" Reason: {e.rcvd.reason}"
                 self.log.info(msg)
-                time.sleep(3.0)
-                self.log.info("Reconnecting")
-                continue
+                return
+        else:
+            self.log.error("Couldn't connect to websocket server in time after 5 attempts")
 
     def get_control_packet(self, command_type: T.Optional[WsCommandType] = None) -> WsRequest:
         if command_type is None:
