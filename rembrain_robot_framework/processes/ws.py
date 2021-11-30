@@ -119,8 +119,7 @@ class WsRobotProcess(RobotProcess):
             async def _recv_sink():
                 """Receive and drop incoming packets"""
                 while True:
-                    data = await ws.recv()
-                    self.log.debug(f"Got data from websocket: {data}")
+                    await ws.recv()
 
             await asyncio.gather(_ping(), _get_then_send(), _recv_sink())
         await self._connect_ws(_push_fn)
