@@ -1,6 +1,7 @@
 import asyncio
 import json
 import logging
+import multiprocessing
 import os
 import time
 import typing as T
@@ -52,7 +53,9 @@ class WsRobotProcess(RobotProcess):
 
         self.ping_interval = float(kwargs.get("ping_interval", 1.0))
         self.connection_timeout = float(kwargs.get("connection_timeout", 0.5))
-        self._root_logger = logging.getLogger()
+
+        self._ws_lock: multiprocessing.Lock = self.shared.ws_lock
+        self._holding_lock = False
 
     def run(self) -> None:
         self.log.info(f"{self.__class__.__name__} started, name: {self.name}")
@@ -132,8 +135,9 @@ class WsRobotProcess(RobotProcess):
     def _turn_off_debug(self):
         # TODO: DELETE
         # After control packet sent, turn off debug logging
-        if self._root_logger.level == logging.DEBUG:
-            self._root_logger.setLevel(logging.INFO)
+        root_logger = logging.getLogger()
+        if root_logger.level == logging.DEBUG:
+            root_logger.setLevel(logging.INFO)
         if self._stack_monitor is not None:
             self._stack_monitor.stop_monitoring()
 
@@ -144,8 +148,12 @@ class WsRobotProcess(RobotProcess):
         """
         for i in range(5):
             try:
+                self._ws_lock.acquire()
+                self._holding_lock = True
                 ws = await asyncio.wait_for(websockets.connect(self.ws_url, logger=WebsocketsLogAdapter(self.log, {})),
                                             self.connection_timeout)
+                self._ws_lock.release()
+                self._holding_lock = False
                 self.log.info("Sending control packet")
                 await ws.send(self.get_control_packet().json())
                 await handler_fn(ws)
@@ -167,6 +175,10 @@ class WsRobotProcess(RobotProcess):
                     msg += f" Reason: {e.rcvd.reason}"
                 self.log.info(msg)
                 return
+            finally:
+                if self._holding_lock:
+                    self._ws_lock.release()
+                    self._holding_lock = False
         else:
             self.log.error("Couldn't connect to websocket server in time after 5 attempts")
 
