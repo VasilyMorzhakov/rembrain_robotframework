@@ -114,7 +114,7 @@ class RobotDispatcher:
 
     def set_logging(self, project_description: dict, in_cluster: bool) -> None:
         # Set up logging
-        self.log_queue, self.log_listener = setup_logging(project_description, in_cluster)
+        self.log_queue, self.log_listener = setup_logging(project_description, in_cluster, self.manager)
         self.log_listener.start()
 
         self.log = logging.getLogger("RobotDispatcher")
