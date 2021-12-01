@@ -126,7 +126,7 @@ class WsRobotProcess(RobotProcess):
             if self._root_logger.level == logging.DEBUG:
                 self._root_logger.setLevel(logging.INFO)
             self._stack_monitor.stop_monitoring()
-            
+
             await asyncio.gather(_ping(), _get_then_send(), _recv_sink())
 
 

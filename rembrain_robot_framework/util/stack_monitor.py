@@ -55,12 +55,11 @@ class StackMonitor:
     def stop_monitoring(self):
         # Print the stacks one last time
         self.__print()
-        if not self._monitor_thread:
-            self._monitor_thread.stop()
-            self._monitor_thread = None
-        if not self._print_thread:
-            self._print_thread.stop()
-            self._print_thread = None
+        with self._stack_lock:
+            if self._monitor_thread:
+                self._monitor_thread.stop()
+            if self._print_thread:
+                self._print_thread.stop()
 
     def _get_frames(self):
         threads = {thread.ident: thread for thread in threading.enumerate()}
@@ -91,8 +90,10 @@ class StackMonitor:
         return s + f"\r\n\t{line}"
 
     def _print_stacks(self):
-        while not self._print_thread.is_stopped():
+        while True:
             time.sleep(self._print_interval)
+            if self._print_thread.is_stopped():
+                break
             self.__print()
 
     def __print(self):
@@ -146,11 +147,14 @@ if __name__ == "__main__":
             fn_1()
             fn_2()
 
-    sm = StackMonitor()
+    sm = StackMonitor("")
     sm.start_monitoring()
 
     t1 = threading.Thread(target=loop, daemon=True)
     t1.start()
-    time.sleep(20)
+    time.sleep(5)
 
+    print("\r\nSTOPPED\r\n")
     sm.stop_monitoring()
+
+    time.sleep(20)
