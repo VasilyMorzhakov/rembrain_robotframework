@@ -141,6 +141,7 @@ class WsRobotProcess(RobotProcess):
                     self._root_logger.setLevel(logging.INFO)
                 await handler_fn(ws)
                 self.log.info("Handler function exited")
+                await ws.close()
                 return
             except asyncio.TimeoutError:
                 self.log.warning(f"Couldn't connect to websocket server in {self.connection_timeout}")
