@@ -52,7 +52,7 @@ class WsRobotProcess(RobotProcess):
 
         self.ping_interval = float(kwargs.get("ping_interval", 1.0))
         self.connection_timeout = float(kwargs.get("connection_timeout", 0.5))
-        self.log.info("Init done")
+        self._root_logger = logging.getLogger()
 
     def run(self) -> None:
         self.log.info(f"{self.__class__.__name__} started, name: {self.name}")
@@ -135,6 +135,10 @@ class WsRobotProcess(RobotProcess):
                                             self.connection_timeout)
                 self.log.info("Sending control packet")
                 await ws.send(self.get_control_packet().json())
+                # TODO: DELETE
+                # After control packet sent, turn off debug logging
+                if self._root_logger.level == logging.DEBUG:
+                    self._root_logger.setLevel(logging.INFO)
                 await handler_fn(ws)
                 self.log.info("Handler function exited")
                 return
