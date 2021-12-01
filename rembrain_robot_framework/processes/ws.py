@@ -121,7 +121,15 @@ class WsRobotProcess(RobotProcess):
                 while True:
                     await ws.recv()
 
+            # TODO: DELETE
+            # After control packet sent, turn off debug logging
+            if self._root_logger.level == logging.DEBUG:
+                self._root_logger.setLevel(logging.INFO)
+            self._stack_monitor.stop_monitoring()
+            
             await asyncio.gather(_ping(), _get_then_send(), _recv_sink())
+
+
         await self._connect_ws(_push_fn)
 
     async def _connect_ws(self, handler_fn) -> None:
@@ -135,10 +143,6 @@ class WsRobotProcess(RobotProcess):
                                             self.connection_timeout)
                 self.log.info("Sending control packet")
                 await ws.send(self.get_control_packet().json())
-                # TODO: DELETE
-                # After control packet sent, turn off debug logging
-                if self._root_logger.level == logging.DEBUG:
-                    self._root_logger.setLevel(logging.INFO)
                 await handler_fn(ws)
                 self.log.info("Handler function exited")
                 await ws.close()

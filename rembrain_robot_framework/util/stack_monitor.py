@@ -13,7 +13,7 @@ class StackMonitor:
     """
     Uses code from the hanging_threads library: https://github.com/niccokunzmann/hanging_threads
     """
-    def __init__(self,name,**kwargs):
+    def __init__(self, name, **kwargs):
         """
         :param poll_interval: Interval between stack polls (in seconds) Default: 0.1
         :param print_interval: Interval between stack prints (in seconds) Default: 5
@@ -27,7 +27,7 @@ class StackMonitor:
         self._stack_counter = {}
         self._stack_lock = threading.Lock()
         self._interval_start = time.time()
-        self._name=name
+        self._name = name
 
     def start_monitoring(self):
         self._interval_start = time.time()
@@ -103,7 +103,8 @@ class StackMonitor:
                 for thread_id, frames_cnt in self._stack_counter.items():
                     res += "\r\n========================================================\r\n"
                     res += f"||THREAD '{thread_id}':||\r\n{self.frame_cnt_to_str(frames_cnt)}"
-                logger.info(res)
+                # logger.info(res)
+                print(res)
                 if self._clear_on_print:
                     self._interval_start = time.time()
                     self._stack_counter.clear()
