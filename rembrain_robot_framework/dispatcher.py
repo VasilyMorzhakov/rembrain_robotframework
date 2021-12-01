@@ -189,11 +189,15 @@ class RobotDispatcher:
         if platform.system() == "Darwin":
             return is_overflow
 
+        # FIXME: NOT WORKING because Manager.Queue() doesn't have a maxsize property.
+        # Need to store the queue sizes in some dict
+        return False
+
         for p_name, process in self.processes.items():
             for q_name, queue in process["consume_queues"].items():
                 q_size: int = queue.qsize()
 
-                if queue._maxsize - q_size <= int(queue._maxsize * 0.1):
+                if queue.maxsize - q_size <= int(queue.maxsize * 0.1):
                     self.log.warning(f"Consume queue {q_name} of process {p_name} has reached {q_size} messages.")
                     is_overflow = True
 
@@ -201,7 +205,7 @@ class RobotDispatcher:
                 for q in queues:
                     q_size: int = q.qsize()
 
-                    if q._maxsize - q_size <= int(q._maxsize * 0.1):
+                    if q.maxsize - q_size <= int(q.maxsize * 0.1):
                         self.log.warning(f"Publish queue {q_name} of process {p_name} has reached {q_size} messages.")
                         is_overflow = True
 
