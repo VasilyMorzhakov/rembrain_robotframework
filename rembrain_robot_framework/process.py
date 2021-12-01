@@ -3,6 +3,8 @@ import typing as T
 from collections import namedtuple
 from multiprocessing import Queue
 
+from rembrain_robot_framework.util.stack_monitor import StackMonitor
+
 
 class RobotProcess:
     def __init__(
@@ -22,6 +24,9 @@ class RobotProcess:
         self._shared: T.Any = namedtuple('_', shared_objects.keys())(**shared_objects)
         self.queues_to_clear: T.List[str] = []  # in case of exception this queues are cleared
         self.log = logging.getLogger(f"{self.__class__.__name__} ({self.name})")
+        self._stack_monitor: T.Optional[StackMonitor] = None
+        if "monitoring" in kwargs and kwargs['monitoring']:
+            self._init_monitoring(self.name)
 
     def run(self) -> None:
         raise NotImplementedError()
@@ -43,6 +48,8 @@ class RobotProcess:
         """
         It frees all occupied resources.
         """
+        if not self._stack_monitor:
+            self._stack_monitor.stop_monitoring()
         self.close_objects()
         self.clear_queues()
 
@@ -153,3 +160,12 @@ class RobotProcess:
             consume_queue_name = list(self._consume_queues.keys())[0]
 
         return self._consume_queues[consume_queue_name].empty()
+
+    def _init_monitoring(self, name):
+        """
+        Initializes stack monitoring
+        This feature will sample the stacks of all threads in the process for a period, then log them out
+        """
+        self._stack_monitor = StackMonitor(name)
+        self._stack_monitor.start_monitoring()
+
