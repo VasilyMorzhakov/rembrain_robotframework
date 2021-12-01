@@ -125,7 +125,8 @@ class WsRobotProcess(RobotProcess):
             # After control packet sent, turn off debug logging
             if self._root_logger.level == logging.DEBUG:
                 self._root_logger.setLevel(logging.INFO)
-            self._stack_monitor.stop_monitoring()
+            if self._stack_monitor is not None:
+                self._stack_monitor.stop_monitoring()
 
             await asyncio.gather(_ping(), _get_then_send(), _recv_sink())
 
