@@ -94,7 +94,7 @@ class RobotDispatcher:
                     self.config.get("queues_sizes", {}).get(queue_name, self.DEFAULT_QUEUE_SIZE)
                 )
 
-                queue = Queue(maxsize=queue_size)
+                queue = self.manager.Queue(maxsize=queue_size)
                 self.processes[process]["consume_queues"][queue_name] = queue
 
                 if queue_name not in publish_queues:
@@ -129,7 +129,6 @@ class RobotDispatcher:
 
     def start_processes(self) -> None:
         for process_name in self.processes.keys():
-            self.log.info(f"Starting process {process_name}")
             self._run_process(process_name)
             proc = self.process_pool[process_name]
             self.log.info(f"Process {process_name} on PID {proc.pid} started")
