@@ -105,6 +105,7 @@ class WsRobotProcess(RobotProcess):
 
             async def _get_then_send():
                 """Gets data to send from the consume_queue (MUST be binary) and sends it to websocket"""
+                first_packet_sent = False
                 while True:
                     if not self.is_empty():
                         self.log.debug("Getting data")
@@ -113,6 +114,9 @@ class WsRobotProcess(RobotProcess):
                         if type(data) is not bytes:
                             raise RuntimeError("Data to send to ws should be binary")
                         await ws.send(data)
+                        if not first_packet_sent:
+                            self._turn_off_debug()
+                            first_packet_sent = True
                     else:
                         await asyncio.sleep(0.01)
 
@@ -121,17 +125,17 @@ class WsRobotProcess(RobotProcess):
                 while True:
                     await ws.recv()
 
-            # TODO: DELETE
-            # After control packet sent, turn off debug logging
-            if self._root_logger.level == logging.DEBUG:
-                self._root_logger.setLevel(logging.INFO)
-            if self._stack_monitor is not None:
-                self._stack_monitor.stop_monitoring()
-
             await asyncio.gather(_ping(), _get_then_send(), _recv_sink())
 
-
         await self._connect_ws(_push_fn)
+
+    def _turn_off_debug(self):
+        # TODO: DELETE
+        # After control packet sent, turn off debug logging
+        if self._root_logger.level == logging.DEBUG:
+            self._root_logger.setLevel(logging.INFO)
+        if self._stack_monitor is not None:
+            self._stack_monitor.stop_monitoring()
 
     async def _connect_ws(self, handler_fn) -> None:
         """
