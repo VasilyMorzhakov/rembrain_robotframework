@@ -1,4 +1,5 @@
 import logging
+import multiprocessing
 import platform
 import time
 import typing as T
@@ -19,6 +20,7 @@ class RobotDispatcher:
             project_description: T.Optional[dict] = None,
             in_cluster: bool = True,
     ):
+        multiprocessing.set_start_method("spawn")
         self.shared_objects = {}
         self.process_pool: T.Dict[str, Process] = {}
         self.in_cluster: bool = in_cluster
