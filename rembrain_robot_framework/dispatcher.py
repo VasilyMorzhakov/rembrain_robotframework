@@ -20,7 +20,6 @@ class RobotDispatcher:
             project_description: T.Optional[dict] = None,
             in_cluster: bool = True,
     ):
-        multiprocessing.set_start_method("spawn")
         self.shared_objects = {}
         self.process_pool: T.Dict[str, Process] = {}
         self.in_cluster: bool = in_cluster
@@ -49,6 +48,11 @@ class RobotDispatcher:
         self.set_logging(project_description, in_cluster)
 
         self.log.info("RobotHost is configuring processes.")
+
+        # Turn ON spawn because fork wrecks SSL contexts among other things
+        if multiprocessing.get_start_method() != "spawn":
+            self.log.warning("Turning on spawn method for multiprocessing")
+            multiprocessing.set_start_method("spawn", force=True)
 
         # compare processes and config
         if len(self.processes) != len(self.config["processes"]):

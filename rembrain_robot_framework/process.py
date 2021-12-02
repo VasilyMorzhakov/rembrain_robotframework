@@ -48,7 +48,7 @@ class RobotProcess:
         """
         It frees all occupied resources.
         """
-        if not self._stack_monitor:
+        if self._stack_monitor:
             self._stack_monitor.stop_monitoring()
         self.close_objects()
         self.clear_queues()

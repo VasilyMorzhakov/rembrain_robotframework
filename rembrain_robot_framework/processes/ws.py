@@ -52,10 +52,7 @@ class WsRobotProcess(RobotProcess):
         self._parse_fn = self._data_type_parse_fns[self.data_type]
 
         self.ping_interval = float(kwargs.get("ping_interval", 1.0))
-        self.connection_timeout = float(kwargs.get("connection_timeout", 0.5))
-
-        self._ws_lock: multiprocessing.Lock = self.shared.ws_lock
-        self._holding_lock = False
+        self.connection_timeout = float(kwargs.get("connection_timeout", 1.5))
 
     def run(self) -> None:
         self.log.info(f"{self.__class__.__name__} started, name: {self.name}")
@@ -92,7 +89,7 @@ class WsRobotProcess(RobotProcess):
     async def _push(self) -> None:
         async def _push_fn(ws):
             """
-            This one has three long running function:
+            Push handler has three long running function:
             - one for sending pings in keep_alive interval
             - one for consuming from queue and publishing
             - one for receiving and dropping any packages coming from the websocket
@@ -108,7 +105,6 @@ class WsRobotProcess(RobotProcess):
 
             async def _get_then_send():
                 """Gets data to send from the consume_queue (MUST be binary) and sends it to websocket"""
-                first_packet_sent = False
                 while True:
                     if not self.is_empty():
                         self.log.debug("Getting data")
@@ -117,9 +113,6 @@ class WsRobotProcess(RobotProcess):
                         if type(data) is not bytes:
                             raise RuntimeError("Data to send to ws should be binary")
                         await ws.send(data)
-                        if not first_packet_sent:
-                            self._turn_off_debug()
-                            first_packet_sent = True
                     else:
                         await asyncio.sleep(0.01)
 
@@ -132,37 +125,19 @@ class WsRobotProcess(RobotProcess):
 
         await self._connect_ws(_push_fn)
 
-    def _turn_off_debug(self):
-        # TODO: DELETE
-        # After control packet sent, turn off debug logging
-        root_logger = logging.getLogger()
-        if root_logger.level == logging.DEBUG:
-            root_logger.setLevel(logging.INFO)
-        if self._stack_monitor is not None:
-            self._stack_monitor.stop_monitoring()
-
     async def _connect_ws(self, handler_fn) -> None:
         """
         Connects to the websocket, sends control packet
         then runs handler_fn that then uses the websocket however it needs
         """
-        for i in range(5):
+        async with websockets.connect(self.ws_url, logger=WebsocketsLogAdapter(self.log, {}),
+                                      open_timeout=self.connection_timeout) as ws:
             try:
-                self._ws_lock.acquire()
-                self._holding_lock = True
-                ws = await asyncio.wait_for(websockets.connect(self.ws_url, logger=WebsocketsLogAdapter(self.log, {})),
-                                            self.connection_timeout)
-                self._ws_lock.release()
-                self._holding_lock = False
                 self.log.info("Sending control packet")
                 await ws.send(self.get_control_packet().json())
                 await handler_fn(ws)
                 self.log.info("Handler function exited")
-                await ws.close()
                 return
-            except asyncio.TimeoutError:
-                self.log.warning(f"Couldn't connect to websocket server in {self.connection_timeout}")
-                continue
             except websockets.ConnectionClosedError as e:
                 msg = "Connection closed with error."
                 if e.rcvd is not None:
@@ -175,12 +150,6 @@ class WsRobotProcess(RobotProcess):
                     msg += f" Reason: {e.rcvd.reason}"
                 self.log.info(msg)
                 return
-            finally:
-                if self._holding_lock:
-                    self._ws_lock.release()
-                    self._holding_lock = False
-        else:
-            self.log.error("Couldn't connect to websocket server in time after 5 attempts")
 
     def get_control_packet(self, command_type: T.Optional[WsCommandType] = None) -> WsRequest:
         if command_type is None:
