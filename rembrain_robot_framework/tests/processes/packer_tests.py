@@ -7,7 +7,7 @@ from pytest_mock import MockerFixture
 from rembrain_robot_framework.pack import PackType
 from rembrain_robot_framework.processes import VideoPacker, VideoUnpacker
 from rembrain_robot_framework.services.watcher import Watcher
-from rembrain_robot_framework.tests.utils import Image
+from rembrain_robot_framework.tests.models import Image
 
 
 @pytest.fixture()

@@ -19,7 +19,8 @@ class YoloImageProcessor(RobotProcess):
             # The consume call is blocking so no need to poll
             image = self.consume()
 
-            # In external example processor actually consumes a tuple of (image, depth), so check for that
+            # In external example processor actually consumes a tuple of (image, depth),
+            # so check for that
             depth_data = None
             if type(image) is tuple:
                 image = image[0]

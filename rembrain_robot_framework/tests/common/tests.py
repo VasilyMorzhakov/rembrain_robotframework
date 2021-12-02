@@ -20,7 +20,7 @@ def robot_dispatcher_fx(request) -> RobotDispatcher:
 
     yield robot_dispatcher
 
-    robot_dispatcher.log_listener.stop()
+    robot_dispatcher.stop_logging()
 
 
 # second way
@@ -28,10 +28,10 @@ def robot_dispatcher_fx(request) -> RobotDispatcher:
 def robot_dispatcher_class_fx(request, mocker: MockerFixture) -> RobotDispatcher:
     config: T.Any = EnvYAML(os.path.join(os.path.dirname(__file__), "configs", request.param[0]))
 
-    def set_logging(self, *args):
+    def run_logging(self, *args):
         self.log = type("MOCK_LOG", (object,), {"info": lambda x: ..., })
 
-    mocker.patch.object(RobotDispatcher, 'set_logging', set_logging)
+    mocker.patch.object(RobotDispatcher, 'run_logging', run_logging)
     yield RobotDispatcher, config
 
 
@@ -117,7 +117,7 @@ def test_add_custom_processes() -> None:
     time.sleep(3.0)
     assert robot_dispatcher.shared_objects["success"].value
 
-    robot_dispatcher.log_listener.stop()
+    robot_dispatcher.stop_logging()
 
 
 @pytest.mark.parametrize(
@@ -159,4 +159,4 @@ def test_description_from_config() -> None:
         assert rd.project_description["subsystem"] == "test_subsystem"
         assert rd.project_description["robot"] == robot_name
 
-        rd.log_listener.stop()
+        rd.stop_logging()

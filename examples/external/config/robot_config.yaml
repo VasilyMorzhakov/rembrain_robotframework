@@ -1,6 +1,6 @@
 processes:
   gui:
-    title: "Rembrain robotframework example (External)"
+    title: "Rembrain Robot Framework Example (External)"
     keep_alive: false
     consume:
       - image_orig

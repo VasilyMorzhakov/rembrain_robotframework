@@ -15,12 +15,10 @@ def query_env_vars(required_vars: List[str]) -> bool:
     # build layout
     layout = [
         [sg.Text("Some required env variables aren't assigned, please input them:", pad=(0, 10))],
-        *[
-            [[
-                sg.Text(k, size=(30, 1), justification="right"),
-                sg.InputText(key=f"-{k}", enable_events=True, password_char="*" if "password" in k.lower() else "")
-            ]] for k in current_env_vars
-        ],
+        *[[[
+            sg.Text(k, size=(30, 1), justification="right"),
+            sg.InputText(key=f"-{k}", enable_events=True, password_char="*" if "password" in k.lower() else "")
+        ]] for k in current_env_vars],
         [sg.Exit(pad=((0, 430), (10, 0))), sg.Submit(disabled=True, pad=((0, 0), (10, 0)))]
     ]
 

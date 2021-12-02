@@ -12,6 +12,7 @@ class WsRobotProcess(RobotProcess):
     Process that connects to a websocketgate server and communicates with it
     Can either pull or push data
     """
+
     def __init__(
             self,
             command_type: str,

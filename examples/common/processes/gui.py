@@ -1,22 +1,23 @@
 import typing as T
 
-import PySimpleGUI as sg
 import numpy as np
+import PySimpleGUI as sg
 from PIL import ImageTk, Image
 
 from rembrain_robot_framework import RobotProcess
 
 
 class GUIProcess(RobotProcess):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, title: str = "Rembrain Robot Framework Example", *args, **kwargs):
         super(GUIProcess, self).__init__(*args, **kwargs)
 
-        # Required for persistence of images, because if they go out of scope, they disappear from the canvas
-        self.tk_images: T.Dict[str, T.Optional[ImageTk.PhotoImage]] = {
+        # Required for persistence of images,
+        # because if they go out of scope, they disappear from the canvas
+        self._tk_images: T.Dict[str, T.Optional[ImageTk.PhotoImage]] = {
             "image_orig": None,
             "image_processed": None
         }
-        self._title = kwargs.get("title", "Rembrain robotframework example")
+        self._title: str = title
 
     def run(self) -> None:
         canvas_orig = sg.Canvas(size=(533, 400))
@@ -51,7 +52,7 @@ class GUIProcess(RobotProcess):
 
         img = Image.fromarray(raw_image)
         img = img.resize(canvas_elem.get_size())
-        self.tk_images[queue_name] = ImageTk.PhotoImage(img)
+        self._tk_images[queue_name] = ImageTk.PhotoImage(img)
 
         canvas_elem.TKCanvas.delete("all")
-        canvas_elem.TKCanvas.create_image(0, 0, image=self.tk_images[queue_name], anchor="nw")
+        canvas_elem.TKCanvas.create_image(0, 0, image=self._tk_images[queue_name], anchor="nw")

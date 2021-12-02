@@ -23,7 +23,7 @@ def run_dispatcher():
     robot_dispatcher = RobotDispatcher(config, processes, in_cluster=False)
     robot_dispatcher.start_processes()
     robot_dispatcher.run(robot_dispatcher.shared_objects["exit_flag"])
-    robot_dispatcher.log_listener.stop()
+    robot_dispatcher.stop_logging()
 
 
 if __name__ == "__main__":

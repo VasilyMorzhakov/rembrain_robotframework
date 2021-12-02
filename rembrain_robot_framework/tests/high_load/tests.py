@@ -69,4 +69,4 @@ def test_shared_objects_save_type() -> None:
 
     time.sleep(5.0)
     assert robot_dispatcher.shared_objects["finished_correctly"].value == 10
-    robot_dispatcher.log_listener.stop()
+    robot_dispatcher.stop_logging()

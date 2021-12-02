@@ -3,7 +3,7 @@ import pytest
 from _pytest.fixtures import SubRequest
 
 from rembrain_robot_framework.pack import PackType, Packer, Unpacker
-from rembrain_robot_framework.tests.utils import Image
+from rembrain_robot_framework.tests.models import Image
 
 
 @pytest.fixture()

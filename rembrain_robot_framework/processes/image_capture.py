@@ -12,6 +12,7 @@ class ImageCapture(RobotProcess):
     Args:
         - FPS_limit: maximum capture FPS
     """
+
     def __init__(self, *args, **kwargs):
         super(ImageCapture, self).__init__(*args, **kwargs)
         self.FPS_limit = kwargs.get("FPS_limit", 5)

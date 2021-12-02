@@ -7,7 +7,7 @@ from envyaml import EnvYAML
 sys.path.append(os.path.abspath(os.path.join(__file__, "..", "..", "..")))
 
 from examples.common.processes import ImageCapture, GUIProcess, DepthMixin  # noqa: E402
-from examples.external.config_gui import query_env_vars  # noqa: E402
+from examples.external.utils import query_env_vars  # noqa: E402
 from rembrain_robot_framework import RobotDispatcher  # noqa: E402
 from rembrain_robot_framework.processes import WsRobotProcess, VideoPacker, VideoUnpacker  # noqa: E402
 
@@ -29,14 +29,10 @@ def run_dispatcher():
     robot_dispatcher = RobotDispatcher(config, processes, in_cluster=False)
     robot_dispatcher.start_processes()
     robot_dispatcher.run(robot_dispatcher.shared_objects["exit_flag"])
-    robot_dispatcher.log_listener.stop()
+    robot_dispatcher.stop_logging()
 
 
 if __name__ == "__main__":
-    # todo remove it! - it is hardcode
-    if not os.environ.get("WEBSOCKET_GATE_URL"):
-        os.environ["WEBSOCKET_GATE_URL"] = "wss://monitor-dev.rembrain.ai:5443"
-
     required_vars = ["WEBSOCKET_GATE_URL", "ROBOT_NAME", "RRF_USERNAME", "RRF_PASSWORD"]
     if not query_env_vars(required_vars):
         sys.exit(0)

@@ -33,7 +33,7 @@ def test_crashing_doesnt_create_another_logger() -> None:
         time.sleep(15)
 
     robot_dispatcher.stop_process("failing_process")
-    robot_dispatcher.log_listener.stop()
+    robot_dispatcher.stop_logging()
 
     std_errors.seek(0)
     log_data = std_errors.read()
@@ -93,7 +93,7 @@ def test_logging_to_websocket_works() -> None:
         print("Closing")
         close_flag.value = True
         p.join()
-        robot_dispatcher.log_listener.stop()
+        robot_dispatcher.stop_logging()
 
     # Check that Count messages are in the log output
     messages = list(map(lambda m: m["message"]["message"], logs))
