@@ -5,10 +5,11 @@ from ctypes import c_bool, c_int, c_float, c_char_p
 from functools import wraps
 from logging.handlers import QueueHandler
 from multiprocessing import Value, Lock, Manager
+from multiprocessing.context import BaseContext
 
 
-def generate(name: str, manager: Manager) -> T.Any:
-    # Important: Since we are using a separate context for the RobotProcesses, always instantiate from manager
+def generate(name: str, manager: Manager, ctx: BaseContext) -> T.Any:
+    # Important: Since we are using a separate context for the RobotProcesses, always instantiate from it
     if name == 'dict':
         return manager.dict()
 
@@ -16,20 +17,20 @@ def generate(name: str, manager: Manager) -> T.Any:
         return manager.list()
 
     if name == 'Lock':
-        return manager.Lock()
+        return ctx.Lock()
 
     if name == 'Value:bool':
-        return manager.Value(c_bool, False)
+        return ctx.Value(c_bool, False)
 
     if name == 'Value:int':
-        return manager.Value(c_int, 0)
+        return ctx.Value(c_int, 0)
 
     if name == 'Value:float':
-        return manager.Value(c_float, 0.0)
+        return ctx.Value(c_float, 0.0)
 
     # todo perhaps it does not work
     if name == 'Value:string':
-        return manager.Value(c_char_p, '')
+        return ctx.Value(c_char_p, '')
 
     raise Exception('Wrong type to generate')
 

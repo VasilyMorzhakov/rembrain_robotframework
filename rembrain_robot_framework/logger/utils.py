@@ -5,6 +5,7 @@ import ssl
 import typing as T
 from logging.handlers import QueueListener
 from multiprocessing import Queue
+from multiprocessing.context import BaseContext
 
 import pika
 from python_logging_rabbitmq import RabbitMQHandler
@@ -64,8 +65,8 @@ def get_console_handler() -> logging.StreamHandler:
     return console_handler
 
 
-def setup_logging(project_description: dict, in_cluster: bool = True,
-                  manager: T.Optional[multiprocessing.Manager] = None) -> T.Tuple[Queue, QueueListener]:
+def setup_logging(project_description: dict, ctx: BaseContext,
+                  in_cluster: bool = True) -> T.Tuple[Queue, QueueListener]:
     """
     Sets up a QueueListener that listens to the main logging queue and passes data to the handlers
     The handlers are generated here, there are three handlers:
@@ -75,10 +76,7 @@ def setup_logging(project_description: dict, in_cluster: bool = True,
     Returns the queue for logging + the listener
     Don't forget to start the listener
     """
-    if manager is not None:
-        log_queue = manager.Queue()
-    else:
-        log_queue = Queue()
+    log_queue = ctx.Queue()
     handlers = [get_console_handler()]
 
     out_handler = get_log_handler(project_description, in_cluster)

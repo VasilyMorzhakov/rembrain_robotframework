@@ -4,7 +4,6 @@ import platform
 import time
 import typing as T
 from logging.handlers import QueueHandler, QueueListener
-from multiprocessing.managers import AutoProxy
 
 from rembrain_robot_framework import utils
 from rembrain_robot_framework.logger.utils import setup_logging
@@ -61,7 +60,7 @@ class RobotDispatcher:
                 "shared_objects": {},
             }
 
-        self.log_queue: T.Optional[AutoProxy[Queue]] = None
+        self.log_queue: T.Optional[Queue] = None
         self._log_listener: T.Optional[QueueListener] = None
         self.log: T.Optional[logging.Logger] = None
         self.run_logging(project_description, in_cluster)
@@ -118,7 +117,7 @@ class RobotDispatcher:
                     self.config.get("queues_sizes", {}).get(queue_name, self.DEFAULT_QUEUE_SIZE)
                 )
 
-                queue = self.manager.Queue(maxsize=queue_size)
+                queue = self.mp_context.Queue(maxsize=queue_size)
                 self.processes[process]["consume_queues"][queue_name] = queue
 
                 if queue_name not in publish_queues:
@@ -133,12 +132,14 @@ class RobotDispatcher:
         # shared objects
         if "shared_objects" in self.config and self.config["shared_objects"]:
             self.shared_objects = {
-                name: utils.generate(obj, self.manager) for name, obj in self.config["shared_objects"].items()
+                name: utils.generate(
+                    obj, self.manager, self.mp_context
+                ) for name, obj in self.config["shared_objects"].items()
             }
 
         # system processes queues(dict): process_name (key) => personal process queue (value)
         self.system_queues = {
-            p: self.manager.Queue(maxsize=self.DEFAULT_QUEUE_SIZE) for p in self.processes}
+            p: self.mp_context.Queue(maxsize=self.DEFAULT_QUEUE_SIZE) for p in self.processes}
 
         # for heartbeat
         self.watcher = Watcher(self.in_cluster)
@@ -178,7 +179,7 @@ class RobotDispatcher:
         if object_name in self.shared_objects.keys():
             raise Exception(f"Shared object {object_name} already exists.")
 
-        self.shared_objects[object_name] = utils.generate(object_type, self.manager)
+        self.shared_objects[object_name] = utils.generate(object_type, self.manager, self.mp_context)
 
     def del_shared_object(self, object_name: str) -> None:
         if object_name not in self.shared_objects.keys():
@@ -284,7 +285,7 @@ class RobotDispatcher:
 
     def run_logging(self, project_description: dict, in_cluster: bool) -> None:
         # Set up logging
-        self.log_queue, self._log_listener = setup_logging(project_description, in_cluster, self.manager)
+        self.log_queue, self._log_listener = setup_logging(project_description, self.mp_context, in_cluster)
         self._log_listener.start()
 
         self.log = logging.getLogger("RobotDispatcher")
