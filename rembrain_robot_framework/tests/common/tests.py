@@ -31,7 +31,7 @@ def robot_dispatcher_fx(request) -> RobotDispatcher:
 def test_queues_are_the_same(robot_dispatcher_fx: RobotDispatcher) -> None:
     time.sleep(3.0)
     assert robot_dispatcher_fx.shared_objects["hi_received"].value, 4
-    assert robot_dispatcher_fx.processes["p2"]["consume_queues"]["messages"]._maxsize == 20
+    assert robot_dispatcher_fx.get_queue_max_size("messages") == 20
 
 
 @pytest.mark.parametrize(
@@ -45,8 +45,9 @@ def test_queues_are_the_same(robot_dispatcher_fx: RobotDispatcher) -> None:
 def test_input_queues_different(robot_dispatcher_fx: RobotDispatcher) -> None:
     time.sleep(3.0)
     assert robot_dispatcher_fx.shared_objects["hi_received"].value, 2
-    assert robot_dispatcher_fx.processes["p3"]["consume_queues"]["messages1"]._maxsize == 10
-    assert robot_dispatcher_fx.processes["p3"]["consume_queues"]["messages2"]._maxsize == 50
+    assert robot_dispatcher_fx.get_queue_max_size("messages1") == 10
+    assert robot_dispatcher_fx.get_queue_max_size("messages2") == 50
+
 
 
 @pytest.mark.parametrize(
@@ -76,10 +77,10 @@ def test_performance(robot_dispatcher_fx: RobotDispatcher) -> None:
 
 def test_add_custom_processes() -> None:
     name = "aps"
-    queue = Queue(maxsize=30)
     test_message = "TEST MESSAGE"
 
     robot_dispatcher = RobotDispatcher()
+    queue = robot_dispatcher.manager.Queue(maxsize=30)
     robot_dispatcher.add_shared_object("success", "Value:bool")
     robot_dispatcher.add_process(
         "ap1",

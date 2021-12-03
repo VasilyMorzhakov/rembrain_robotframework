@@ -26,14 +26,10 @@ class RobotDispatcher:
         self.in_cluster: bool = in_cluster
         self.project_description = {} if project_description is None else project_description
 
-        # Warn the user if they are using fork as multiprocess's start_method.
-        # Since it should be only set in __main__, we aren't risking setting it here unless we break even more stuff
-        # So instead we are warning the user about it
-        # # TODO: actually create everything in its own context
-        # if multiprocessing.get_start_method() == "fork":
-        #     self.log.warning("WARNING!!! multiprocessing's start_method is set to 'fork'. "
-        #                      "This can lead to issues with deadlocks/broken pipes in e.g. SSL contexts.\r\n"
-        #                      "Consider setting start method to 'spawn' if you encounter any issues.")
+        # It is important that we create our own separate context.
+        # fork() can easily wreck stability,
+        # since we don't know whether the dispatcher will be created after some threads already started.
+        # So to protect the user from deadlocking their processes, all processes are spawned in a separate context
         self.mp_context = multiprocessing.get_context("spawn")
         self.manager = self.mp_context.Manager()
 
@@ -202,24 +198,21 @@ class RobotDispatcher:
         if platform.system() == "Darwin":
             return is_overflow
 
-        # FIXME: NOT WORKING because Manager.Queue() doesn't have a maxsize property.
-        # Need to store the queue sizes in some dict
-        return False
-        # TODO: FIX
-
         for p_name, process in self.processes.items():
             for q_name, queue in process["consume_queues"].items():
                 q_size: int = queue.qsize()
+                q_maxsize = self.get_queue_max_size(q_name)
 
-                if queue.maxsize - q_size <= int(queue.maxsize * 0.1):
+                if q_maxsize - q_size <= int(q_maxsize * 0.1):
                     self.log.warning(f"Consume queue {q_name} of process {p_name} has reached {q_size} messages.")
                     is_overflow = True
 
             for q_name, queues in process["publish_queues"].items():
                 for q in queues:
                     q_size: int = q.qsize()
+                    q_maxsize = self.get_queue_max_size(q_name)
 
-                    if q.maxsize - q_size <= int(q.maxsize * 0.1):
+                    if q_maxsize - q_size <= int(q_maxsize * 0.1):
                         self.log.warning(f"Publish queue {q_name} of process {p_name} has reached {q_size} messages.")
                         is_overflow = True
 
@@ -248,6 +241,9 @@ class RobotDispatcher:
         for queue_name in queue_names:
             res[queue_name] = int(self.config.get("queues_sizes", {}).get(queue_name, self.DEFAULT_QUEUE_SIZE))
         return res
+
+    def get_queue_max_size(self, queue_name: str) -> int:
+        return self._max_queue_sizes.get(queue_name, self.DEFAULT_QUEUE_SIZE)
 
     def run(self, shared_stop_run: T.Any = None) -> None:
         if platform.system() == "Darwin":
