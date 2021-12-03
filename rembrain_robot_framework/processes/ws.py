@@ -107,6 +107,7 @@ class WsRobotProcess(RobotProcess):
                     if not self.is_empty():
                         data = self.consume()
                         if type(data) is not bytes:
+                            self.log.error("Trying to send non-binary data to push_loop: {data}")
                             raise RuntimeError("Data to send to ws should be binary")
                         await ws.send(data)
                     else:
