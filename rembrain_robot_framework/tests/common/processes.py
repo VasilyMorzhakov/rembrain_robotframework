@@ -84,11 +84,11 @@ class VideoSender(RobotProcess):
 
 class VideoConsumer(RobotProcess):
     def run(self) -> None:
+        self.shared.frames_processed.value = 0
         for _ in range(4000):
             record: str = self.consume()
             assert record.shape == (212, 256, 3)
-
-        self.shared.ok.value = 1
+            self.shared.frames_processed.value += 1
 
 
 class SysP1(RobotProcess):

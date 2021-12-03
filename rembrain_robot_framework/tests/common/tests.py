@@ -87,7 +87,7 @@ def test_output_queues_different(robot_dispatcher_fx: RobotDispatcher) -> None:
 )
 def test_performance(robot_dispatcher_fx: RobotDispatcher) -> None:
     time.sleep(20.0)
-    assert robot_dispatcher_fx.shared_objects["ok"].value == 1
+    assert robot_dispatcher_fx.shared_objects["frames_processed"].value == 4000
 
 
 def test_add_custom_processes() -> None:

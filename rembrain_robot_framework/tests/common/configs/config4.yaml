@@ -5,4 +5,4 @@ processes:
     consume: messages
 
 shared_objects:
-  ok: Value:int
+  frames_processed: Value:int
