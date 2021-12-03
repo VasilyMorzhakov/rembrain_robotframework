@@ -97,19 +97,15 @@ class WsRobotProcess(RobotProcess):
             async def _ping():
                 """Sends out ping packet ever self.ping_interval seconds"""
                 control_packet = json.dumps({"command": WsCommandType.PING})
-                # Wait for a bit for the regular connection to be established so we don't get dropped
-                await asyncio.sleep(1.5)
                 while True:
-                    await ws.send(control_packet)
                     await asyncio.sleep(self.ping_interval)
+                    await ws.send(control_packet)
 
             async def _get_then_send():
                 """Gets data to send from the consume_queue (MUST be binary) and sends it to websocket"""
                 while True:
                     if not self.is_empty():
-                        self.log.debug("Getting data")
                         data = self.consume()
-                        self.log.debug("Sending data")
                         if type(data) is not bytes:
                             raise RuntimeError("Data to send to ws should be binary")
                         await ws.send(data)

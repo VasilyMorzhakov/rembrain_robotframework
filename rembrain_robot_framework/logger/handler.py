@@ -47,11 +47,10 @@ class LogHandler(logging.Handler):
 
     def _send_to_ws(self) -> None:
         # Init connection
-        robot_name = ""
-        if "ROBOT_PASSWORD" in os.environ:
-            username: str = os.environ["ROBOT_NAME"]
-            password: str = os.environ["ROBOT_PASSWORD"]
-            robot_name = username
+        robot_name = os.environ.get("ROBOT_NAME", "")
+        if "RRF_PASSWORD" in os.environ:
+            username: str = os.environ["RRF_USERNAME"]
+            password: str = os.environ["RRF_PASSWORD"]
         else:
             username: str = os.environ["ML_NAME"]
             password: str = os.environ["ML_PASSWORD"]
@@ -85,6 +84,7 @@ class LogHandler(logging.Handler):
                     # Reinitialize the connection
                     self.ws_connect.close()
                     loop = self.ws_connect.push_loop(request)
+                    next(loop)
             else:
                 self._ping(loop)
 

@@ -43,7 +43,7 @@ def get_log_handler(project_description: dict, in_cluster: bool = True) -> T.Any
         )
     else:
         if not (
-                ("ROBOT_NAME" in os.environ and "ROBOT_PASSWORD" in os.environ and "WEBSOCKET_GATE_URL" in os.environ)
+                ("RRF_USERNAME" in os.environ and "RRF_PASSWORD" in os.environ and "WEBSOCKET_GATE_URL" in os.environ)
                 or ("ML_NAME" in os.environ and "ML_PASSWORD" in os.environ)
         ):
             print("Warning, testing environment, web logging is not working")

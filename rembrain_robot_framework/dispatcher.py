@@ -20,12 +20,23 @@ class RobotDispatcher:
             project_description: T.Optional[dict] = None,
             in_cluster: bool = True,
     ):
+
         self.shared_objects = {}
         self.process_pool: T.Dict[str, Process] = {}
         self.in_cluster: bool = in_cluster
         self.project_description = {} if project_description is None else project_description
 
-        self.manager = Manager()
+        # Warn the user if they are using fork as multiprocess's start_method.
+        # Since it should be only set in __main__, we aren't risking setting it here unless we break even more stuff
+        # So instead we are warning the user about it
+        # # TODO: actually create everything in its own context
+        # if multiprocessing.get_start_method() == "fork":
+        #     self.log.warning("WARNING!!! multiprocessing's start_method is set to 'fork'. "
+        #                      "This can lead to issues with deadlocks/broken pipes in e.g. SSL contexts.\r\n"
+        #                      "Consider setting start method to 'spawn' if you encounter any issues.")
+        self.mp_context = multiprocessing.get_context("spawn")
+        self.manager = self.mp_context.Manager()
+
         self.processes = {} if processes is None else processes
         for name, p in self.processes.items():
             if "consume_queues" not in p:
@@ -49,11 +60,6 @@ class RobotDispatcher:
 
         self.log.info("RobotHost is configuring processes.")
 
-        # Turn ON spawn because fork wrecks SSL contexts among other things
-        if multiprocessing.get_start_method() != "spawn":
-            self.log.warning("Turning on spawn method for multiprocessing")
-            multiprocessing.set_start_method("spawn", force=True)
-
         # compare processes and config
         if len(self.processes) != len(self.config["processes"]):
             raise Exception("Number of processes in config is not the same as passed in __init__.")
@@ -65,6 +71,7 @@ class RobotDispatcher:
         # create queues
         consume_queues = {}  # consume from queues
         publish_queues = {}  # publish to queues
+        self._max_queue_sizes = self._gen_queue_size_dict()
         for process_name, process_params in self.config["processes"].items():
             if not process_params:
                 continue
@@ -198,6 +205,7 @@ class RobotDispatcher:
         # FIXME: NOT WORKING because Manager.Queue() doesn't have a maxsize property.
         # Need to store the queue sizes in some dict
         return False
+        # TODO: FIX
 
         for p_name, process in self.processes.items():
             for q_name, queue in process["consume_queues"].items():
@@ -220,6 +228,27 @@ class RobotDispatcher:
 
         return is_overflow
 
+    def _gen_queue_size_dict(self) -> T.Dict[str, int]:
+        """
+        Generates a dictionary of {queue_name: max_size}
+        We have to do it because some queue types (especially Manager.Queue()) hide the max_size property
+        """
+        res = {}
+        queue_names = set()
+        for params in self.config["processes"].values():
+            if not params:
+                continue
+            # Getting consume queues is enough since we always check that all publish queues are consumed
+            queues = params.get("consume", [])
+            if type(queues) is list:
+                for q in queues:
+                    queue_names.add(q)
+            else:
+                queue_names.add(str(queues))
+        for queue_name in queue_names:
+            res[queue_name] = int(self.config.get("queues_sizes", {}).get(queue_name, self.DEFAULT_QUEUE_SIZE))
+        return res
+
     def run(self, shared_stop_run: T.Any = None) -> None:
         if platform.system() == "Darwin":
             self.log.warning("Checking of queue sizes on this system is not supported.")
@@ -232,7 +261,7 @@ class RobotDispatcher:
             time.sleep(2)
 
     def _run_process(self, proc_name: str, **kwargs) -> None:
-        process = Process(
+        process = self.mp_context.Process(
             target=utils.start_process,
             daemon=True,
             kwargs={

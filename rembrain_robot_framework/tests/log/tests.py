@@ -1,4 +1,6 @@
 import json
+import logging
+import multiprocessing
 import os
 import re
 import time
@@ -12,7 +14,7 @@ from envyaml import EnvYAML
 
 from rembrain_robot_framework import RobotDispatcher
 from rembrain_robot_framework.tests.log.processes import FailingProcess
-from rembrain_robot_framework.tests.log.websocket_server import WebsocketServer
+from rembrain_robot_framework.tests.log.websocket_server import start_ws_server
 
 
 def test_crashing_doesnt_create_another_logger() -> None:
@@ -56,24 +58,25 @@ def test_logging_to_websocket_works() -> None:
     Then mock out WEBSOCKET_GATE_URL so all logs get sent to this ws server
     Run the dispatcher and then get logged messages in the end
     """
+    ctx = multiprocessing.get_context("spawn")
 
     ws_port = "15735"
     test_message = "It's test message!"
-    close_flag = Value('b', False)
+    close_flag = ctx.Manager().Value('b', False)
 
     config = EnvYAML(os.path.join(os.path.dirname(__file__), "configs", "config2.yaml"))
     process_map = {"failing_process": FailingProcess}
     processes = {p: {"process_class": process_map[p]} for p in config["processes"]}
 
-    ws_server = WebsocketServer(ws_port, test_message)
-    p = Process(target=ws_server.start, args=(close_flag,))
+    p = ctx.Process(target=start_ws_server, args=(close_flag, ws_port, test_message))
     p.start()
-    time.sleep(2.0)
+    time.sleep(1.0)
 
     env_overrides = {
         "WEBSOCKET_GATE_URL": f"ws://127.0.0.1:{ws_port}",
         "ROBOT_NAME": "framework_test",
-        "ROBOT_PASSWORD": "framework_test",
+        "RRF_USERNAME": "framework_test",
+        "RRF_PASSWORD": "framework_test",
     }
 
     with mock.patch.dict("os.environ", env_overrides):
