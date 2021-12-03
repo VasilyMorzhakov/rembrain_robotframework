@@ -13,3 +13,4 @@ processes:
 
 shared_objects:
   hi_received: Value:int
+  hi_lock: Lock

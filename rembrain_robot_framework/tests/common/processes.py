@@ -24,7 +24,8 @@ class P2(RobotProcess):
         while time.time() - start_time < 2:
             record: str = self.consume()
             if record == self.to_expect:
-                self.shared.hi_received.value += 1
+                with self.shared.hi_lock:
+                    self.shared.hi_received.value += 1
                 self.log.info(f"{self.name} {record} received")
 
 
@@ -32,12 +33,14 @@ class P3(RobotProcess):
     def run(self) -> None:
         rec: str = self.consume("messages1")
         if rec == "hi":
-            self.shared.hi_received.value += 1
+            with self.shared.hi_lock:
+                self.shared.hi_received.value += 1
             self.log.info(self.name + " hi received")
 
         rec = self.consume("messages2")
         if rec == "hi":
-            self.shared.hi_received.value += 1
+            with self.shared.hi_lock:
+                self.shared.hi_received.value += 1
             self.log.info(self.name + " hi received")
 
 
