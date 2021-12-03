@@ -209,7 +209,10 @@ class RobotDispatcher:
         for p_name, process in self.processes.items():
             for q_name, queue in process["consume_queues"].items():
                 q_size: int = queue.qsize()
-                q_maxsize = self.get_queue_max_size(q_name)
+                if hasattr(queue, "_maxsize"):
+                    q_maxsize = queue._maxsize
+                else:
+                    q_maxsize = self.get_queue_max_size(q_name)
 
                 if q_maxsize - q_size <= int(q_maxsize * 0.1):
                     self.log.warning(f"Consume queue {q_name} of process {p_name} has reached {q_size} messages.")
@@ -218,7 +221,10 @@ class RobotDispatcher:
             for q_name, queues in process["publish_queues"].items():
                 for q in queues:
                     q_size: int = q.qsize()
-                    q_maxsize = self.get_queue_max_size(q_name)
+                    if hasattr(q, "_maxsize"):
+                        q_maxsize = q._maxsize
+                    else:
+                        q_maxsize = self.get_queue_max_size(q_name)
 
                     if q_maxsize - q_size <= int(q_maxsize * 0.1):
                         self.log.warning(f"Publish queue {q_name} of process {p_name} has reached {q_size} messages.")
@@ -232,7 +238,7 @@ class RobotDispatcher:
     def _gen_queue_size_dict(self) -> T.Dict[str, int]:
         """
         Generates a dictionary of {queue_name: max_size}
-        We have to do it because some queue types (especially Manager.Queue()) hide the max_size property
+        We have to do it because some queue types (especially Manager.Queue()) hide the maxsize property
         """
         res = {}
         queue_names = set()
