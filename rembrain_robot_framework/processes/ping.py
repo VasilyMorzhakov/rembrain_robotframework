@@ -1,3 +1,4 @@
+import json
 import os
 import subprocess
 import time
@@ -31,5 +32,6 @@ class PingProcess(RobotProcess):
                 "active": self.shared.processor_active.value,
                 "id": self.container_id
             }
-            self.publish(processor_info)
+            to_send = json.dumps(processor_info).encode("utf-8")
+            self.publish(to_send)
             time.sleep(1)
