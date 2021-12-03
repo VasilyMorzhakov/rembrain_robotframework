@@ -4,12 +4,19 @@ import platform
 import time
 import typing as T
 from logging.handlers import QueueHandler, QueueListener
-from multiprocessing import Process, Queue, Manager
+from multiprocessing.managers import AutoProxy
 
 from rembrain_robot_framework import utils
 from rembrain_robot_framework.logger.utils import setup_logging
 from rembrain_robot_framework.services.watcher import Watcher
+from multiprocessing import Queue, Process, Manager
 
+"""
+WARNING FOR MAINTAINERS:
+    This class uses its own multiprocessing context.
+    Do NOT use basic multiprocessing.Queue for mp instances
+    Instead use either self.mp_context.Queue, or self.manager.Queue (depending on which one you need)
+"""
 
 class RobotDispatcher:
     DEFAULT_QUEUE_SIZE = 50
@@ -54,7 +61,7 @@ class RobotDispatcher:
                 "shared_objects": {},
             }
 
-        self.log_queue: T.Optional[Queue] = None
+        self.log_queue: T.Optional[AutoProxy[Queue]] = None
         self._log_listener: T.Optional[QueueListener] = None
         self.log: T.Optional[logging.Logger] = None
         self.run_logging(project_description, in_cluster)
@@ -130,7 +137,8 @@ class RobotDispatcher:
             }
 
         # system processes queues(dict): process_name (key) => personal process queue (value)
-        self.system_queues = {p: Queue(maxsize=self.DEFAULT_QUEUE_SIZE) for p in self.processes}
+        self.system_queues = {
+            p: self.manager.Queue(maxsize=self.DEFAULT_QUEUE_SIZE) for p in self.processes}
 
         # for heartbeat
         self.watcher = Watcher(self.in_cluster)
@@ -276,7 +284,7 @@ class RobotDispatcher:
 
     def run_logging(self, project_description: dict, in_cluster: bool) -> None:
         # Set up logging
-        self.log_queue, self._log_listener = setup_logging(project_description, in_cluster)
+        self.log_queue, self._log_listener = setup_logging(project_description, in_cluster, self.manager)
         self._log_listener.start()
 
         self.log = logging.getLogger("RobotDispatcher")

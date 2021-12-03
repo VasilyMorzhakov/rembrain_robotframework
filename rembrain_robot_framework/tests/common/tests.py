@@ -130,7 +130,8 @@ def test_empty_config(robot_dispatcher_class_fx: tuple):
     with pytest.raises(Exception) as exc_info:
         class_(config, {})
 
-    assert "'Config' params  are incorrect. Please, check config file." in str(exc_info.value)
+    print(str(exc_info.value))
+    assert "'Config' params are incorrect. Please, check config file." in str(exc_info.value)
 
 
 @pytest.mark.parametrize(

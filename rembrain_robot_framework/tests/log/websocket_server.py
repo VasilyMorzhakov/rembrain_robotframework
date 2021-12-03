@@ -29,7 +29,7 @@ class WebsocketServer:
         async with websockets.serve(self.handle_msg, "localhost", self.ws_port):
             while True:
                 if self.close_flag.value:
-                    print("Closing")
+                    print("Stopping websocket server")
                     return
                 await asyncio.sleep(0.2)
 
