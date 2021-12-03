@@ -6,7 +6,8 @@ from pytest_mock import MockerFixture
 
 from rembrain_robot_framework.pack import PackType
 from rembrain_robot_framework.processes import VideoPacker, VideoUnpacker
-from rembrain_robot_framework.tests.utils import Image
+from rembrain_robot_framework.services.watcher import Watcher
+from rembrain_robot_framework.tests.models import Image
 
 
 @pytest.fixture()
@@ -14,15 +15,33 @@ def img_data_fx():
     return Image.get_data()
 
 
-def test_correct_video_packer(mocker: MockerFixture, img_data_fx: Image) -> None:
-    vp = VideoPacker(
+@pytest.fixture()
+def packer_fx(img_data_fx, request):
+    return VideoPacker(
         name="video_packer",
         shared_objects={"camera": img_data_fx.camera},
         consume_queues={},
         publish_queues={},
-        pack_type=PackType.JPG_PNG
+        system_queues={},
+        watcher=Watcher(False),
+        pack_type=request.param,
     )
 
+
+@pytest.fixture()
+def unpacker_fx(img_data_fx):
+    return VideoUnpacker(
+        name="video_unpacker",
+        shared_objects={"camera": img_data_fx.camera},
+        consume_queues={},
+        publish_queues={},
+        system_queues={},
+        watcher=Watcher(False)
+    )
+
+
+@pytest.mark.parametrize('packer_fx', (PackType.JPG_PNG,), indirect=True)
+def test_correct_video_packer(mocker: MockerFixture, img_data_fx: Image, packer_fx) -> None:
     mock_result = None
     loop_reset_exception = 'AssertionError for reset loop!'
 
@@ -31,25 +50,18 @@ def test_correct_video_packer(mocker: MockerFixture, img_data_fx: Image) -> None
         mock_result = message
         raise AssertionError(loop_reset_exception)
 
-    mocker.patch.object(vp, 'consume', return_value=(img_data_fx.rgb, img_data_fx.depth))
-    mocker.patch.object(vp, 'publish', publish)
+    mocker.patch.object(packer_fx, 'consume', return_value=(img_data_fx.rgb, img_data_fx.depth))
+    mocker.patch.object(packer_fx, 'publish', publish)
     with pytest.raises(AssertionError) as exc_info:
-        vp.run()
+        packer_fx.run()
 
     assert loop_reset_exception in str(exc_info.value)
     assert isinstance(mock_result, bytes)
     assert len(mock_result) > 100
 
 
-def test_correct_full_pack_jpg(mocker: MockerFixture, img_data_fx: Image) -> None:
-    vp = VideoPacker(
-        name="video_packer",
-        shared_objects={"camera": img_data_fx.camera},
-        consume_queues={},
-        publish_queues={},
-        pack_type=PackType.JPG
-    )
-
+@pytest.mark.parametrize('packer_fx', (PackType.JPG,), indirect=True)
+def test_correct_full_pack_jpg(mocker: MockerFixture, img_data_fx: Image, packer_fx, unpacker_fx) -> None:
     test_packer_result = None
 
     def publish(message, *args, **kwargs):
@@ -57,19 +69,12 @@ def test_correct_full_pack_jpg(mocker: MockerFixture, img_data_fx: Image) -> Non
         test_packer_result = message
         raise AssertionError
 
-    mocker.patch.object(vp, 'consume', return_value=(img_data_fx.rgb, img_data_fx.depth))
-    mocker.patch.object(vp, 'publish', publish)
+    mocker.patch.object(packer_fx, 'consume', return_value=(img_data_fx.rgb, img_data_fx.depth))
+    mocker.patch.object(packer_fx, 'publish', publish)
     try:
-        vp.run()
+        packer_fx.run()
     except AssertionError:
         pass
-
-    vp = VideoUnpacker(
-        name="video_unpacker",
-        shared_objects={"camera": img_data_fx.camera},
-        consume_queues={},
-        publish_queues={},
-    )
 
     test_unpacker_result = None
     loop_reset_exception = 'BaseException for reset loop!'
@@ -80,10 +85,10 @@ def test_correct_full_pack_jpg(mocker: MockerFixture, img_data_fx: Image) -> Non
         # it uses so type of exception because 'VideoUnpacker.run()' absorbs 'Exception'!
         raise BaseException(loop_reset_exception)
 
-    mocker.patch.object(vp, 'consume', return_value=test_packer_result)
-    mocker.patch.object(vp, 'publish', publish)
+    mocker.patch.object(unpacker_fx, 'consume', return_value=test_packer_result)
+    mocker.patch.object(unpacker_fx, 'publish', publish)
     with pytest.raises(BaseException) as exc_info:
-        vp.run()
+        unpacker_fx.run()
 
     assert loop_reset_exception in str(exc_info.value)
     assert isinstance(test_unpacker_result, tuple)
@@ -93,15 +98,8 @@ def test_correct_full_pack_jpg(mocker: MockerFixture, img_data_fx: Image) -> Non
     assert 'time' in json.loads(test_unpacker_result[2])
 
 
-def test_correct_full_pack_png(mocker: MockerFixture, img_data_fx: Image) -> None:
-    vp = VideoPacker(
-        name="video_packer",
-        shared_objects={"camera": img_data_fx.camera},
-        consume_queues={},
-        publish_queues={},
-        pack_type=PackType.JPG_PNG
-    )
-
+@pytest.mark.parametrize('packer_fx', (PackType.JPG_PNG,), indirect=True)
+def test_correct_full_pack_png(mocker: MockerFixture, img_data_fx: Image, packer_fx, unpacker_fx) -> None:
     test_packer_result = None
 
     def publish(message, *args, **kwargs):
@@ -109,19 +107,12 @@ def test_correct_full_pack_png(mocker: MockerFixture, img_data_fx: Image) -> Non
         test_packer_result = message
         raise AssertionError
 
-    mocker.patch.object(vp, 'consume', return_value=(img_data_fx.rgb, img_data_fx.depth))
-    mocker.patch.object(vp, 'publish', publish)
+    mocker.patch.object(packer_fx, 'consume', return_value=(img_data_fx.rgb, img_data_fx.depth))
+    mocker.patch.object(packer_fx, 'publish', publish)
     try:
-        vp.run()
+        packer_fx.run()
     except AssertionError:
         pass
-
-    vp = VideoUnpacker(
-        name="video_unpacker",
-        shared_objects={"camera": img_data_fx.camera},
-        consume_queues={},
-        publish_queues={},
-    )
 
     test_unpacker_result = None
     loop_reset_exception = 'AssertionError for reset loop!'
@@ -131,10 +122,10 @@ def test_correct_full_pack_png(mocker: MockerFixture, img_data_fx: Image) -> Non
         test_unpacker_result = message
         raise BaseException(loop_reset_exception)
 
-    mocker.patch.object(vp, 'consume', return_value=test_packer_result)
-    mocker.patch.object(vp, 'publish', publish)
+    mocker.patch.object(unpacker_fx, 'consume', return_value=test_packer_result)
+    mocker.patch.object(unpacker_fx, 'publish', publish)
     with pytest.raises(BaseException) as exc_info:
-        vp.run()
+        unpacker_fx.run()
 
     assert loop_reset_exception in str(exc_info.value)
     assert isinstance(test_unpacker_result, tuple)

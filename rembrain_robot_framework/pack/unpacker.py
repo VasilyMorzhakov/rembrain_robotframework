@@ -19,8 +19,8 @@ class Unpacker:
             raise Exception("Packer type was changed on fly.")
 
         if self.pack_type == PackType.JPG:
-            l1: tuple = struct.unpack("I", buffer[0 + 1: 4 + 1])[0]
-            l2: tuple = struct.unpack("I", buffer[4 + 1: 8 + 1])[0]
+            l1: int = struct.unpack("I", buffer[0 + 1: 4 + 1])[0]
+            l2: int = struct.unpack("I", buffer[4 + 1: 8 + 1])[0]
 
             if len(buffer) == l1 + l2 + 8 + 1:
                 buf1 = buffer[8 + 1: 8 + 1 + l1]

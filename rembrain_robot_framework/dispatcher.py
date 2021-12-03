@@ -8,6 +8,7 @@ from multiprocessing import Process, Queue, Manager
 
 from rembrain_robot_framework import utils
 from rembrain_robot_framework.logger.utils import setup_logging
+from rembrain_robot_framework.services.watcher import Watcher
 
 
 class RobotDispatcher:
@@ -20,11 +21,14 @@ class RobotDispatcher:
             project_description: T.Optional[dict] = None,
             in_cluster: bool = True,
     ):
-
         self.shared_objects = {}
         self.process_pool: T.Dict[str, Process] = {}
         self.in_cluster: bool = in_cluster
-        self.project_description = {} if project_description is None else project_description
+
+        if config and config.get("description"):
+            self.project_description = config["description"]
+        else:
+            self.project_description = {} if project_description is None else project_description
 
         # It is important that we create our own separate context.
         # fork() can easily wreck stability,
@@ -41,6 +45,7 @@ class RobotDispatcher:
             if "publish_queues" not in p:
                 p["publish_queues"] = {}
 
+        # todo think about hard typing  for field in "config"
         self.config = config
         if self.config is None:
             self.config = {
@@ -50,11 +55,14 @@ class RobotDispatcher:
             }
 
         self.log_queue: T.Optional[Queue] = None
-        self.log_listener: T.Optional[QueueListener] = None
+        self._log_listener: T.Optional[QueueListener] = None
         self.log: T.Optional[logging.Logger] = None
-        self.set_logging(project_description, in_cluster)
+        self.run_logging(project_description, in_cluster)
 
         self.log.info("RobotHost is configuring processes.")
+
+        if "processes" not in self.config or not isinstance(self.config["processes"], dict):
+            raise Exception("'Config' params are incorrect. Please, check config file.")
 
         # compare processes and config
         if len(self.processes) != len(self.config["processes"]):
@@ -116,25 +124,16 @@ class RobotDispatcher:
                         self.processes[process_]["publish_queues"][queue_name] = [queue]
 
         # shared objects
-        if 'shared_objects' in self.config.keys():
+        if "shared_objects" in self.config and self.config["shared_objects"]:
             self.shared_objects = {
                 name: utils.generate(obj, self.manager) for name, obj in self.config["shared_objects"].items()
             }
 
-    def set_logging(self, project_description: dict, in_cluster: bool) -> None:
-        # Set up logging
-        self.log_queue, self.log_listener = setup_logging(project_description, in_cluster, self.manager)
-        self.log_listener.start()
+        # system processes queues(dict): process_name (key) => personal process queue (value)
+        self.system_queues = {p: Queue(maxsize=self.DEFAULT_QUEUE_SIZE) for p in self.processes}
 
-        self.log = logging.getLogger("RobotDispatcher")
-
-        # Clear any handlers that have already existed
-        self.log.handlers.clear()
-        self.log.setLevel(logging.INFO)
-        self.log.addHandler(QueueHandler(self.log_queue))
-
-        # Don't propagate to root logger
-        self.log.propagate = False
+        # for heartbeat
+        self.watcher = Watcher(self.in_cluster)
 
     def start_processes(self) -> None:
         for process_name in self.processes.keys():
@@ -266,9 +265,29 @@ class RobotDispatcher:
                 "shared_objects": self.shared_objects,
                 "project_description": self.project_description,
                 "logging_queue": self.log_queue,
+                "system_queues": self.system_queues,
+                "watcher": self.watcher,
                 **self.processes[proc_name],
                 **kwargs,
             }
         )
         process.start()
         self.process_pool[proc_name] = process
+
+    def run_logging(self, project_description: dict, in_cluster: bool) -> None:
+        # Set up logging
+        self.log_queue, self._log_listener = setup_logging(project_description, in_cluster)
+        self._log_listener.start()
+
+        self.log = logging.getLogger("RobotDispatcher")
+
+        # Clear any handlers that have already existed
+        self.log.handlers.clear()
+        self.log.setLevel(logging.INFO)
+        self.log.addHandler(QueueHandler(self.log_queue))
+
+        # Don't propagate to root logger
+        self.log.propagate = False
+
+    def stop_logging(self):
+        self._log_listener.stop()

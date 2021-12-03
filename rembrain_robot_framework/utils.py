@@ -27,6 +27,7 @@ def generate(name: str, manager: Manager) -> T.Any:
     if name == 'Value:float':
         return manager.Value(c_float, 0.0)
 
+    # todo perhaps it does not work
     if name == 'Value:string':
         return manager.Value(c_char_p, '')
 

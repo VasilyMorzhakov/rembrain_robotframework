@@ -38,7 +38,7 @@ This way the processes communicate via the Rembrain message broker using websock
 This allows the processor to be run on an external machine 
 that is able to process more computationally intensive workloads.
 
-You have to specify `ROBOT_NAME` and `ROBOT_PASSWORD` variables as well as `WEBSOCKET_GATE_URL` 
+You have to specify `ROBOT_NAME`, `RRF_USERNAME` and `RRF_PASSWORD` variables as well as `WEBSOCKET_GATE_URL` 
 (rembrain's ws broker url is supplied by default) in order for the two programs to communicate.
 
 #### Running the external example
@@ -46,7 +46,7 @@ To run this example first start the processor, which will start running in your 
 and then start the robot process in another shell
 
 ```shell
-ROBOT_NAME=test ROBOT_PASSWORD=test python3 examples/external/run_processor.py
+ROBOT_NAME=test RRF_USERNAME=test RRF_PASSWORD python3 examples/external/run_processor.py
 # in another shell (the robot name/password should be the same)
-ROBOT_NAME=test ROBOT_PASSWORD=test python3 examples/external/run_robot.py
+ROBOT_NAME=test RRF_USERNAME=test RRF_PASSWORD python3 examples/external/run_robot.py
 ```

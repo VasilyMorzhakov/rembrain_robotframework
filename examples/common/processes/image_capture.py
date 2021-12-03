@@ -12,7 +12,7 @@ class ImageCapture(RobotProcess):
     def __init__(self, *args, **kwargs):
         super(ImageCapture, self).__init__(*args, **kwargs)
 
-        image_path = os.path.join(os.path.dirname(__file__), "..", "res", "dog.jpg")
+        image_path = os.path.join(os.path.dirname(__file__), "..", "static", "dog.jpg")
         self.image = cv2.imread(image_path)
         self.image = cv2.cvtColor(self.image, cv2.COLOR_BGR2RGB)
         self.frame_number = 0

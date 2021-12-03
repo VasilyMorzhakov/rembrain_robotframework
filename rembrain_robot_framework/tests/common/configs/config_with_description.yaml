@@ -1,0 +1,12 @@
+processes:
+  p1:
+    eternal_loop: False
+
+queues_sizes:
+
+shared_objects:
+
+description:
+  project: test_project
+  subsystem: test_subsystem
+  robot: ${ROBOT_NAME}

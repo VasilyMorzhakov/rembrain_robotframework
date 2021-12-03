@@ -2,6 +2,11 @@ import logging
 import typing as T
 from collections import namedtuple
 from multiprocessing import Queue
+from threading import Thread
+from uuid import uuid4
+
+from rembrain_robot_framework.models.personal_message import PersonalMessage
+from rembrain_robot_framework.services.watcher import Watcher
 
 from rembrain_robot_framework.util.stack_monitor import StackMonitor
 
@@ -13,6 +18,8 @@ class RobotProcess:
             shared_objects: dict,
             consume_queues: T.Dict[str, Queue],
             publish_queues: T.Dict[str, T.List[Queue]],
+            system_queues: T.Dict[str, Queue],
+            watcher: Watcher,
             *args,
             **kwargs
     ):
@@ -22,11 +29,16 @@ class RobotProcess:
         self._publish_queues: T.Dict[str, T.List[Queue]] = publish_queues  # queues for writing
 
         self._shared: T.Any = namedtuple('_', shared_objects.keys())(**shared_objects)
+
+        self._system_queues: T.Dict[str, Queue] = system_queues
+        self._received_personal_messages = {}
+
         self.queues_to_clear: T.List[str] = []  # in case of exception this queues are cleared
         self.log = logging.getLogger(f"{self.__class__.__name__} ({self.name})")
         self._stack_monitor: T.Optional[StackMonitor] = None
         if "monitoring" in kwargs and kwargs['monitoring']:
             self._init_monitoring(self.name)
+        self.watcher = watcher
 
     def run(self) -> None:
         raise NotImplementedError()
@@ -74,7 +86,8 @@ class RobotProcess:
                 while not q.empty():
                     q.get(timeout=2.0)
 
-    def publish(self, message: T.Any, queue_name: T.Optional[str] = None, clear_on_overflow: bool = False) -> None:
+    def publish(self, message: T.Any, queue_name: T.Optional[str] = None, clear_on_overflow: bool = False,
+                is_personal: bool = False) -> T.Optional[str]:
         if len(self._publish_queues.keys()) == 0:
             self.log.error(f"Process \"{self.name}\" has no queues to write to.")
             return
@@ -86,6 +99,11 @@ class RobotProcess:
 
             queue_name = list(self._publish_queues.keys())[0]
 
+        personal_id: T.Optional[str] = None
+        if is_personal:
+            personal_id = str(uuid4())
+            message = PersonalMessage(id=personal_id, client_process=self.name, data=message)
+
         for q in self._publish_queues[queue_name]:
             if clear_on_overflow:
                 while q.full():
@@ -93,13 +111,17 @@ class RobotProcess:
 
             q.put(message)
 
+        return personal_id
+
     def consume(self, queue_name: T.Optional[str] = None, clear_all_messages: bool = False) -> T.Any:
         if len(self._consume_queues.keys()) == 0:
+            # todo maybe there should be exception here?
             self.log.error(f"Process \"{self.name}\" has no queues to read from.")
             return
 
         if queue_name is None:
             if len(self._consume_queues.keys()) != 1:
+                # todo maybe there should be exception here?
                 self.log.error(f"Process \"{self.name}\" has more than one read queue. Specify a read queue name.")
                 return
 
@@ -169,3 +191,28 @@ class RobotProcess:
         self._stack_monitor = StackMonitor(name)
         self._stack_monitor.start_monitoring()
 
+
+    def publish_to_system_queue(self, personal_id: str, client_process: str, data: T.Any) -> None:
+        self._system_queues[client_process].put(
+            PersonalMessage(id=personal_id, client_process=client_process, data=data)
+        )
+
+    def consume_from_system_queue(self, personal_id: str) -> T.Any:
+        if personal_id in self._received_personal_messages:
+            message: PersonalMessage = self._received_personal_messages[personal_id]
+            del self._received_personal_messages[personal_id]
+            return message.data
+
+        while True:
+            # todo exception or logging?
+            if len(self._received_personal_messages) > 50:
+                raise Exception(f"Overflow of personal messages for '{self.name}'!")
+
+            message: PersonalMessage = self._system_queues[self.name].get()
+            if message.id == personal_id:
+                return message.data
+            else:
+                self._received_personal_messages[message.id] = message.data
+
+    def heartbeat(self, message: str):
+        Thread(target=self.watcher.notify, daemon=True, args=(message,)).start()

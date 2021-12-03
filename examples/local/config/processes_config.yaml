@@ -1,6 +1,6 @@
 processes:
   gui:
-    title: "Rembrain robotframework example (Local)"
+    title: "Rembrain Robot Framework Example (Local)"
     keep_alive: false
     consume:
       - image_orig
@@ -19,3 +19,8 @@ processes:
 
 shared_objects:
   exit_flag: "Value:bool"
+
+description:
+  project: rembrain_robotframework_examples
+  subsystem: local_example
+  robot: local_example_robot
