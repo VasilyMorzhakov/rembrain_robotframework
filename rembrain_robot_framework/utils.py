@@ -8,6 +8,7 @@ from multiprocessing import Value, Lock, Manager
 
 
 def generate(name: str, manager: Manager) -> T.Any:
+    # Important: Since we are using a separate context for the RobotProcesses, always instantiate from manager
     if name == 'dict':
         return manager.dict()
 
@@ -15,20 +16,20 @@ def generate(name: str, manager: Manager) -> T.Any:
         return manager.list()
 
     if name == 'Lock':
-        return Lock()
+        return manager.Lock()
 
     if name == 'Value:bool':
-        return Value(c_bool, False)
+        return manager.Value(c_bool, False)
 
     if name == 'Value:int':
-        return Value(c_int, 0)
+        return manager.Value(c_int, 0)
 
     if name == 'Value:float':
-        return Value(c_float, 0.0)
+        return manager.Value(c_float, 0.0)
 
     # todo perhaps it does not work
     if name == 'Value:string':
-        return Value(c_char_p, '')
+        return manager.Value(c_char_p, '')
 
     raise Exception('Wrong type to generate')
 

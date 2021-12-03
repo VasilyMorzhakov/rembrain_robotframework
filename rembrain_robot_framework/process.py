@@ -8,6 +8,8 @@ from uuid import uuid4
 from rembrain_robot_framework.models.personal_message import PersonalMessage
 from rembrain_robot_framework.services.watcher import Watcher
 
+from rembrain_robot_framework.util.stack_monitor import StackMonitor
+
 
 class RobotProcess:
     def __init__(
@@ -33,7 +35,10 @@ class RobotProcess:
 
         self.queues_to_clear: T.List[str] = []  # in case of exception this queues are cleared
         self.log = logging.getLogger(f"{self.__class__.__name__} ({self.name})")
-        self.watcher: Watcher = watcher
+        self._stack_monitor: T.Optional[StackMonitor] = None
+        if "monitoring" in kwargs and kwargs['monitoring']:
+            self._init_monitoring(self.name)
+        self.watcher = watcher
 
     def run(self) -> None:
         raise NotImplementedError()
@@ -55,6 +60,8 @@ class RobotProcess:
         """
         It frees all occupied resources.
         """
+        if self._stack_monitor:
+            self._stack_monitor.stop_monitoring()
         self.close_objects()
         self.clear_queues()
 
@@ -175,6 +182,15 @@ class RobotProcess:
             consume_queue_name = list(self._consume_queues.keys())[0]
 
         return self._consume_queues[consume_queue_name].empty()
+
+    def _init_monitoring(self, name):
+        """
+        Initializes stack monitoring
+        This feature will sample the stacks of all threads in the process for a period, then log them out
+        """
+        self._stack_monitor = StackMonitor(name)
+        self._stack_monitor.start_monitoring()
+
 
     def publish_to_system_queue(self, personal_id: str, client_process: str, data: T.Any) -> None:
         self._system_queues[client_process].put(

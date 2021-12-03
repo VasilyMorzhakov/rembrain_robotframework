@@ -5,6 +5,7 @@ python-json-logger
 python-logging-rabbitmq
 envyaml
 websocket-client
+websockets
 pydantic
 wheel
 stopit

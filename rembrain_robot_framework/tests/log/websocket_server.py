@@ -2,47 +2,38 @@ import asyncio
 import json
 import typing as T
 from multiprocessing import Value
-from threading import Thread
 
 import websockets
 
 
 class WebsocketServer:
-    def __init__(self, ws_port: str, test_message):
-        self.test_message: str = test_message
-        self.ws_port: str = ws_port
+    def __init__(self, ws_port: int, dump_message: str, close_flag: Value):
+        self.dump_message = dump_message
+        self.ws_port = ws_port
 
-        self.exec_thread: T.Optional[Thread] = None
-        self.close_flag: T.Optional[Value] = None
+        self.close_flag: Value = close_flag
         self.messages: T.List[T.Any] = []
 
     async def handle_msg(self, websocket: websockets.WebSocketServerProtocol, path: str) -> None:
         async for message in websocket:
             if type(message) is bytes:
                 message = message.decode("utf-8")
-            if message == self.test_message:
+            if message == self.dump_message:
                 await websocket.send(json.dumps(self.messages))
             else:
                 self.messages.append(json.loads(message))
                 await websocket.send(message)
 
     async def run(self) -> None:
-        print("Starting websocket server")
-        async with websockets.serve(self.handle_msg, "127.0.0.1", self.ws_port):
-            await asyncio.Future()
+        print(f"Starting websocket server on port {self.ws_port}")
+        async with websockets.serve(self.handle_msg, "localhost", self.ws_port):
+            while True:
+                if self.close_flag.value:
+                    print("Stopping websocket server")
+                    return
+                await asyncio.sleep(0.2)
 
-    async def check_close(self) -> None:
-        while True:
-            if self.close_flag.value:
-                break
 
-            await asyncio.sleep(1.0)
-
-    def start(self, close_flag: Value) -> None:
-        loop = asyncio.new_event_loop()
-        self.close_flag = close_flag
-
-        check_task = loop.create_task(self.check_close())
-        # do not remove the task assignment or it gets dropped
-        server_task = loop.create_task(self.run())
-        loop.run_until_complete(check_task)
+def start_ws_server(close_flag: Value, ws_port: int, dump_message: str) -> None:
+    server = WebsocketServer(ws_port, dump_message, close_flag)
+    asyncio.run(server.run())

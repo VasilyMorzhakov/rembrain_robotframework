@@ -1,14 +1,22 @@
 import logging
+import multiprocessing
 import platform
 import time
 import typing as T
 from logging.handlers import QueueHandler, QueueListener
-from multiprocessing import Process, Queue, Manager
+from multiprocessing.managers import AutoProxy
 
 from rembrain_robot_framework import utils
 from rembrain_robot_framework.logger.utils import setup_logging
 from rembrain_robot_framework.services.watcher import Watcher
+from multiprocessing import Queue, Process, Manager
 
+"""
+WARNING FOR MAINTAINERS:
+    This class uses its own multiprocessing context.
+    Do NOT use basic multiprocessing.Queue for mp instances
+    Instead use either self.mp_context.Queue, or self.manager.Queue (depending on which one you need)
+"""
 
 class RobotDispatcher:
     DEFAULT_QUEUE_SIZE = 50
@@ -21,7 +29,7 @@ class RobotDispatcher:
             in_cluster: bool = True,
     ):
         self.shared_objects = {}
-        self.process_pool = {}
+        self.process_pool: T.Dict[str, Process] = {}
         self.in_cluster: bool = in_cluster
 
         if config and config.get("description"):
@@ -29,7 +37,13 @@ class RobotDispatcher:
         else:
             self.project_description = {} if project_description is None else project_description
 
-        self.manager = Manager()
+        # It is important that we create our own separate context.
+        # fork() can easily wreck stability,
+        # since we don't know whether the dispatcher will be created after some threads already started.
+        # So to protect the user from deadlocking their processes, all processes are spawned in a separate context
+        self.mp_context = multiprocessing.get_context("spawn")
+        self.manager = self.mp_context.Manager()
+
         self.processes = {} if processes is None else processes
         for name, p in self.processes.items():
             if "consume_queues" not in p:
@@ -47,7 +61,7 @@ class RobotDispatcher:
                 "shared_objects": {},
             }
 
-        self.log_queue: T.Optional[Queue] = None
+        self.log_queue: T.Optional[AutoProxy[Queue]] = None
         self._log_listener: T.Optional[QueueListener] = None
         self.log: T.Optional[logging.Logger] = None
         self.run_logging(project_description, in_cluster)
@@ -55,7 +69,7 @@ class RobotDispatcher:
         self.log.info("RobotHost is configuring processes.")
 
         if "processes" not in self.config or not isinstance(self.config["processes"], dict):
-            raise Exception("'Config' params  are incorrect. Please, check config file.")
+            raise Exception("'Config' params are incorrect. Please, check config file.")
 
         # compare processes and config
         if len(self.processes) != len(self.config["processes"]):
@@ -68,6 +82,7 @@ class RobotDispatcher:
         # create queues
         consume_queues = {}  # consume from queues
         publish_queues = {}  # publish to queues
+        self._max_queue_sizes = self._gen_queue_size_dict()
         for process_name, process_params in self.config["processes"].items():
             if not process_params:
                 continue
@@ -103,7 +118,7 @@ class RobotDispatcher:
                     self.config.get("queues_sizes", {}).get(queue_name, self.DEFAULT_QUEUE_SIZE)
                 )
 
-                queue = Queue(maxsize=queue_size)
+                queue = self.manager.Queue(maxsize=queue_size)
                 self.processes[process]["consume_queues"][queue_name] = queue
 
                 if queue_name not in publish_queues:
@@ -122,7 +137,8 @@ class RobotDispatcher:
             }
 
         # system processes queues(dict): process_name (key) => personal process queue (value)
-        self.system_queues = {p: Queue(maxsize=self.DEFAULT_QUEUE_SIZE) for p in self.processes}
+        self.system_queues = {
+            p: self.manager.Queue(maxsize=self.DEFAULT_QUEUE_SIZE) for p in self.processes}
 
         # for heartbeat
         self.watcher = Watcher(self.in_cluster)
@@ -130,6 +146,8 @@ class RobotDispatcher:
     def start_processes(self) -> None:
         for process_name in self.processes.keys():
             self._run_process(process_name)
+            proc = self.process_pool[process_name]
+            self.log.info(f"Process {process_name} on PID {proc.pid} started")
 
     def add_process(
             self,
@@ -190,16 +208,18 @@ class RobotDispatcher:
         for p_name, process in self.processes.items():
             for q_name, queue in process["consume_queues"].items():
                 q_size: int = queue.qsize()
+                q_maxsize = self.get_queue_max_size(q_name)
 
-                if queue._maxsize - q_size <= int(queue._maxsize * 0.1):
+                if q_maxsize - q_size <= int(q_maxsize * 0.1):
                     self.log.warning(f"Consume queue {q_name} of process {p_name} has reached {q_size} messages.")
                     is_overflow = True
 
             for q_name, queues in process["publish_queues"].items():
                 for q in queues:
                     q_size: int = q.qsize()
+                    q_maxsize = self.get_queue_max_size(q_name)
 
-                    if q._maxsize - q_size <= int(q._maxsize * 0.1):
+                    if q_maxsize - q_size <= int(q_maxsize * 0.1):
                         self.log.warning(f"Publish queue {q_name} of process {p_name} has reached {q_size} messages.")
                         is_overflow = True
 
@@ -207,6 +227,30 @@ class RobotDispatcher:
             time.sleep(5)
 
         return is_overflow
+
+    def _gen_queue_size_dict(self) -> T.Dict[str, int]:
+        """
+        Generates a dictionary of {queue_name: max_size}
+        We have to do it because some queue types (especially Manager.Queue()) hide the max_size property
+        """
+        res = {}
+        queue_names = set()
+        for params in self.config["processes"].values():
+            if not params:
+                continue
+            # Getting consume queues is enough since we always check that all publish queues are consumed
+            queues = params.get("consume", [])
+            if type(queues) is list:
+                for q in queues:
+                    queue_names.add(q)
+            else:
+                queue_names.add(str(queues))
+        for queue_name in queue_names:
+            res[queue_name] = int(self.config.get("queues_sizes", {}).get(queue_name, self.DEFAULT_QUEUE_SIZE))
+        return res
+
+    def get_queue_max_size(self, queue_name: str) -> int:
+        return self._max_queue_sizes.get(queue_name, self.DEFAULT_QUEUE_SIZE)
 
     def run(self, shared_stop_run: T.Any = None) -> None:
         if platform.system() == "Darwin":
@@ -220,8 +264,7 @@ class RobotDispatcher:
             time.sleep(2)
 
     def _run_process(self, proc_name: str, **kwargs) -> None:
-        # todo why log_queue passes to processes?
-        process = Process(
+        process = self.mp_context.Process(
             target=utils.start_process,
             daemon=True,
             kwargs={
@@ -239,11 +282,9 @@ class RobotDispatcher:
         process.start()
         self.process_pool[proc_name] = process
 
-    # todo replace all logging logic in partial class
     def run_logging(self, project_description: dict, in_cluster: bool) -> None:
         # Set up logging
-        # todo why log_queue passes to processes?
-        self.log_queue, self._log_listener = setup_logging(project_description, in_cluster)
+        self.log_queue, self._log_listener = setup_logging(project_description, in_cluster, self.manager)
         self._log_listener.start()
 
         self.log = logging.getLogger("RobotDispatcher")

@@ -25,7 +25,8 @@ class P1(RobotProcess):
             self.shared.started.value = True
 
         self.shared.finished.value = True
-        self.shared.finished_correctly.value += 1
+        with self.shared.finished_lock:
+            self.shared.finished_correctly.value += 1
 
 
 class P2(RobotProcess):
@@ -49,7 +50,8 @@ class P2(RobotProcess):
             assert (self.shared.state["status"].startswith("ok"))
             assert (self.shared.state["img"].shape == (24, 32, 3))
 
-        self.shared.finished_correctly.value += 1
+        with self.shared.finished_lock:
+            self.shared.finished_correctly.value += 1
 
 
 def test_shared_objects_save_type() -> None:

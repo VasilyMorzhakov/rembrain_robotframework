@@ -16,3 +16,4 @@ shared_objects:
   started: Value:bool
   state: dict
   finished_correctly: Value:int
+  finished_lock: Lock
