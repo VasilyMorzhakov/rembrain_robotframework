@@ -290,6 +290,7 @@ class RobotDispatcher:
         process.start()
         self.process_pool[proc_name] = process
 
+    # todo replace all logging logic in partial class
     def run_logging(self, project_description: dict, in_cluster: bool) -> None:
         # Set up logging
         self.log_queue, self._log_listener = setup_logging(project_description, self.mp_context, in_cluster)

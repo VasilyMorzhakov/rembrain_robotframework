@@ -124,13 +124,14 @@ def test_check_is_empty(default_proc_params_fx: dict) -> None:
 
     assert 'Process "rp" has no queues to read.' in str(exc_info.value)
 
-    q = Queue(maxsize=2)
-    r._consume_queues = {"message1": Queue(maxsize=2), "message2": q}
+    r._consume_queues = {"message1": Queue(maxsize=2), "message2": Queue(maxsize=2)}
     with pytest.raises(Exception) as exc_info:
         r.is_empty()
 
     assert "Process 'rp' has more than one read queue. Specify a consume queue name." in str(exc_info.value)
 
+    q = Queue(maxsize=2)
     q.put("q")
+    r._consume_queues = {"message1": Queue(maxsize=2), "message2": q}
     assert r.is_empty("message1")
     assert not r.is_empty("message2")
