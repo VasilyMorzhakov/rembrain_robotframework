@@ -35,9 +35,11 @@ class RobotProcess:
 
         self.queues_to_clear: T.List[str] = []  # in case of exception this queues are cleared
         self.log = logging.getLogger(f"{self.__class__.__name__} ({self.name})")
+
         self._stack_monitor: T.Optional[StackMonitor] = None
         if "monitoring" in kwargs and kwargs['monitoring']:
             self._init_monitoring(self.name)
+
         self.watcher = watcher
 
     def run(self) -> None:
@@ -62,9 +64,11 @@ class RobotProcess:
         """
         if self._stack_monitor:
             self._stack_monitor.stop_monitoring()
+
         self.close_objects()
         self.clear_queues()
 
+    # todo it's ridiculous - free_resources may be called with super()
     def close_objects(self) -> None:
         """It can be overridden in process implementation."""
         pass
@@ -89,7 +93,7 @@ class RobotProcess:
     def publish(self, message: T.Any, queue_name: T.Optional[str] = None, clear_on_overflow: bool = False,
                 is_personal: bool = False) -> T.Optional[str]:
         if len(self._publish_queues.keys()) == 0:
-            self.log.error(f"Process \"{self.name}\" has no queues to write to.")
+            self.log.error(f"Process \"{self.name}\" has no queues to write.")
             return
 
         if queue_name is None:
@@ -116,7 +120,7 @@ class RobotProcess:
     def consume(self, queue_name: T.Optional[str] = None, clear_all_messages: bool = False) -> T.Any:
         if len(self._consume_queues.keys()) == 0:
             # todo maybe there should be exception here?
-            self.log.error(f"Process \"{self.name}\" has no queues to read from.")
+            self.log.error(f"Process \"{self.name}\" has no queues to read.")
             return
 
         if queue_name is None:
@@ -152,9 +156,17 @@ class RobotProcess:
         if publish_queue_name and consume_queue_name:
             raise Exception("Only one of params must set!")
 
+        # if consume queue
         if consume_queue_name:
+            if not self.has_consume_queue(consume_queue_name):
+                raise Exception(f"Consume queue with name = '{consume_queue_name}' does not exist.")
+
             # TODO check if it's used anywhere
             return self._consume_queues[consume_queue_name].full()
+
+        # if publish queue
+        if not self.has_publish_queue(publish_queue_name):
+            raise Exception(f"Publish queue with name = '{publish_queue_name}' does not exist.")
 
         for q in self._publish_queues[publish_queue_name]:
             if q.full():
@@ -162,6 +174,7 @@ class RobotProcess:
 
         return False
 
+    # todo exceptions or logging
     def is_empty(self, consume_queue_name: T.Optional[str] = None):
         """
         Checks inter-process queue is empty.
@@ -173,7 +186,7 @@ class RobotProcess:
         :rtype: Bool
         """
         if len(self._consume_queues.keys()) == 0:
-            raise Exception(f"Process \"{self.name}\" has no queues to read from.")
+            raise Exception(f"Process \"{self.name}\" has no queues to read.")
 
         if consume_queue_name is None:
             if len(self._consume_queues.keys()) != 1:
@@ -190,7 +203,6 @@ class RobotProcess:
         """
         self._stack_monitor = StackMonitor(name)
         self._stack_monitor.start_monitoring()
-
 
     def publish_to_system_queue(self, personal_id: str, client_process: str, data: T.Any) -> None:
         self._system_queues[client_process].put(
