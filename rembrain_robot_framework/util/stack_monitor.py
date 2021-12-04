@@ -9,10 +9,12 @@ import typing as T
 logger = logging.getLogger(__name__)
 
 
+# todo replace to 'services'
 class StackMonitor:
     """
     Uses code from the hanging_threads library: https://github.com/niccokunzmann/hanging_threads
     """
+
     def __init__(self, name, **kwargs):
         """
         :param poll_interval: Interval between stack polls (in seconds) Default: 0.1
@@ -134,18 +136,22 @@ class StoppableThread(threading.Thread):
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)
 
+
     def fn_1():
         print("Hi1")
         time.sleep(1)
+
 
     def fn_2():
         print("Hi2")
         time.sleep(0.5)
 
+
     def loop():
         while True:
             fn_1()
             fn_2()
+
 
     sm = StackMonitor("")
     sm.start_monitoring()
