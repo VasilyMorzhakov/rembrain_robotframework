@@ -17,6 +17,7 @@ WARNING FOR MAINTAINERS:
     Instead use either self.mp_context.Queue, or self.manager.Queue (depending on which one you need)
 """
 
+
 class RobotDispatcher:
     DEFAULT_QUEUE_SIZE = 50
 
