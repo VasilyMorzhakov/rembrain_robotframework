@@ -6,6 +6,7 @@ from pytest_mock import MockerFixture
 
 from rembrain_robot_framework import RobotProcess
 from rembrain_robot_framework.services.watcher import Watcher
+from rembrain_robot_framework.utils import ConfigurationError
 
 
 @pytest.fixture()
@@ -63,37 +64,40 @@ def test_incorrect_publish(mocker: MockerFixture, default_proc_params_fx: dict) 
         error_message = args[0]
 
     mocker.patch.object(r.log, 'error', _error)
-
-    result = r.publish("message")
-    assert result is None
-    assert error_message == 'Process "rp" has no queues to write.'
+    try:
+        r.publish("message")
+    except ConfigurationError as e:
+        pass
+    else:
+        assert False
 
     r._publish_queues = {"message1": [Queue(maxsize=2)], "message2": [Queue(maxsize=2)]}
-    result = r.publish("message")
-    assert result is None
-    assert error_message == 'Process "rp" has more than one write queue. Specify a write queue name.'
+    try:
+        r.publish("message")
+    except ConfigurationError as e:
+        pass
+    else:
+        assert False
 
 
 def test_incorrect_consume(mocker: MockerFixture, default_proc_params_fx: dict) -> None:
     default_proc_params_fx.update(publish_queues={"message1": Queue(maxsize=2)})
     r = RobotProcess(**default_proc_params_fx)
 
-    error_message = ""
-
-    def _error(*args):
-        nonlocal error_message
-        error_message = args[0]
-
-    mocker.patch.object(r.log, 'error', _error)
-
-    result = r.consume("message1")
-    assert result is None
-    assert error_message == 'Process "rp" has no queues to read.'
+    try:
+        r.consume("message1")
+    except ConfigurationError as e:
+        pass
+    else:
+        assert False
 
     r._consume_queues = {"message1": Queue(maxsize=2), "message2": Queue(maxsize=2)}
-    result = r.consume()
-    assert result is None
-    assert error_message == 'Process "rp" has more than one read queue. Specify a read queue name.'
+    try:
+        r.consume()
+    except ConfigurationError as e:
+        pass
+    else:
+        assert False
 
 
 def test_check_is_full(default_proc_params_fx: dict) -> None:

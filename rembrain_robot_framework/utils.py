@@ -81,3 +81,14 @@ def start_process(process_class, *args, **kwargs) -> None:
     finally:
         if process:
             process.free_resources()
+
+
+class ConfigurationError(Exception):
+    """Raised when there are errors in config.yaml or
+     process usage conflicts with this configurations"""""
+    pass
+
+
+class ComputationFailure(Exception):
+    """returned when there is an exception during RPC call"""""
+    pass
