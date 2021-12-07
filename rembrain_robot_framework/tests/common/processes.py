@@ -115,3 +115,36 @@ class SysP2(RobotProcess):
             client_process=personal_message.client_process,
             data=self.TEST_MESSAGE
         )
+
+
+class QueueSizeP1(RobotProcess):
+    def run(self) -> None:
+        while True:
+            queue_name = self.shared.publish_message.get("queue_name")
+            if queue_name:
+                repeats = self.shared.publish_message.get("repeats")
+
+                for _ in range(repeats):
+                    self.publish("test", queue_name=queue_name)
+
+                self.shared.publish_message["queue_name"] = None
+
+            time.sleep(0.5)
+            if self.shared.finish_load.value:
+                break
+
+
+class QueueSizeP2(RobotProcess):
+    def run(self) -> None:
+        while True:
+            queue_name = self.shared.consume_message.get("queue_name")
+            if queue_name:
+                repeats = self.shared.consume_message.get("repeats")
+
+                for _ in range(repeats):
+                    self.consume(queue_name=queue_name)
+
+                self.shared.consume_message["queue_name"] = None
+
+            if self.shared.finish_dump.value:
+                break

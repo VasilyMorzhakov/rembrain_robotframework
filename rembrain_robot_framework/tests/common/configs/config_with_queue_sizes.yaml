@@ -1,0 +1,26 @@
+processes:
+  p1:
+    publish:
+      - messages1
+      - messages2
+      - messages3
+      - messages4
+  p2:
+    consume:
+      - messages1
+      - messages2
+      - messages3
+      - messages4
+
+queues_sizes:
+  messages1: 2
+  messages2: 3
+  messages3: 4
+  messages4: 10
+
+shared_objects:
+  publish_message: dict
+  consume_message: dict
+  finish_load: Value:bool
+  finish_dump: Value:bool
+

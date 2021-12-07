@@ -1,0 +1,27 @@
+processes:
+  p1:
+    extra_param: 5
+    publish:
+      - messages1
+      - messages2
+    consume:
+      - messages3
+      - messages4
+  p2:
+    publish:
+      - messages3
+      - messages4
+    consume:
+      - messages1
+      - messages2
+
+queues_sizes:
+  messages1: 5
+  messages2: 10
+
+shared_objects:
+  test_dict: dict
+  test_bool: Value:bool
+
+description:
+  project: TEST

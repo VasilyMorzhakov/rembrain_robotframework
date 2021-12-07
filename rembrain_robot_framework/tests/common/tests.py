@@ -159,3 +159,131 @@ def test_description_from_config() -> None:
         assert rd.project_description["robot"] == robot_name
 
         rd.stop_logging()
+
+
+@pytest.mark.parametrize(
+    'robot_dispatcher_fx',
+    (("config_with_queue_sizes.yaml", {
+        "p1": {"process_class": QueueSizeP1, "keep_alive": False},
+        "p2": {"process_class": QueueSizeP2, "keep_alive": False},
+    }),), indirect=True
+)
+def test_check_overflow(mocker: MockerFixture, robot_dispatcher_fx: RobotDispatcher) -> None:
+    warn_message = ""
+
+    def _warning(*args):
+        nonlocal warn_message
+        warn_message = args[0]
+
+    mocker.patch.object(robot_dispatcher_fx.log, 'warning', _warning)
+
+    assert not robot_dispatcher_fx.check_queues_overflow()
+    assert not warn_message
+
+    # 1 from 2
+    robot_dispatcher_fx.shared_objects["publish_message"]["repeats"] = 1
+    robot_dispatcher_fx.shared_objects["publish_message"]["queue_name"] = "messages1"
+    time.sleep(3)
+    assert not robot_dispatcher_fx.check_queues_overflow()
+
+    # 2 from 2
+    robot_dispatcher_fx.shared_objects["publish_message"]["repeats"] = 1
+    robot_dispatcher_fx.shared_objects["publish_message"]["queue_name"] = "messages1"
+    time.sleep(2)
+    assert robot_dispatcher_fx.check_queues_overflow()
+    assert warn_message == 'Consume queue messages1 of process p2 has reached 2 messages.'
+
+    # 2 from 3
+    # firstly clean first queue
+    warn_message = ""
+    robot_dispatcher_fx.shared_objects["consume_message"]["repeats"] = 2
+    robot_dispatcher_fx.shared_objects["consume_message"]["queue_name"] = "messages1"
+    robot_dispatcher_fx.shared_objects["publish_message"]["repeats"] = 2
+    robot_dispatcher_fx.shared_objects["publish_message"]["queue_name"] = "messages2"
+    time.sleep(2)
+    assert not robot_dispatcher_fx.check_queues_overflow()
+    assert not warn_message
+
+    # 9 from 10
+    robot_dispatcher_fx.shared_objects["publish_message"]["repeats"] = 9
+    robot_dispatcher_fx.shared_objects["publish_message"]["queue_name"] = "messages4"
+    time.sleep(2)
+    assert robot_dispatcher_fx.check_queues_overflow()
+    assert warn_message == 'Consume queue messages4 of process p2 has reached 9 messages.'
+
+    warn_message = ""
+    robot_dispatcher_fx.shared_objects["consume_message"]["repeats"] = 1
+    robot_dispatcher_fx.shared_objects["consume_message"]["queue_name"] = "messages4"
+    time.sleep(2)
+    assert not robot_dispatcher_fx.check_queues_overflow()
+    assert not warn_message
+
+    # 3 from 4
+    robot_dispatcher_fx.shared_objects["publish_message"]["repeats"] = 3
+    robot_dispatcher_fx.shared_objects["publish_message"]["queue_name"] = "messages3"
+    time.sleep(2)
+    assert not robot_dispatcher_fx.check_queues_overflow()
+    assert not warn_message
+
+    # 4 from 4
+    robot_dispatcher_fx.shared_objects["publish_message"]["repeats"] = 1
+    robot_dispatcher_fx.shared_objects["publish_message"]["queue_name"] = "messages3"
+    time.sleep(2)
+    assert robot_dispatcher_fx.check_queues_overflow()
+    assert warn_message == 'Consume queue messages3 of process p2 has reached 4 messages.'
+
+    robot_dispatcher_fx.shared_objects["finish_load"].value = True
+
+    warn_message = ""
+    robot_dispatcher_fx.shared_objects["consume_message"]["repeats"] = 2
+    robot_dispatcher_fx.shared_objects["consume_message"]["queue_name"] = "messages2"
+    time.sleep(2)
+    assert robot_dispatcher_fx.check_queues_overflow()  # "messages3" stayed full
+    assert warn_message == 'Consume queue messages3 of process p2 has reached 4 messages.'
+
+    warn_message = ""
+    robot_dispatcher_fx.shared_objects["consume_message"]["repeats"] = 1
+    robot_dispatcher_fx.shared_objects["consume_message"]["queue_name"] = "messages3"
+    time.sleep(2)
+    assert not robot_dispatcher_fx.check_queues_overflow()  # "messages3" consisted of 3 from 4
+    assert not warn_message
+
+    robot_dispatcher_fx.shared_objects["finish_dump"].value = True
+    time.sleep(2)
+
+
+def test_correct_dispatcher_full_creation() -> None:
+    config: T.Any = EnvYAML(os.path.join(os.path.dirname(__file__), "configs", "config_full.yaml"))
+    p = {
+        "p1": {"process_class": StubProcess, "keep_alive": False},
+        "p2": {"process_class": StubProcess, "keep_alive": False},
+    }
+    robot_dispatcher = RobotDispatcher(config, p)
+
+    assert "project" in robot_dispatcher.project_description
+    assert robot_dispatcher.project_description["project"] == "TEST"
+
+    assert robot_dispatcher._max_queue_sizes
+    mqs = {'messages1': 5, 'messages2': 10, 'messages3': 50, 'messages4': 50}
+    assert all(k in mqs and mqs[k] == v for k, v in robot_dispatcher._max_queue_sizes.items())
+
+    assert robot_dispatcher.processes
+    assert all(i in p for i in robot_dispatcher.processes) and len(p) == len(robot_dispatcher.processes)
+
+    m = ("messages1", "messages2")
+    assert all(i in m for i in robot_dispatcher.processes['p1']['publish_queues']) and len(m) == len(
+        robot_dispatcher.processes['p1']['publish_queues']
+    )
+    m = ("messages3", "messages4")
+    assert all(i in m for i in robot_dispatcher.processes['p1']['consume_queues']) and len(m) == len(
+        robot_dispatcher.processes['p1']['consume_queues']
+    )
+    assert robot_dispatcher.processes['p1']['extra_param'] == 5
+
+    assert robot_dispatcher.shared_objects
+    assert 'test_dict' in robot_dispatcher.shared_objects
+    assert 'test_bool' in robot_dispatcher.shared_objects
+    assert robot_dispatcher.system_queues
+    assert all(i in p for i in robot_dispatcher.system_queues) and len(p) == len(robot_dispatcher.system_queues)
+
+    robot_dispatcher.stop_logging()

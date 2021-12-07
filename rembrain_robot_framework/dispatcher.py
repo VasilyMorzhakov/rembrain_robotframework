@@ -8,7 +8,7 @@ from logging.handlers import QueueHandler, QueueListener
 from rembrain_robot_framework import utils
 from rembrain_robot_framework.logger.utils import setup_logging
 from rembrain_robot_framework.services.watcher import Watcher
-from multiprocessing import Queue, Process, Manager
+from multiprocessing import Queue, Process
 
 """
 WARNING FOR MAINTAINERS:
@@ -53,6 +53,7 @@ class RobotDispatcher:
                 p["publish_queues"] = {}
 
         # todo think about hard typing  for field in "config"
+        # todo remove it param from 'self' - it does not use in other methods
         self.config = config
         if self.config is None:
             self.config = {
@@ -82,7 +83,7 @@ class RobotDispatcher:
         # create queues
         consume_queues = {}  # consume from queues
         publish_queues = {}  # publish to queues
-        self._max_queue_sizes = self._gen_queue_size_dict()
+        self._max_queue_sizes = self._collect_queue_sizes()
         for process_name, process_params in self.config["processes"].items():
             if not process_params:
                 continue
@@ -236,16 +237,18 @@ class RobotDispatcher:
 
         return is_overflow
 
-    def _gen_queue_size_dict(self) -> T.Dict[str, int]:
+    def _collect_queue_sizes(self) -> T.Dict[str, int]:
         """
         Generates a dictionary of {queue_name: max_size}
         We have to do it because some queue types (especially Manager.Queue()) hide the maxsize property
         """
-        res = {}
+        result = {}
         queue_names = set()
+
         for params in self.config["processes"].values():
             if not params:
                 continue
+
             # Getting consume queues is enough since we always check that all publish queues are consumed
             queues = params.get("consume", [])
             if type(queues) is list:
@@ -253,9 +256,11 @@ class RobotDispatcher:
                     queue_names.add(q)
             else:
                 queue_names.add(str(queues))
+
         for queue_name in queue_names:
-            res[queue_name] = int(self.config.get("queues_sizes", {}).get(queue_name, self.DEFAULT_QUEUE_SIZE))
-        return res
+            result[queue_name] = int(self.config.get("queues_sizes", {}).get(queue_name, self.DEFAULT_QUEUE_SIZE))
+
+        return result
 
     def get_queue_max_size(self, queue_name: str) -> int:
         return self._max_queue_sizes.get(queue_name, self.DEFAULT_QUEUE_SIZE)
