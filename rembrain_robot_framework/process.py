@@ -108,8 +108,6 @@ class RobotProcess:
             personal_id = str(uuid4())
             message = PersonalMessage(id=personal_id, client_process=self.name, data=message)
 
-        print(queue_name)
-        print(self._publish_queues[queue_name])
         for q in self._publish_queues[queue_name]:
             if clear_on_overflow:
                 while q.full():
