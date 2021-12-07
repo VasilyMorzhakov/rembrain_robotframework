@@ -32,10 +32,11 @@ class RobotDispatcher:
         self.process_pool: T.Dict[str, Process] = {}
         self.in_cluster: bool = in_cluster
 
-        if config and config.get("description"):
+        self.project_description = {}
+        if project_description:
+            self.project_description = project_description
+        elif config and config.get("description"):
             self.project_description = config["description"]
-        else:
-            self.project_description = {} if project_description is None else project_description
 
         # It is important that we create our own separate context.
         # fork() can easily wreck stability,
