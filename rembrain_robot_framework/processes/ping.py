@@ -15,6 +15,9 @@ class PingProcess(RobotProcess):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
+        self.associated_robot = kwargs.get("associated_robot", os.environ["ROBOT_NAME"])
+        self.template_type = kwargs.get("template_type", os.environ["TEMPLATE_TYPE"])
+
         # get container ID - it's assumed, that we're in a docker container
         try:
             docker_s = subprocess.check_output(["cat", "/proc/1/cpuset"]).decode(
@@ -30,8 +33,8 @@ class PingProcess(RobotProcess):
 
         while True:
             processor_info = {
-                "associated_robot": os.environ["ROBOT_NAME"],  # todo it should receive from params of constructor
-                "template_type": os.environ["TEMPLATE_TYPE"],  # todo it should receive from params of constructor
+                "associated_robot": self.associated_robot,
+                "template_type": self.template_type,
                 "active": self.shared.processor_active.value,
                 "id": self.container_id,
             }
