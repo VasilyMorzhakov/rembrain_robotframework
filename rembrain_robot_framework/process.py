@@ -27,19 +27,18 @@ class RobotProcess:
     ):
         self.name: str = name
 
-        self._consume_queues: T.Dict[str, Queue] = consume_queues  # queues for reading
-        self._publish_queues: T.Dict[
-            str, T.List[Queue]
-        ] = publish_queues  # queues for writing
+        # queues for reading
+        self._consume_queues: T.Dict[str, Queue] = consume_queues
+        # queues for writing
+        self._publish_queues: T.Dict[str, T.List[Queue]] = publish_queues
 
         self._shared: T.Any = namedtuple("_", shared_objects.keys())(**shared_objects)
 
         self._system_queues: T.Dict[str, Queue] = system_queues
         self._received_named_messages = {}
 
-        self.queues_to_clear: T.List[
-            str
-        ] = []  # in case of exception this queues are cleared
+        # in case of exception these queues are cleared
+        self.queues_to_clear: T.List[str] = []
         self.log = logging.getLogger(f"{self.__class__.__name__} ({self.name})")
 
         self._stack_monitor: T.Optional[StackMonitor] = None
