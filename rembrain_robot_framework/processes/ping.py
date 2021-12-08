@@ -11,6 +11,7 @@ class PingProcess(RobotProcess):
     For use only in Docker
     Out: Info about the process to the queue (pushed every second)
     """
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -27,8 +28,8 @@ class PingProcess(RobotProcess):
 
         while True:
             processor_info = {
-                "associated_robot": os.environ["ROBOT_NAME"],
-                "template_type": os.environ["TEMPLATE_TYPE"],
+                "associated_robot": os.environ["ROBOT_NAME"],  # todo it should receive from params of constructor
+                "template_type": os.environ["TEMPLATE_TYPE"],  # todo it should receive from params of constructor
                 "active": self.shared.processor_active.value,
                 "id": self.container_id
             }

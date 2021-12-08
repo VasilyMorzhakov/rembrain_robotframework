@@ -1,9 +1,7 @@
 import asyncio
 import json
 import logging
-import multiprocessing
 import os
-import time
 import typing as T
 
 import websockets
@@ -12,8 +10,8 @@ from rembrain_robot_framework import RobotProcess
 from rembrain_robot_framework.ws import WsCommandType, WsRequest
 
 
+# todo receive env params from  yaml and pass to constructor?
 class WsRobotProcess(RobotProcess):
-
     # Functions to handle binary data coming from pull commands
     _data_type_parse_fns: T.Dict[str, T.Callable[[bytes], T.Any]] = {
         "json": lambda b: json.loads(b.decode("utf-8")),
@@ -67,6 +65,7 @@ class WsRobotProcess(RobotProcess):
             while True:
                 data = await ws.recv()
                 self._publish_if_not_ping(data)
+
         await self._connect_ws(_pull_fn)
 
     def _publish_if_not_ping(self, data: T.Union[str, bytes]):
@@ -94,6 +93,7 @@ class WsRobotProcess(RobotProcess):
             - one for consuming from queue and publishing
             - one for receiving and dropping any packages coming from the websocket
             """
+
             async def _ping():
                 """Sends out ping packet ever self.ping_interval seconds"""
                 control_packet = json.dumps({"command": WsCommandType.PING})
@@ -167,5 +167,5 @@ class WebsocketsLogAdapter(logging.LoggerAdapter):
         We have to get rid of it so we can pass log messages accross processes
         """
         if "websocket" in kwargs["extra"]:
-            del(kwargs["extra"]["websocket"])
+            del (kwargs["extra"]["websocket"])
         return msg, kwargs

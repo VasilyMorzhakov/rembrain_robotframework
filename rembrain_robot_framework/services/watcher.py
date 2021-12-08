@@ -23,7 +23,7 @@ class Watcher:
         self._connect.push(WsRequest(
             command=WsCommandType.PUSH,
             exchange=self.EXCHANGE,
-            robot_name=os.environ["ROBOT_NAME"],
+            robot_name=os.environ["ROBOT_NAME"], # todo how to pass params
             username=os.environ["RRF_USERNAME"],
             password=os.environ["RRF_PASSWORD"],
             message=message

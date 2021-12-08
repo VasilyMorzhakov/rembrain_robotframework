@@ -12,6 +12,7 @@ import websocket
 from rembrain_robot_framework.ws import WsCommandType, WsRequest
 
 
+# todo WEBSOCKET_GATE_URL pass to constructor?
 class WsDispatcher:
     CONNECTION_RETRIES = 3
 
