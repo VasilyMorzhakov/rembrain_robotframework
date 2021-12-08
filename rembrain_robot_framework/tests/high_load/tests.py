@@ -38,17 +38,17 @@ class P2(RobotProcess):
             if not self.shared.started.value:
                 continue
 
-            assert (type(self.shared.state["n_0"]) is int)
-            assert (type(self.shared.state["n_1"]) is int)
-            assert (type(self.shared.state["n_2"]) is str)
+            assert type(self.shared.state["n_0"]) is int
+            assert type(self.shared.state["n_1"]) is int
+            assert type(self.shared.state["n_2"]) is str
 
-            assert (type(self.shared.state["status"]) is str)
-            assert (type(self.shared.state["list"]) is list)
-            assert (type(self.shared.state["img"]) is np.ndarray)
-            assert (len(self.shared.state["list"]) == 9)
+            assert type(self.shared.state["status"]) is str
+            assert type(self.shared.state["list"]) is list
+            assert type(self.shared.state["img"]) is np.ndarray
+            assert len(self.shared.state["list"]) == 9
 
-            assert (self.shared.state["status"].startswith("ok"))
-            assert (self.shared.state["img"].shape == (24, 32, 3))
+            assert self.shared.state["status"].startswith("ok")
+            assert self.shared.state["img"].shape == (24, 32, 3)
 
         with self.shared.finished_lock:
             self.shared.finished_correctly.value += 1
@@ -58,7 +58,7 @@ def test_shared_objects_save_type() -> None:
     config: T.Any = EnvYAML(os.path.join(os.path.dirname(__file__), "config.yaml"))
     processes = {
         **{f"p1_{i}": {"process_class": P1, "keep_alive": False} for i in range(5)},
-        **{f"p2_{i}": {"process_class": P2, "keep_alive": False} for i in range(5)}
+        **{f"p2_{i}": {"process_class": P2, "keep_alive": False} for i in range(5)},
     }
 
     robot_dispatcher = RobotDispatcher(config, processes)

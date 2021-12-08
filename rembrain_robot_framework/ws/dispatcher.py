@@ -31,7 +31,9 @@ class WsDispatcher:
             # Turn on SO_REUSEADDR so we can reuse hung sockets
             for i in range(self.CONNECTION_RETRIES):
                 with stopit.ThreadingTimeout(0.5):
-                    self.ws = websocket.WebSocket(sockopt=((socket.SOL_SOCKET, socket.SO_REUSEADDR, 1),))
+                    self.ws = websocket.WebSocket(
+                        sockopt=((socket.SOL_SOCKET, socket.SO_REUSEADDR, 1),)
+                    )
                     self.ws.connect(os.environ["WEBSOCKET_GATE_URL"])
                     break
             else:
@@ -70,7 +72,9 @@ class WsDispatcher:
                         break
 
                     response: T.Union[str, bytes] = self.ws.recv()
-                    if isinstance(response, bytes) or (isinstance(response, str) and response != WsCommandType.PING):
+                    if isinstance(response, bytes) or (
+                        isinstance(response, str) and response != WsCommandType.PING
+                    ):
                         yield response
 
             except Exception:
@@ -82,7 +86,10 @@ class WsDispatcher:
 
     # todo refactor params
     def push(
-            self, request: WsRequest, retry_times: T.Optional[int] = None, delay: T.Optional[int] = None
+        self,
+        request: WsRequest,
+        retry_times: T.Optional[int] = None,
+        delay: T.Optional[int] = None,
     ) -> T.Optional[T.Union[str, bytes]]:
         """
         Open socket and send 'PUSH' command to websocket.
@@ -91,7 +98,9 @@ class WsDispatcher:
         :param delay - (optional) sleep interval in seconds if it needs
         :return: ws response
         """
-        repeats: T.Iterator = iter(int, 1) if retry_times is None else range(retry_times)
+        repeats: T.Iterator = (
+            iter(int, 1) if retry_times is None else range(retry_times)
+        )
         for _ in repeats:
             try:
                 self.open()
@@ -104,7 +113,9 @@ class WsDispatcher:
                     time.sleep(5.0)
 
             except Exception:
-                self.log.error(f"WsDispatcher: Send '{WsCommandType.PUSH}' command failed. Reason: {format_exc()}.")
+                self.log.error(
+                    f"WsDispatcher: Send '{WsCommandType.PUSH}' command failed. Reason: {format_exc()}."
+                )
                 self.close()
 
         # todo try to remove this code
@@ -112,7 +123,7 @@ class WsDispatcher:
             time.sleep(delay)
 
     def push_loop(
-            self, request: WsRequest, data: T.Union[str, bytes] = b""
+        self, request: WsRequest, data: T.Union[str, bytes] = b""
     ) -> T.Generator[T.Union[str, bytes], bytes, None]:
         """
         Open socket, send 'PUSH' command to websocket with auth data and then send data constantly.

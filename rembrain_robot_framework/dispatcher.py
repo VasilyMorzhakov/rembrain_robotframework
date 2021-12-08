@@ -22,11 +22,11 @@ class RobotDispatcher:
     DEFAULT_QUEUE_SIZE = 50
 
     def __init__(
-            self,
-            config: T.Any = None,
-            processes: T.Optional[dict] = None,
-            project_description: T.Optional[dict] = None,
-            in_cluster: bool = True,
+        self,
+        config: T.Any = None,
+        processes: T.Optional[dict] = None,
+        project_description: T.Optional[dict] = None,
+        in_cluster: bool = True,
     ):
         self.shared_objects = {}
         self.process_pool: T.Dict[str, Process] = {}
@@ -70,12 +70,16 @@ class RobotDispatcher:
 
         self.log.info("RobotHost is configuring processes.")
 
-        if "processes" not in self.config or not isinstance(self.config["processes"], dict):
+        if "processes" not in self.config or not isinstance(
+            self.config["processes"], dict
+        ):
             raise Exception("'Config' params are incorrect. Please, check config file.")
 
         # compare processes and config
         if len(self.processes) != len(self.config["processes"]):
-            raise Exception("Number of processes in config is not the same as passed in __init__.")
+            raise Exception(
+                "Number of processes in config is not the same as passed in __init__."
+            )
 
         # p[0] is process class, p[1] is the process name
         if any([p not in self.config["processes"] for p in self.processes]):
@@ -117,32 +121,39 @@ class RobotDispatcher:
         for queue_name, bind_processes in consume_queues.items():
             for process in bind_processes:
                 queue_size = int(
-                    self.config.get("queues_sizes", {}).get(queue_name, self.DEFAULT_QUEUE_SIZE)
+                    self.config.get("queues_sizes", {}).get(
+                        queue_name, self.DEFAULT_QUEUE_SIZE
+                    )
                 )
 
                 queue = self.mp_context.Queue(maxsize=queue_size)
                 self.processes[process]["consume_queues"][queue_name] = queue
 
                 if queue_name not in publish_queues:
-                    raise Exception(f"A process {processes} consumes from a queue {queue_name}, but no publish to it.")
+                    raise Exception(
+                        f"A process {processes} consumes from a queue {queue_name}, but no publish to it."
+                    )
 
                 for process_ in publish_queues[queue_name]:
                     if queue_name in self.processes[process_]["publish_queues"]:
-                        self.processes[process_]["publish_queues"][queue_name].append(queue)
+                        self.processes[process_]["publish_queues"][queue_name].append(
+                            queue
+                        )
                     else:
                         self.processes[process_]["publish_queues"][queue_name] = [queue]
 
         # shared objects
         if "shared_objects" in self.config and self.config["shared_objects"]:
             self.shared_objects = {
-                name: utils.generate(
-                    obj, self.manager, self.mp_context
-                ) for name, obj in self.config["shared_objects"].items()
+                name: utils.generate(obj, self.manager, self.mp_context)
+                for name, obj in self.config["shared_objects"].items()
             }
 
         # system processes queues(dict): process_name (key) => personal process queue (value)
         self.system_queues = {
-            p: self.mp_context.Queue(maxsize=self.DEFAULT_QUEUE_SIZE) for p in self.processes}
+            p: self.mp_context.Queue(maxsize=self.DEFAULT_QUEUE_SIZE)
+            for p in self.processes
+        }
 
         # for heartbeat
         self.watcher = Watcher(self.in_cluster)
@@ -154,25 +165,29 @@ class RobotDispatcher:
             self.log.info(f"Process {process_name} on PID {proc.pid} started")
 
     def add_process(
-            self,
-            process_name: str,
-            process_class: T.Any,
-            publish_queues: T.Optional[T.Dict[str, T.List[Queue]]] = None,
-            consume_queues: T.Optional[T.Dict[str, Queue]] = None,
-            **kwargs,
+        self,
+        process_name: str,
+        process_class: T.Any,
+        publish_queues: T.Optional[T.Dict[str, T.List[Queue]]] = None,
+        consume_queues: T.Optional[T.Dict[str, Queue]] = None,
+        **kwargs,
     ) -> None:
         if process_name in self.process_pool:
-            self.log.error(f"Error at creating new process, process {process_name} is already running.")
+            self.log.error(
+                f"Error at creating new process, process {process_name} is already running."
+            )
             raise Exception("Process already exists in pool.")
 
         if process_name in self.processes:
-            self.log.error(f"Error at creating new process, process {process_name} already exists in processes.")
+            self.log.error(
+                f"Error at creating new process, process {process_name} already exists in processes."
+            )
             raise Exception("Process already exists in processes.")
 
         self.processes[process_name] = {
-            'process_class': process_class,
-            'consume_queues': consume_queues if consume_queues else {},
-            'publish_queues': publish_queues if publish_queues else {}
+            "process_class": process_class,
+            "consume_queues": consume_queues if consume_queues else {},
+            "publish_queues": publish_queues if publish_queues else {},
         }
 
         self._run_process(process_name, **kwargs)
@@ -182,7 +197,9 @@ class RobotDispatcher:
         if object_name in self.shared_objects.keys():
             raise Exception(f"Shared object {object_name} already exists.")
 
-        self.shared_objects[object_name] = utils.generate(object_type, self.manager, self.mp_context)
+        self.shared_objects[object_name] = utils.generate(
+            object_type, self.manager, self.mp_context
+        )
 
     def del_shared_object(self, object_name: str) -> None:
         if object_name not in self.shared_objects.keys():
@@ -218,7 +235,9 @@ class RobotDispatcher:
                     q_maxsize = self.get_queue_max_size(q_name)
 
                 if q_maxsize - q_size <= int(q_maxsize * 0.1):
-                    self.log.warning(f"Consume queue {q_name} of process {p_name} has reached {q_size} messages.")
+                    self.log.warning(
+                        f"Consume queue {q_name} of process {p_name} has reached {q_size} messages."
+                    )
                     is_overflow = True
 
             for q_name, queues in process["publish_queues"].items():
@@ -230,7 +249,9 @@ class RobotDispatcher:
                         q_maxsize = self.get_queue_max_size(q_name)
 
                     if q_maxsize - q_size <= int(q_maxsize * 0.1):
-                        self.log.warning(f"Publish queue {q_name} of process {p_name} has reached {q_size} messages.")
+                        self.log.warning(
+                            f"Publish queue {q_name} of process {p_name} has reached {q_size} messages."
+                        )
                         is_overflow = True
 
         if is_overflow:
@@ -259,7 +280,11 @@ class RobotDispatcher:
                 queue_names.add(str(queues))
 
         for queue_name in queue_names:
-            result[queue_name] = int(self.config.get("queues_sizes", {}).get(queue_name, self.DEFAULT_QUEUE_SIZE))
+            result[queue_name] = int(
+                self.config.get("queues_sizes", {}).get(
+                    queue_name, self.DEFAULT_QUEUE_SIZE
+                )
+            )
 
         return result
 
@@ -291,7 +316,7 @@ class RobotDispatcher:
                 "watcher": self.watcher,
                 **self.processes[proc_name],
                 **kwargs,
-            }
+            },
         )
         process.start()
         self.process_pool[proc_name] = process
@@ -299,7 +324,9 @@ class RobotDispatcher:
     # todo replace all logging logic in partial class
     def run_logging(self, project_description: dict, in_cluster: bool) -> None:
         # Set up logging
-        self.log_queue, self._log_listener = setup_logging(project_description, self.mp_context, in_cluster)
+        self.log_queue, self._log_listener = setup_logging(
+            project_description, self.mp_context, in_cluster
+        )
         self._log_listener.start()
 
         self.log = logging.getLogger("RobotDispatcher")

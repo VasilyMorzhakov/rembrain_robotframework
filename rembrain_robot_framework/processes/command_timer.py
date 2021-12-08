@@ -10,6 +10,7 @@ class CommandTimer(RobotProcess):
     Does: Adds a timestamp field
     Out: JSON-serialized dictionary *binary encoded*
     """
+
     def run(self):
         self.log.info(f"{self.__class__.__name__} started, name: {self.name}.")
 
@@ -19,4 +20,4 @@ class CommandTimer(RobotProcess):
             command["timestamp"] = datetime.now(timezone.utc).timestamp()
 
             self.log.info(f"message to send: {command}")
-            self.publish(json.dumps(command).encode('utf-8'))
+            self.publish(json.dumps(command).encode("utf-8"))

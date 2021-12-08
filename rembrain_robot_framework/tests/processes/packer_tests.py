@@ -36,22 +36,26 @@ def unpacker_fx(img_data_fx):
         consume_queues={},
         publish_queues={},
         system_queues={},
-        watcher=Watcher(False)
+        watcher=Watcher(False),
     )
 
 
-@pytest.mark.parametrize('packer_fx', (PackType.JPG_PNG,), indirect=True)
-def test_correct_video_packer(mocker: MockerFixture, img_data_fx: Image, packer_fx) -> None:
+@pytest.mark.parametrize("packer_fx", (PackType.JPG_PNG,), indirect=True)
+def test_correct_video_packer(
+    mocker: MockerFixture, img_data_fx: Image, packer_fx
+) -> None:
     mock_result = None
-    loop_reset_exception = 'AssertionError for reset loop!'
+    loop_reset_exception = "AssertionError for reset loop!"
 
     def publish(message, *args, **kwargs):
         nonlocal mock_result
         mock_result = message
         raise AssertionError(loop_reset_exception)
 
-    mocker.patch.object(packer_fx, 'consume', return_value=(img_data_fx.rgb, img_data_fx.depth))
-    mocker.patch.object(packer_fx, 'publish', publish)
+    mocker.patch.object(
+        packer_fx, "consume", return_value=(img_data_fx.rgb, img_data_fx.depth)
+    )
+    mocker.patch.object(packer_fx, "publish", publish)
     with pytest.raises(AssertionError) as exc_info:
         packer_fx.run()
 
@@ -60,8 +64,10 @@ def test_correct_video_packer(mocker: MockerFixture, img_data_fx: Image, packer_
     assert len(mock_result) > 100
 
 
-@pytest.mark.parametrize('packer_fx', (PackType.JPG,), indirect=True)
-def test_correct_full_pack_jpg(mocker: MockerFixture, img_data_fx: Image, packer_fx, unpacker_fx) -> None:
+@pytest.mark.parametrize("packer_fx", (PackType.JPG,), indirect=True)
+def test_correct_full_pack_jpg(
+    mocker: MockerFixture, img_data_fx: Image, packer_fx, unpacker_fx
+) -> None:
     test_packer_result = None
 
     def publish(message, *args, **kwargs):
@@ -69,15 +75,17 @@ def test_correct_full_pack_jpg(mocker: MockerFixture, img_data_fx: Image, packer
         test_packer_result = message
         raise AssertionError
 
-    mocker.patch.object(packer_fx, 'consume', return_value=(img_data_fx.rgb, img_data_fx.depth))
-    mocker.patch.object(packer_fx, 'publish', publish)
+    mocker.patch.object(
+        packer_fx, "consume", return_value=(img_data_fx.rgb, img_data_fx.depth)
+    )
+    mocker.patch.object(packer_fx, "publish", publish)
     try:
         packer_fx.run()
     except AssertionError:
         pass
 
     test_unpacker_result = None
-    loop_reset_exception = 'BaseException for reset loop!'
+    loop_reset_exception = "BaseException for reset loop!"
 
     def publish(message, *args, **kwargs):
         nonlocal test_unpacker_result
@@ -85,8 +93,8 @@ def test_correct_full_pack_jpg(mocker: MockerFixture, img_data_fx: Image, packer
         # it uses so type of exception because 'VideoUnpacker.run()' absorbs 'Exception'!
         raise BaseException(loop_reset_exception)
 
-    mocker.patch.object(unpacker_fx, 'consume', return_value=test_packer_result)
-    mocker.patch.object(unpacker_fx, 'publish', publish)
+    mocker.patch.object(unpacker_fx, "consume", return_value=test_packer_result)
+    mocker.patch.object(unpacker_fx, "publish", publish)
     with pytest.raises(BaseException) as exc_info:
         unpacker_fx.run()
 
@@ -95,11 +103,13 @@ def test_correct_full_pack_jpg(mocker: MockerFixture, img_data_fx: Image, packer
     assert len(test_unpacker_result) == 3
     assert np.sqrt(np.mean(np.square(test_unpacker_result[0] - img_data_fx.rgb))) < 5
     assert test_unpacker_result[1] is None
-    assert 'time' in json.loads(test_unpacker_result[2])
+    assert "time" in json.loads(test_unpacker_result[2])
 
 
-@pytest.mark.parametrize('packer_fx', (PackType.JPG_PNG,), indirect=True)
-def test_correct_full_pack_png(mocker: MockerFixture, img_data_fx: Image, packer_fx, unpacker_fx) -> None:
+@pytest.mark.parametrize("packer_fx", (PackType.JPG_PNG,), indirect=True)
+def test_correct_full_pack_png(
+    mocker: MockerFixture, img_data_fx: Image, packer_fx, unpacker_fx
+) -> None:
     test_packer_result = None
 
     def publish(message, *args, **kwargs):
@@ -107,23 +117,25 @@ def test_correct_full_pack_png(mocker: MockerFixture, img_data_fx: Image, packer
         test_packer_result = message
         raise AssertionError
 
-    mocker.patch.object(packer_fx, 'consume', return_value=(img_data_fx.rgb, img_data_fx.depth))
-    mocker.patch.object(packer_fx, 'publish', publish)
+    mocker.patch.object(
+        packer_fx, "consume", return_value=(img_data_fx.rgb, img_data_fx.depth)
+    )
+    mocker.patch.object(packer_fx, "publish", publish)
     try:
         packer_fx.run()
     except AssertionError:
         pass
 
     test_unpacker_result = None
-    loop_reset_exception = 'AssertionError for reset loop!'
+    loop_reset_exception = "AssertionError for reset loop!"
 
     def publish(message, *args, **kwargs):
         nonlocal test_unpacker_result
         test_unpacker_result = message
         raise BaseException(loop_reset_exception)
 
-    mocker.patch.object(unpacker_fx, 'consume', return_value=test_packer_result)
-    mocker.patch.object(unpacker_fx, 'publish', publish)
+    mocker.patch.object(unpacker_fx, "consume", return_value=test_packer_result)
+    mocker.patch.object(unpacker_fx, "publish", publish)
     with pytest.raises(BaseException) as exc_info:
         unpacker_fx.run()
 
@@ -132,4 +144,4 @@ def test_correct_full_pack_png(mocker: MockerFixture, img_data_fx: Image, packer
     assert len(test_unpacker_result) == 3
     assert np.sqrt(np.mean(np.square(test_unpacker_result[0] - img_data_fx.rgb))) < 5
     assert (test_unpacker_result[1] == img_data_fx.depth).all()
-    assert 'time' in test_unpacker_result[2]
+    assert "time" in test_unpacker_result[2]

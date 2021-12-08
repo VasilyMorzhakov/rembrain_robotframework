@@ -28,12 +28,14 @@ class VideoUnpacker(RobotProcess):
                     if isinstance(response_data, bytes):
                         rgb, depth16, camera = self.unpacker.unpack(response_data)
 
-                        if hasattr(self.shared, 'camera'):
+                        if hasattr(self.shared, "camera"):
                             self.shared.camera["camera"] = json.loads(camera)
 
                         self.publish((rgb, depth16, camera), clear_on_overflow=True)
                     else:
-                        self.log.error(f"VideoUnpacker: WS response is not bytes! Response={response_data}.")
+                        self.log.error(
+                            f"VideoUnpacker: WS response is not bytes! Response={response_data}."
+                        )
 
             except Exception as e:
                 self.log.error(f"Error in video_receiver: {e}.")

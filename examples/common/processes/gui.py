@@ -8,14 +8,16 @@ from rembrain_robot_framework import RobotProcess
 
 
 class GUIProcess(RobotProcess):
-    def __init__(self, title: str = "Rembrain Robot Framework Example", *args, **kwargs):
+    def __init__(
+        self, title: str = "Rembrain Robot Framework Example", *args, **kwargs
+    ):
         super(GUIProcess, self).__init__(*args, **kwargs)
 
         # Required for persistence of images,
         # because if they go out of scope, they disappear from the canvas
         self._tk_images: T.Dict[str, T.Optional[ImageTk.PhotoImage]] = {
             "image_orig": None,
-            "image_processed": None
+            "image_processed": None,
         }
         self._title: str = title
 
@@ -25,13 +27,13 @@ class GUIProcess(RobotProcess):
 
         layout = [
             [sg.Text("Original", size=(76, 1)), sg.Text("Processed")],
-            [canvas_orig, canvas_processed]
+            [canvas_orig, canvas_processed],
         ]
         window = sg.Window(self._title, layout, location=(10, 10))
 
         while True:
             event, values = window.read(timeout=10)
-            if event in (sg.WIN_CLOSED, 'Exit'):
+            if event in (sg.WIN_CLOSED, "Exit"):
                 break
 
             self.try_redraw_image("image_orig", canvas_orig)
@@ -55,4 +57,6 @@ class GUIProcess(RobotProcess):
         self._tk_images[queue_name] = ImageTk.PhotoImage(img)
 
         canvas_elem.TKCanvas.delete("all")
-        canvas_elem.TKCanvas.create_image(0, 0, image=self._tk_images[queue_name], anchor="nw")
+        canvas_elem.TKCanvas.create_image(
+            0, 0, image=self._tk_images[queue_name], anchor="nw"
+        )

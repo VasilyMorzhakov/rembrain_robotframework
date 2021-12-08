@@ -58,7 +58,9 @@ class AP1(RobotProcess):
         self.custom_test_message = kwargs.get("custom_test_message")
 
     def run(self) -> None:
-        self.publish(queue_name=self.custom_queue_name, message=self.custom_test_message)
+        self.publish(
+            queue_name=self.custom_queue_name, message=self.custom_test_message
+        )
         self.log.info(self.name + " published message successfully.")
 
 
@@ -95,7 +97,9 @@ class SysP1(RobotProcess):
     TEST_MESSAGE = "REQUEST_TEST_MESSAGE"
 
     def run(self) -> None:
-        personal_id: str = self.publish(self.TEST_MESSAGE, queue_name="messages", named=True)
+        personal_id: str = self.publish(
+            self.TEST_MESSAGE, queue_name="messages", named=True
+        )
         self.shared.response["id"] = personal_id
         self.shared.response["data"] = self.wait_response(request_id=personal_id)
 

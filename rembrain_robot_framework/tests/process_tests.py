@@ -12,12 +12,12 @@ from rembrain_robot_framework.utils import ConfigurationError
 @pytest.fixture()
 def default_proc_params_fx() -> dict:
     return {
-        'name': 'rp',
-        'shared_objects': {},
-        'consume_queues': {},
-        'publish_queues': {},
-        'system_queues': {},
-        'watcher': Watcher(False)
+        "name": "rp",
+        "shared_objects": {},
+        "consume_queues": {},
+        "publish_queues": {},
+        "system_queues": {},
+        "watcher": Watcher(False),
     }
 
 
@@ -44,7 +44,7 @@ def test_correct_publish_and_consume(default_proc_params_fx: dict) -> None:
 
     default_proc_params_fx.update(
         consume_queues={"message1": common_queue},
-        publish_queues={"message1": [common_queue], "message2": [Queue(maxsize=2)]}
+        publish_queues={"message1": [common_queue], "message2": [Queue(maxsize=2)]},
     )
     r = RobotProcess(**default_proc_params_fx)
 
@@ -63,7 +63,7 @@ def test_incorrect_publish(mocker: MockerFixture, default_proc_params_fx: dict) 
         nonlocal error_message
         error_message = args[0]
 
-    mocker.patch.object(r.log, 'error', _error)
+    mocker.patch.object(r.log, "error", _error)
     try:
         r.publish("message")
     except ConfigurationError as e:
@@ -132,7 +132,10 @@ def test_check_is_empty(default_proc_params_fx: dict) -> None:
     with pytest.raises(Exception) as exc_info:
         r.is_empty()
 
-    assert "Process 'rp' has more than one read queue. Specify a consume queue name." in str(exc_info.value)
+    assert (
+        "Process 'rp' has more than one read queue. Specify a consume queue name."
+        in str(exc_info.value)
+    )
 
     q = Queue(maxsize=2)
     q.put("q")

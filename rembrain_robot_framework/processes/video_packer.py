@@ -26,7 +26,7 @@ class VideoPacker(RobotProcess):
 
         while True:
             camera = {}
-            if hasattr(self.shared, 'camera'):
+            if hasattr(self.shared, "camera"):
                 camera: T.Any = self.shared.camera.copy()
 
             result = self.consume()
@@ -35,7 +35,7 @@ class VideoPacker(RobotProcess):
             elif len(result) == 3:
                 rgb, depth, camera = result
             else:
-                raise Exception('video_packer consumes tuples with 2 or 3 elements')
+                raise Exception("video_packer consumes tuples with 2 or 3 elements")
 
             camera["time"] = datetime.now(timezone.utc).timestamp()
             buffer: bytes = self.packer.pack(rgb, depth, camera)
@@ -43,5 +43,7 @@ class VideoPacker(RobotProcess):
 
             self.packets_sent += 1
             if self.packets_sent % 300 == 0:
-                self.log.info(f"Current video sending rate is {300 / (time.time() - self.last_timed)} fps.")
+                self.log.info(
+                    f"Current video sending rate is {300 / (time.time() - self.last_timed)} fps."
+                )
                 self.last_timed = time.time()

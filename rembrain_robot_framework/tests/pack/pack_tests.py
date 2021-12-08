@@ -13,16 +13,20 @@ def img_data_fx():
 
 @pytest.fixture()
 def pack_buffer_fx(request: SubRequest, img_data_fx) -> bytes:
-    return Packer(request.param).pack(img_data_fx.rgb, img_data_fx.depth, img_data_fx.camera)
+    return Packer(request.param).pack(
+        img_data_fx.rgb, img_data_fx.depth, img_data_fx.camera
+    )
 
 
-@pytest.mark.parametrize('pack_buffer_fx', (PackType.JPG_PNG, PackType.JPG), indirect=True)
+@pytest.mark.parametrize(
+    "pack_buffer_fx", (PackType.JPG_PNG, PackType.JPG), indirect=True
+)
 def test_correct_pack(pack_buffer_fx: bytes):
     assert isinstance(pack_buffer_fx, bytes)
     assert len(pack_buffer_fx) > 100
 
 
-@pytest.mark.parametrize('pack_buffer_fx', (PackType.JPG_PNG,), indirect=True)
+@pytest.mark.parametrize("pack_buffer_fx", (PackType.JPG_PNG,), indirect=True)
 def test_correct_full_pack_png(pack_buffer_fx: bytes, img_data_fx: Image) -> None:
     test_unpacker_result = Unpacker().unpack(pack_buffer_fx)
 
@@ -32,7 +36,7 @@ def test_correct_full_pack_png(pack_buffer_fx: bytes, img_data_fx: Image) -> Non
     assert (test_unpacker_result[1] == img_data_fx.depth).all()
 
 
-@pytest.mark.parametrize('pack_buffer_fx', (PackType.JPG,), indirect=True)
+@pytest.mark.parametrize("pack_buffer_fx", (PackType.JPG,), indirect=True)
 def test_correct_full_pack_jpg(pack_buffer_fx: bytes, img_data_fx: Image) -> None:
     test_unpacker_result = Unpacker().unpack(pack_buffer_fx)
 

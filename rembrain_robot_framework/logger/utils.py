@@ -15,7 +15,10 @@ from rembrain_robot_framework.logger import JsonFormatter, LogHandler
 
 def get_log_handler(project_description: dict, in_cluster: bool = True) -> T.Any:
     if in_cluster:
-        if "RABBIT_ADDRESS" not in os.environ or "@" not in os.environ["RABBIT_ADDRESS"]:
+        if (
+            "RABBIT_ADDRESS" not in os.environ
+            or "@" not in os.environ["RABBIT_ADDRESS"]
+        ):
             print("Warning, testing environment, web logging is not working")
             return None
 
@@ -28,7 +31,9 @@ def get_log_handler(project_description: dict, in_cluster: bool = True) -> T.Any
             stared_host: str = ".".join(["*"] + host.split(".")[-2:]).replace("/", "")
             context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
             context.load_default_certs()
-            connection_params = {"ssl_options": pika.SSLOptions(context, server_hostname=stared_host)}
+            connection_params = {
+                "ssl_options": pika.SSLOptions(context, server_hostname=stared_host)
+            }
             port = 5671
 
         return RabbitMQHandler(
@@ -44,8 +49,12 @@ def get_log_handler(project_description: dict, in_cluster: bool = True) -> T.Any
         )
     else:
         if not (
-                ("RRF_USERNAME" in os.environ and "RRF_PASSWORD" in os.environ and "WEBSOCKET_GATE_URL" in os.environ)
-                or ("ML_NAME" in os.environ and "ML_PASSWORD" in os.environ)
+            (
+                "RRF_USERNAME" in os.environ
+                and "RRF_PASSWORD" in os.environ
+                and "WEBSOCKET_GATE_URL" in os.environ
+            )
+            or ("ML_NAME" in os.environ and "ML_PASSWORD" in os.environ)
         ):
             print("Warning, testing environment, web logging is not working")
             return None
@@ -65,8 +74,9 @@ def get_console_handler() -> logging.StreamHandler:
     return console_handler
 
 
-def setup_logging(project_description: dict, ctx: BaseContext,
-                  in_cluster: bool = True) -> T.Tuple[Queue, QueueListener]:
+def setup_logging(
+    project_description: dict, ctx: BaseContext, in_cluster: bool = True
+) -> T.Tuple[Queue, QueueListener]:
     """
     Sets up a QueueListener that listens to the main logging queue and passes data to the handlers
     The handlers are generated here, there are three handlers:

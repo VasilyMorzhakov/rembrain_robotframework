@@ -4,7 +4,8 @@ from rembrain_robot_framework import RobotProcess
 
 
 class StubProcess(RobotProcess):
-    """ It is just stub without any benefit work."""
+    """It is just stub without any benefit work."""
+
     SLEEP_TIME = 10
 
     def __init__(self, eternal_loop: bool = True, *args, **kwargs):
