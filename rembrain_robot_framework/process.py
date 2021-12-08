@@ -7,9 +7,9 @@ from uuid import uuid4
 
 from rembrain_robot_framework.models.named_message import NamedMessage
 from rembrain_robot_framework.services.watcher import Watcher
-from rembrain_robot_framework.utils import ConfigurationError, ComputationFailure
+from rembrain_robot_framework.utils import ConfigurationError
 
-from rembrain_robot_framework.util.stack_monitor import StackMonitor
+from rembrain_robot_framework.services.stack_monitor import StackMonitor
 
 
 class RobotProcess:

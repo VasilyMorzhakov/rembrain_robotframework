@@ -36,6 +36,5 @@ shared_objects:
 
 
 description:
-  project: rembrain_robotframework_examples
   subsystem: remote_example_processor
   robot: ${ROBOT_NAME}

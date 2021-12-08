@@ -21,6 +21,5 @@ shared_objects:
   exit_flag: "Value:bool"
 
 description:
-  project: rembrain_robotframework_examples
   subsystem: local_example
   robot: local_example_robot

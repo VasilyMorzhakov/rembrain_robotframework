@@ -204,10 +204,7 @@ def test_description_from_config() -> None:
             config, {"p1": {"process_class": StubProcess, "keep_alive": False}}
         )
 
-        assert all(
-            (i in ("project", "subsystem", "robot") for i in rd.project_description)
-        )
-        assert rd.project_description["project"] == "test_project"
+        assert all((i in ("subsystem", "robot") for i in rd.project_description))
         assert rd.project_description["subsystem"] == "test_subsystem"
         assert rd.project_description["robot"] == robot_name
 
@@ -333,8 +330,8 @@ def test_correct_dispatcher_full_creation() -> None:
     }
     robot_dispatcher = RobotDispatcher(config, p)
 
-    assert "project" in robot_dispatcher.project_description
-    assert robot_dispatcher.project_description["project"] == "TEST"
+    assert "subsystem" in robot_dispatcher.project_description
+    assert robot_dispatcher.project_description["subsystem"] == "TEST"
 
     assert robot_dispatcher._max_queue_sizes
     mqs = {"messages1": 5, "messages2": 10, "messages3": 50, "messages4": 50}
@@ -351,6 +348,7 @@ def test_correct_dispatcher_full_creation() -> None:
     assert all(
         i in m for i in robot_dispatcher.processes["p1"]["publish_queues"]
     ) and len(m) == len(robot_dispatcher.processes["p1"]["publish_queues"])
+
     m = ("messages3", "messages4")
     assert all(
         i in m for i in robot_dispatcher.processes["p1"]["consume_queues"]
@@ -360,6 +358,7 @@ def test_correct_dispatcher_full_creation() -> None:
     assert robot_dispatcher.shared_objects
     assert "test_dict" in robot_dispatcher.shared_objects
     assert "test_bool" in robot_dispatcher.shared_objects
+
     assert robot_dispatcher.system_queues
     assert all(i in p for i in robot_dispatcher.system_queues) and len(p) == len(
         robot_dispatcher.system_queues
