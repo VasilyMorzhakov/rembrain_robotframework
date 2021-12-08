@@ -62,7 +62,7 @@ def test_logging_to_websocket_works() -> None:
 
     ws_port = "15735"
     dump_message = "It's test message!"
-    close_flag = ctx.Manager().Value('b', False)
+    close_flag = ctx.Manager().Value("b", False)
 
     config = EnvYAML(os.path.join(os.path.dirname(__file__), "configs", "config2.yaml"))
     process_map = {"failing_process": FailingProcess}

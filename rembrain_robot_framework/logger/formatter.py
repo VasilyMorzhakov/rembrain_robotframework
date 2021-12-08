@@ -6,7 +6,12 @@ from pythonjsonlogger import jsonlogger
 
 
 class JsonFormatter(jsonlogger.JsonFormatter):
-    def add_fields(self, log_record: T.Union[OrderedDict, dict], record: LogRecord, message_dict: dict) -> None:
+    def add_fields(
+        self,
+        log_record: T.Union[OrderedDict, dict],
+        record: LogRecord,
+        message_dict: dict,
+    ) -> None:
         super(JsonFormatter, self).add_fields(log_record, record, message_dict)
 
         level: T.Optional[str] = log_record.get("level")

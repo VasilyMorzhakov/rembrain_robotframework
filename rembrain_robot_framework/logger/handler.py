@@ -41,9 +41,14 @@ class LogHandler(logging.Handler):
             if self.logs_queue.qsize() < self._MAX_LOG_SIZE:
                 self.logs_queue.put(binary_record)
             else:
-                print("WARNING! Log queue overloaded, message wasn't delivered to websocket")
+                print(
+                    "WARNING! Log queue overloaded, message wasn't delivered to websocket"
+                )
         except Exception:
-            print("Attention: logger exception - record was not written! Reason:", format_exc())
+            print(
+                "Attention: logger exception - record was not written! Reason:",
+                format_exc(),
+            )
 
     def _send_to_ws(self) -> None:
         # Init connection
@@ -76,7 +81,9 @@ class LogHandler(logging.Handler):
                         loop.send(msg)
                         break
                     else:
-                        raise RuntimeError(f"Failed to deliver log message in {self._SEND_RETRIES} attempts")
+                        raise RuntimeError(
+                            f"Failed to deliver log message in {self._SEND_RETRIES} attempts"
+                        )
 
                 except Exception as e:
                     print("Exception in logging:", e)

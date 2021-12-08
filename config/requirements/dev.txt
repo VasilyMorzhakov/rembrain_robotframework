@@ -2,4 +2,5 @@
 pycodestyle
 pytest
 pytest-mock
-websockets
+black
+pre-commit

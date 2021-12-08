@@ -20,11 +20,13 @@ class Watcher:
         self._send_to_ws(message)
 
     def _send_to_ws(self, message: str) -> None:
-        self._connect.push(WsRequest(
-            command=WsCommandType.PUSH,
-            exchange=self.EXCHANGE,
-            robot_name=os.environ["ROBOT_NAME"],
-            username=os.environ["RRF_USERNAME"],
-            password=os.environ["RRF_PASSWORD"],
-            message=message
-        ))
+        self._connect.push(
+            WsRequest(
+                command=WsCommandType.PUSH,
+                exchange=self.EXCHANGE,
+                robot_name=os.environ["ROBOT_NAME"],
+                username=os.environ["RRF_USERNAME"],
+                password=os.environ["RRF_PASSWORD"],
+                message=message,
+            )
+        )

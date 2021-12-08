@@ -15,31 +15,35 @@ from rembrain_robot_framework.util.stack_monitor import StackMonitor
 class RobotProcess:
     # TODO: add doctrings for this parameters
     def __init__(
-            self,
-            name: str,
-            shared_objects: dict,
-            consume_queues: T.Dict[str, Queue],
-            publish_queues: T.Dict[str, T.List[Queue]],
-            system_queues: T.Dict[str, Queue],
-            watcher: Watcher,
-            *args,
-            **kwargs
+        self,
+        name: str,
+        shared_objects: dict,
+        consume_queues: T.Dict[str, Queue],
+        publish_queues: T.Dict[str, T.List[Queue]],
+        system_queues: T.Dict[str, Queue],
+        watcher: Watcher,
+        *args,
+        **kwargs,
     ):
         self.name: str = name
 
         self._consume_queues: T.Dict[str, Queue] = consume_queues  # queues for reading
-        self._publish_queues: T.Dict[str, T.List[Queue]] = publish_queues  # queues for writing
+        self._publish_queues: T.Dict[
+            str, T.List[Queue]
+        ] = publish_queues  # queues for writing
 
-        self._shared: T.Any = namedtuple('_', shared_objects.keys())(**shared_objects)
+        self._shared: T.Any = namedtuple("_", shared_objects.keys())(**shared_objects)
 
         self._system_queues: T.Dict[str, Queue] = system_queues
         self._received_named_messages = {}
 
-        self.queues_to_clear: T.List[str] = []  # in case of exception this queues are cleared
+        self.queues_to_clear: T.List[
+            str
+        ] = []  # in case of exception this queues are cleared
         self.log = logging.getLogger(f"{self.__class__.__name__} ({self.name})")
 
         self._stack_monitor: T.Optional[StackMonitor] = None
-        if "monitoring" in kwargs and kwargs['monitoring']:
+        if "monitoring" in kwargs and kwargs["monitoring"]:
             self._init_monitoring(self.name)
 
         self.watcher = watcher
@@ -92,8 +96,13 @@ class RobotProcess:
                 while not q.empty():
                     q.get(timeout=2.0)
 
-    def publish(self, message: T.Any, queue_name: T.Optional[str] = None, clear_on_overflow: bool = False,
-                named: bool = False) -> T.Optional[str]:
+    def publish(
+        self,
+        message: T.Any,
+        queue_name: T.Optional[str] = None,
+        clear_on_overflow: bool = False,
+        named: bool = False,
+    ) -> T.Optional[str]:
         """
         Sends message to all processes that are configured to listen to the queue_name. If there are several processes
         listening than every one will receive a copy of the message.
@@ -112,20 +121,28 @@ class RobotProcess:
         :rtype: T.Optional[str]
         """
         if len(self._publish_queues.keys()) == 0:
-            self.log.error(f"Process \"{self.name}\" has no queues to write.")
-            raise ConfigurationError(f"Publish called with 0 output queues for process {self.name}")
+            self.log.error(f'Process "{self.name}" has no queues to write.')
+            raise ConfigurationError(
+                f"Publish called with 0 output queues for process {self.name}"
+            )
 
         if queue_name is None:
             if len(self._publish_queues.keys()) != 1:
-                self.log.error(f"Process \"{self.name}\" has more than one write queue. Specify a write queue name.")
-                raise ConfigurationError(f"Publish called with >1 output queues for process {self.name}")
+                self.log.error(
+                    f'Process "{self.name}" has more than one write queue. Specify a write queue name.'
+                )
+                raise ConfigurationError(
+                    f"Publish called with >1 output queues for process {self.name}"
+                )
 
             queue_name = list(self._publish_queues.keys())[0]
 
         message_id: T.Optional[str] = None
         if named:
             message_id = str(uuid4())
-            message = NamedMessage(id=message_id, client_process=self.name, data=message)
+            message = NamedMessage(
+                id=message_id, client_process=self.name, data=message
+            )
 
         for q in self._publish_queues[queue_name]:
             if clear_on_overflow:
@@ -136,13 +153,19 @@ class RobotProcess:
 
         return message_id
 
-    def consume(self, queue_name: T.Optional[str] = None, clear_all_messages: bool = False) -> T.Any:
+    def consume(
+        self, queue_name: T.Optional[str] = None, clear_all_messages: bool = False
+    ) -> T.Any:
         if len(self._consume_queues.keys()) == 0:
-            raise ConfigurationError(f"Consume called with 0 input queues for process {self.name}")
+            raise ConfigurationError(
+                f"Consume called with 0 input queues for process {self.name}"
+            )
 
         if queue_name is None:
             if len(self._consume_queues.keys()) != 1:
-                raise ConfigurationError(f"Consume called with >1 input queues for process {self.name}")
+                raise ConfigurationError(
+                    f"Consume called with >1 input queues for process {self.name}"
+                )
 
             queue_name = list(self._consume_queues.keys())[0]
 
@@ -160,10 +183,10 @@ class RobotProcess:
         return queue_name in self._publish_queues
 
     def is_full(
-            self,
-            *,
-            publish_queue_name: T.Optional[str] = None,
-            consume_queue_name: T.Optional[str] = None
+        self,
+        *,
+        publish_queue_name: T.Optional[str] = None,
+        consume_queue_name: T.Optional[str] = None,
     ) -> bool:
         if publish_queue_name is None and consume_queue_name is None:
             raise ConfigurationError("None of params was got!")
@@ -174,14 +197,18 @@ class RobotProcess:
         # if consume queue
         if consume_queue_name:
             if not self.has_consume_queue(consume_queue_name):
-                raise ConfigurationError(f"Consume queue with name = '{consume_queue_name}' does not exist.")
+                raise ConfigurationError(
+                    f"Consume queue with name = '{consume_queue_name}' does not exist."
+                )
 
             # TODO check if it's used anywhere
             return self._consume_queues[consume_queue_name].full()
 
         # if publish queue
         if not self.has_publish_queue(publish_queue_name):
-            raise ConfigurationError(f"Publish queue with name = '{publish_queue_name}' does not exist.")
+            raise ConfigurationError(
+                f"Publish queue with name = '{publish_queue_name}' does not exist."
+            )
 
         for q in self._publish_queues[publish_queue_name]:
             if q.full():
@@ -200,11 +227,13 @@ class RobotProcess:
         :rtype: Bool
         """
         if len(self._consume_queues.keys()) == 0:
-            raise ConfigurationError(f"Process \"{self.name}\" has no queues to read.")
+            raise ConfigurationError(f'Process "{self.name}" has no queues to read.')
 
         if consume_queue_name is None:
             if len(self._consume_queues.keys()) != 1:
-                raise ConfigurationError(f"Process '{self.name}' has more than one read queue. Specify a consume queue name.")
+                raise ConfigurationError(
+                    f"Process '{self.name}' has more than one read queue. Specify a consume queue name."
+                )
 
             consume_queue_name = list(self._consume_queues.keys())[0]
 

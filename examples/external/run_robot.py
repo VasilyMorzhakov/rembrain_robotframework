@@ -9,7 +9,11 @@ sys.path.append(os.path.abspath(os.path.join(__file__, "..", "..", "..")))
 from examples.common.processes import ImageCapture, GUIProcess, DepthMixin  # noqa: E402
 from examples.external.utils import query_env_vars  # noqa: E402
 from rembrain_robot_framework import RobotDispatcher  # noqa: E402
-from rembrain_robot_framework.processes import WsRobotProcess, VideoPacker, VideoUnpacker  # noqa: E402
+from rembrain_robot_framework.processes import (
+    WsRobotProcess,
+    VideoPacker,
+    VideoUnpacker,
+)  # noqa: E402
 
 
 def run_dispatcher():
@@ -20,10 +24,12 @@ def run_dispatcher():
         "video_packer": VideoPacker,
         "orig_pusher": WsRobotProcess,
         "processed_receiver": WsRobotProcess,
-        "video_unpacker": VideoUnpacker
+        "video_unpacker": VideoUnpacker,
     }
 
-    config = EnvYAML(os.path.join(os.path.dirname(__file__), "config", "robot_config.yaml"))
+    config = EnvYAML(
+        os.path.join(os.path.dirname(__file__), "config", "robot_config.yaml")
+    )
     processes = {p: {"process_class": process_map[p]} for p in config["processes"]}
 
     robot_dispatcher = RobotDispatcher(config, processes, in_cluster=False)

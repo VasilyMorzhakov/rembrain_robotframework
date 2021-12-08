@@ -23,8 +23,14 @@ class ImageCapture(RobotProcess):
 
             img = self.image.copy()
             img = cv2.putText(
-                img, str(self.frame_number), (20, 40),
-                cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2, cv2.LINE_AA
+                img,
+                str(self.frame_number),
+                (20, 40),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                1,
+                (255, 255, 255),
+                2,
+                cv2.LINE_AA,
             )
 
             self.publish(img)

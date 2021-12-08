@@ -23,4 +23,3 @@ shared_objects:
   consume_message: dict
   finish_load: Value:bool
   finish_dump: Value:bool
-

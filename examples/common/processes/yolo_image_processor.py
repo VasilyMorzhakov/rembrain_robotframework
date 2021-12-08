@@ -7,6 +7,7 @@ class YoloImageProcessor(RobotProcess):
 
         # To prevent importing pytorch/etc in main process
         import yolov5
+
         device = kwargs.get("device", "cpu")
         self.model = yolov5.load("yolov5n.pt", device)
         self.frame_counter = 0

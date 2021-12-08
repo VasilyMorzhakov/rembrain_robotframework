@@ -14,7 +14,9 @@ class WebsocketServer:
         self.close_flag: Value = close_flag
         self.messages: T.List[T.Any] = []
 
-    async def handle_msg(self, websocket: websockets.WebSocketServerProtocol, path: str) -> None:
+    async def handle_msg(
+        self, websocket: websockets.WebSocketServerProtocol, path: str
+    ) -> None:
         async for message in websocket:
             if type(message) is bytes:
                 message = message.decode("utf-8")

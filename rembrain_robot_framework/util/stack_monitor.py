@@ -136,22 +136,18 @@ class StoppableThread(threading.Thread):
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)
 
-
     def fn_1():
         print("Hi1")
         time.sleep(1)
-
 
     def fn_2():
         print("Hi2")
         time.sleep(0.5)
 
-
     def loop():
         while True:
             fn_1()
             fn_2()
-
 
     sm = StackMonitor("")
     sm.start_monitoring()

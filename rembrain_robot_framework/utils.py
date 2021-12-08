@@ -10,29 +10,29 @@ from multiprocessing.context import BaseContext
 
 def generate(name: str, manager: Manager, ctx: BaseContext) -> T.Any:
     # Important: Since we are using a separate context for the RobotProcesses, always instantiate from it
-    if name == 'dict':
+    if name == "dict":
         return manager.dict()
 
-    if name == 'list':
+    if name == "list":
         return manager.list()
 
-    if name == 'Lock':
+    if name == "Lock":
         return ctx.Lock()
 
-    if name == 'Value:bool':
+    if name == "Value:bool":
         return ctx.Value(c_bool, False)
 
-    if name == 'Value:int':
+    if name == "Value:int":
         return ctx.Value(c_int, 0)
 
-    if name == 'Value:float':
+    if name == "Value:float":
         return ctx.Value(c_float, 0.0)
 
     # todo perhaps it does not work
-    if name == 'Value:string':
-        return ctx.Value(c_char_p, '')
+    if name == "Value:string":
+        return ctx.Value(c_char_p, "")
 
-    raise Exception('Wrong type to generate')
+    raise Exception("Wrong type to generate")
 
 
 def keep_alive(start_process_func: T.Callable) -> T.Callable:
@@ -85,10 +85,12 @@ def start_process(process_class, *args, **kwargs) -> None:
 
 class ConfigurationError(Exception):
     """Raised when there are errors in config.yaml or
-     process usage conflicts with this configurations"""""
+    process usage conflicts with this configurations"""
+
     pass
 
 
 class ComputationFailure(Exception):
-    """returned when there is an exception during RPC call"""""
+    """returned when there is an exception during RPC call"""
+
     pass

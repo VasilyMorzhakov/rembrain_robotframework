@@ -28,10 +28,15 @@ class WsRobotProcess(RobotProcess):
 
         self.command_type: str = kwargs["command_type"]
         if self.command_type == WsCommandType.PUSH_LOOP:
-            self.log.warning("Command type push_loop is now the same as push, change your config "
-                             "since push_loop is deprecated")
+            self.log.warning(
+                "Command type push_loop is now the same as push, change your config "
+                "since push_loop is deprecated"
+            )
             self.command_type = WsCommandType.PUSH
-        if self.command_type not in WsCommandType.ALL_VALUES or self.command_type == WsCommandType.PING:
+        if (
+            self.command_type not in WsCommandType.ALL_VALUES
+            or self.command_type == WsCommandType.PING
+        ):
             raise RuntimeError("Unknown/disallowed command type")
 
         # TODO: delete this after push ACTUALLY becomes push-loop, and not the other way around
@@ -47,8 +52,10 @@ class WsRobotProcess(RobotProcess):
         # Data type handling for pull commands
         self.data_type: str = kwargs.get("data_type", "binary").lower()
         if self.data_type not in self._data_type_parse_fns:
-            raise RuntimeError(f"Data type {self.data_type} is not in allowed types."
-                               f"\r\nPlease use one of following: {', '.join(self._data_type_parse_fns.keys())}")
+            raise RuntimeError(
+                f"Data type {self.data_type} is not in allowed types."
+                f"\r\nPlease use one of following: {', '.join(self._data_type_parse_fns.keys())}"
+            )
         self._parse_fn = self._data_type_parse_fns[self.data_type]
 
         self.ping_interval = float(kwargs.get("ping_interval", 1.0))
@@ -67,6 +74,7 @@ class WsRobotProcess(RobotProcess):
             while True:
                 data = await ws.recv()
                 self._publish_if_not_ping(data)
+
         await self._connect_ws(_pull_fn)
 
     def _publish_if_not_ping(self, data: T.Union[str, bytes]):
@@ -83,8 +91,10 @@ class WsRobotProcess(RobotProcess):
             if data == WsCommandType.PING:
                 return
             else:
-                raise RuntimeError(f"Got non-ping string data from websocket, this shouldn't be happening"
-                                   f"\r\nData: {data}")
+                raise RuntimeError(
+                    f"Got non-ping string data from websocket, this shouldn't be happening"
+                    f"\r\nData: {data}"
+                )
 
     async def _push(self) -> None:
         async def _push_fn(ws):
@@ -94,6 +104,7 @@ class WsRobotProcess(RobotProcess):
             - one for consuming from queue and publishing
             - one for receiving and dropping any packages coming from the websocket
             """
+
             async def _ping():
                 """Sends out ping packet ever self.ping_interval seconds"""
                 control_packet = json.dumps({"command": WsCommandType.PING})
@@ -107,7 +118,9 @@ class WsRobotProcess(RobotProcess):
                     if not self.is_empty():
                         data = self.consume()
                         if type(data) is not bytes:
-                            self.log.error(f"Trying to send non-binary data to push_loop: {data}")
+                            self.log.error(
+                                f"Trying to send non-binary data to push_loop: {data}"
+                            )
                             raise RuntimeError("Data to send to ws should be binary")
                         await ws.send(data)
                     else:
@@ -127,8 +140,11 @@ class WsRobotProcess(RobotProcess):
         Connects to the websocket, sends control packet
         then runs handler_fn that then uses the websocket however it needs
         """
-        async with websockets.connect(self.ws_url, logger=WebsocketsLogAdapter(self.log, {}),
-                                      open_timeout=self.connection_timeout) as ws:
+        async with websockets.connect(
+            self.ws_url,
+            logger=WebsocketsLogAdapter(self.log, {}),
+            open_timeout=self.connection_timeout,
+        ) as ws:
             try:
                 self.log.info("Sending control packet")
                 await ws.send(self.get_control_packet().json())
@@ -148,7 +164,9 @@ class WsRobotProcess(RobotProcess):
                 self.log.info(msg)
                 return
 
-    def get_control_packet(self, command_type: T.Optional[WsCommandType] = None) -> WsRequest:
+    def get_control_packet(
+        self, command_type: T.Optional[WsCommandType] = None
+    ) -> WsRequest:
         if command_type is None:
             command_type = self.command_type
         return WsRequest(
@@ -156,7 +174,7 @@ class WsRobotProcess(RobotProcess):
             exchange=self.exchange,
             robot_name=self.robot_name,
             username=self.username,
-            password=self.password
+            password=self.password,
         )
 
 
@@ -167,5 +185,5 @@ class WebsocketsLogAdapter(logging.LoggerAdapter):
         We have to get rid of it so we can pass log messages accross processes
         """
         if "websocket" in kwargs["extra"]:
-            del(kwargs["extra"]["websocket"])
+            del kwargs["extra"]["websocket"]
         return msg, kwargs
