@@ -33,7 +33,7 @@ class RobotDispatcher:
         self.in_cluster: bool = in_cluster
 
         self.project_description = {}
-        if project_description:
+        if project_description is not None:
             self.project_description = project_description
         elif config and config.get("description"):
             self.project_description = config["description"]
