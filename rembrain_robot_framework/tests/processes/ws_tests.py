@@ -10,16 +10,20 @@ from rembrain_robot_framework.ws import WsCommandType, WsRequest
 
 
 @pytest.fixture()
-def ws_proc_params_fx():
+def ws_proc_params_fx(mocker):
     return {
         "name": "ws_robot_process",
         "shared_objects": {},
         "consume_queues": {},
         "publish_queues": {},
+        "system_queues": {},
+        "command_type": "pull",
         "exchange": "test_ws_robot_process",
+        "url": "https://example.com",
         "robot_name": "tester",
         "username": "tester",
         "password": "tester",
+        "watcher": mocker.MagicMock(),
     }
 
 
@@ -127,3 +131,10 @@ def test_incorrect_ws_pull_data_decode(mocker, ws_proc_params_fx):
         ws_proc.run()
 
     assert "WS response is not bytes!" in str(exc_info.value)
+
+
+@pytest.mark.parametrize("arg", ["exchange", "command_type"])
+def test_required_args(ws_proc_params_fx, arg):
+    del ws_proc_params_fx[arg]
+    with pytest.raises(Exception):
+        ws_proc = WsRobotProcess(**ws_proc_params_fx)

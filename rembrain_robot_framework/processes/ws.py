@@ -41,11 +41,19 @@ class WsRobotProcess(RobotProcess):
         if self.command_type == WsCommandType.PUSH:
             self.command_type = WsCommandType.PUSH_LOOP
 
-        self.ws_url: str = kwargs.get("url", os.environ["WEBSOCKET_GATE_URL"])
         self.exchange: str = kwargs["exchange"]
-        self.robot_name: str = kwargs.get("robot_name", os.environ["ROBOT_NAME"])
-        self.username: str = kwargs.get("username", os.environ["RRF_USERNAME"])
-        self.password: str = kwargs.get("password", os.environ["RRF_PASSWORD"])
+        self.ws_url: str = self.get_arg_with_env_fallback(
+            kwargs, "url", "WEBSOCKET_GATE_URL"
+        )
+        self.robot_name: str = self.get_arg_with_env_fallback(
+            kwargs, "robot_name", "ROBOT_NAME"
+        )
+        self.username: str = self.get_arg_with_env_fallback(
+            kwargs, "username", "RRF_USERNAME"
+        )
+        self.password: str = self.get_arg_with_env_fallback(
+            kwargs, "password", "RRF_PASSWORD"
+        )
 
         # Data type handling for pull commands
         self.data_type: str = kwargs.get("data_type", "binary").lower()

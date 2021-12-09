@@ -15,8 +15,12 @@ class PingProcess(RobotProcess):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.associated_robot = kwargs.get("associated_robot", os.environ["ROBOT_NAME"])
-        self.template_type = kwargs.get("template_type", os.environ["TEMPLATE_TYPE"])
+        self.associated_robot = self.get_arg_with_env_fallback(
+            kwargs, "associated_robot", "ROBOT_NAME"
+        )
+        self.template_type = self.get_arg_with_env_fallback(
+            kwargs, "template_type", "TEMPLATE_TYPE"
+        )
 
         # get container ID - it's assumed, that we're in a docker container
         try:
