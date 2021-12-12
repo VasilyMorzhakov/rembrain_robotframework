@@ -30,7 +30,7 @@ class WsDispatcher:
             self.log.info("Opening websocket connection")
             # Turn on SO_REUSEADDR so we can reuse hung sockets
             for i in range(self.CONNECTION_RETRIES):
-                with stopit.ThreadingTimeout(0.5):
+                with stopit.ThreadingTimeout(1.5):
                     self.ws = websocket.WebSocket(
                         sockopt=((socket.SOL_SOCKET, socket.SO_REUSEADDR, 1),)
                     )
@@ -137,9 +137,6 @@ class WsDispatcher:
                 self.open()
                 self.ws.send(request.json())
                 self.ws.recv()
-
-                # todo does it need ?
-                self.ws.settimeout(1.0)
 
                 self._start_silent_reader()
                 while True:

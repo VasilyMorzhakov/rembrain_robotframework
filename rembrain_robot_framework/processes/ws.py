@@ -1,7 +1,5 @@
 import asyncio
 import json
-import logging
-import os
 import typing as T
 
 import websockets
@@ -11,6 +9,9 @@ from rembrain_robot_framework.ws import WsCommandType, WsRequest
 
 
 # todo receive env params from  yaml and pass to constructor?
+from rembrain_robot_framework.ws.ws_log_adapter import WsLogAdapter
+
+
 class WsRobotProcess(RobotProcess):
     # Functions to handle binary data coming from pull commands
     _data_type_parse_fns: T.Dict[str, T.Callable[[bytes], T.Any]] = {
@@ -148,7 +149,7 @@ class WsRobotProcess(RobotProcess):
         """
         async with websockets.connect(
             self.ws_url,
-            logger=WebsocketsLogAdapter(self.log, {}),
+            logger=WsLogAdapter(self.log, {}),
             open_timeout=self.connection_timeout,
         ) as ws:
             try:
@@ -182,14 +183,3 @@ class WsRobotProcess(RobotProcess):
             username=self.username,
             password=self.password,
         )
-
-
-class WebsocketsLogAdapter(logging.LoggerAdapter):
-    def process(self, msg, kwargs):
-        """
-        Websockets adds its own LoggingAdapter that adds an unpicklable websocket class,
-        We have to get rid of it so we can pass log messages accross processes
-        """
-        if "websocket" in kwargs["extra"]:
-            del kwargs["extra"]["websocket"]
-        return msg, kwargs

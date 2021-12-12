@@ -1,15 +1,20 @@
+import asyncio
 import json
 import logging
 import os
 import queue
-import time
 import typing as T
 from threading import Thread
 from traceback import format_exc
 
+import websockets
 from python_logging_rabbitmq import FieldFilter
 
-from rembrain_robot_framework.ws import WsRequest, WsCommandType, WsDispatcher
+from rembrain_robot_framework.ws import (
+    WsRequest,
+    WsCommandType,
+    WsLogAdapter,
+)
 
 
 class LogHandler(logging.Handler):
@@ -20,17 +25,24 @@ class LogHandler(logging.Handler):
     def __init__(self, fields: T.Optional[dict] = None, *args, **kwargs):
         super(LogHandler, self).__init__(*args, **kwargs)
 
+        # Setting up the inner logger (only to stderr)
+        self.log = logging.getLogger(__name__)
+        # Turn off propagation so we don't write to ourselves
+        self.log.propagate = False
+        for handler in self.log.handlers:
+            self.log.removeHandler(handler)
+
+        handler = logging.StreamHandler()
+        formatter = logging.Formatter("%(levelname)s:%(name)s:%(message)s")
+        handler.setFormatter(formatter)
+        self.log.addHandler(handler)
+
+        self.logs_queue = queue.Queue(maxsize=200)
         self.fields: dict = fields if isinstance(fields, dict) else {}
         if len(self.fields) > 0:
             self.addFilter(FieldFilter(self.fields, True))
 
-        self.logs_queue = queue.Queue()
-
-        self.last_ping_time = time.time()
-        self.keep_alive_interval = 1.0
-
-        # Disable logs so we don't lockup in a loop by accident
-        self.ws_connect = WsDispatcher(propagate_log=False)
+        # Start a new thread where we send the log records to the websocket
         Thread(target=self._send_to_ws, daemon=True).start()
 
     def emit(self, record: logging.LogRecord) -> None:
@@ -41,11 +53,11 @@ class LogHandler(logging.Handler):
             if self.logs_queue.qsize() < self._MAX_LOG_SIZE:
                 self.logs_queue.put(binary_record)
             else:
-                print(
+                self.log.warning(
                     "WARNING! Log queue overloaded, message wasn't delivered to websocket"
                 )
         except Exception:
-            print(
+            self.log.error(
                 "Attention: logger exception - record was not written! Reason:",
                 format_exc(),
             )
@@ -67,39 +79,49 @@ class LogHandler(logging.Handler):
             username=username,
             password=password,
         )
+        loop = asyncio.new_event_loop()
+        loop.run_until_complete(self._connect_ws(request))
 
-        loop = self.ws_connect.push_loop(request)
-        next(loop)
+    async def _connect_ws(self, control_packet: WsRequest) -> None:
+        """
+        Connects to the websocket, sends control packet then starts the push loop
+        This always runs in an infinite loop and restarts if cancels
+        """
 
-        # Loop where we receive data from queue and pump it to the websocket
+        async for ws in websockets.connect(
+            os.environ["WEBSOCKET_GATE_URL"],
+            logger=WsLogAdapter(self.log, {}),
+            open_timeout=1.5,
+        ):
+            try:
+                self.log.info("Sending control packet")
+                await ws.send(control_packet.json())
+                await asyncio.gather(self._ping(ws), self._send_log_record(ws))
+                continue
+            except websockets.ConnectionClosedError as e:
+                msg = "Connection closed with error."
+                if e.rcvd is not None:
+                    msg += f" Reason: {e.rcvd.reason}"
+                self.log.error(msg)
+                continue
+            except websockets.ConnectionClosedOK as e:
+                msg = "Connection closed."
+                if e.rcvd is not None:
+                    msg += f" Reason: {e.rcvd.reason}"
+                self.log.info(msg)
+                continue
+
+    @staticmethod
+    async def _ping(ws):
+        control_packet = json.dumps({"command": WsCommandType.PING})
+        while True:
+            await asyncio.sleep(1.0)
+            await ws.send(control_packet)
+
+    async def _send_log_record(self, ws):
         while True:
             if self.logs_queue.qsize() > 0:
                 msg = self.logs_queue.get()
-
-                try:
-                    for i in range(self._SEND_RETRIES):
-                        loop.send(msg)
-                        break
-                    else:
-                        raise RuntimeError(
-                            f"Failed to deliver log message in {self._SEND_RETRIES} attempts"
-                        )
-
-                except Exception as e:
-                    print("Exception in logging:", e)
-                    time.sleep(5)
-                    # Reinitialize the connection
-                    self.ws_connect.close()
-                    loop = self.ws_connect.push_loop(request)
-                    next(loop)
+                await ws.send(msg)
             else:
-                self._ping(loop)
-
-    def _ping(self, push_loop: T.Generator) -> None:
-        now: float = time.time()
-
-        if now - self.last_ping_time >= self.keep_alive_interval:
-            push_loop.send(json.dumps({"command": WsCommandType.PING}))
-            self.last_ping_time = now
-
-        time.sleep(0.001)
+                await asyncio.sleep(0.01)
