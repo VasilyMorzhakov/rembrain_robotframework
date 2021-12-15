@@ -2,5 +2,6 @@
 pycodestyle
 pytest
 pytest-mock
+pytest-timeout
 black
 pre-commit

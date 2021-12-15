@@ -1,12 +1,14 @@
-import json
+import asyncio
+from unittest.mock import MagicMock, AsyncMock
 
 import pytest
 
 from rembrain_robot_framework.processes import WsRobotProcess
-from rembrain_robot_framework.ws import WsCommandType, WsRequest
+from rembrain_robot_framework.ws import WsCommandType
 
 
-# FIXME: don't work after rewrite
+class TestEndError(Exception):
+    ...
 
 
 @pytest.fixture()
@@ -17,7 +19,7 @@ def ws_proc_params_fx(mocker):
         "consume_queues": {},
         "publish_queues": {},
         "system_queues": {},
-        "command_type": "pull",
+        "command_type": WsCommandType.PULL,
         "exchange": "test_ws_robot_process",
         "url": "https://example.com",
         "robot_name": "tester",
@@ -27,114 +29,190 @@ def ws_proc_params_fx(mocker):
     }
 
 
-@pytest.mark.skip
-def test_correct_ws_push(mocker, ws_proc_params_fx):
-    ws_proc = WsRobotProcess(**ws_proc_params_fx, command_type=WsCommandType.PUSH)
-    test_mock_result = None
-    test_data = {"some_data": 777}
-    loop_reset_exception = "AssertionError for reset loop!"
-
-    def push(request, *args, **kwargs):
-        nonlocal test_mock_result
-        test_mock_result = request
-        raise AssertionError(loop_reset_exception)
-
-    mocker.patch.object(ws_proc, "_ping")
-    mocker.patch.object(ws_proc, "consume", return_value=test_data)
-    mocker.patch.object(ws_proc, "is_empty", return_value=False)
-    mocker.patch.object(ws_proc.ws_connect, "push", push)
-
-    with pytest.raises(AssertionError) as exc_info:
-        ws_proc.run()
-
-    assert loop_reset_exception in str(exc_info.value)
-    assert isinstance(test_mock_result, WsRequest)
-    assert test_mock_result.message == test_data
-    assert test_mock_result.exchange == ws_proc.exchange
+@pytest.fixture()
+def ws_proc_push(ws_proc_params_fx, mocker):
+    ws_proc_params_fx["command_type"] = WsCommandType.PUSH
+    return ws_proc(ws_proc_params_fx, mocker)
 
 
-@pytest.mark.skip
-def test_correct_ws_push_loop(mocker, ws_proc_params_fx):
-    ws_proc = WsRobotProcess(**ws_proc_params_fx, command_type=WsCommandType.PUSH_LOOP)
-    test_mock_result = None
-    test_data = {"some_data": 777}
-    loop_reset_exception = "AssertionError for reset loop!"
-
-    def push_loop(*args, **kwargs):
-        nonlocal test_mock_result
-        test_mock_result = yield
-        raise AssertionError(loop_reset_exception)
-
-    mocker.patch.object(ws_proc, "_ping")
-    mocker.patch.object(ws_proc, "consume", return_value=test_data)
-    mocker.patch.object(ws_proc, "is_empty", return_value=False)
-    mocker.patch.object(ws_proc.ws_connect, "push_loop", push_loop)
-
-    with pytest.raises(AssertionError) as exc_info:
-        ws_proc.run()
-
-    assert loop_reset_exception in str(exc_info.value)
-    assert isinstance(test_mock_result, dict)
-    assert test_mock_result == test_data
+@pytest.fixture()
+def ws_proc_pull(ws_proc_params_fx, mocker):
+    ws_proc_params_fx["command_type"] = WsCommandType.PULL
+    return ws_proc(ws_proc_params_fx, mocker)
 
 
-@pytest.mark.skip
-def test_correct_ws_pull(mocker, ws_proc_params_fx):
-    ws_proc = WsRobotProcess(
-        **ws_proc_params_fx,
-        command_type=WsCommandType.PULL,
-        is_decode=True,
-        to_json=True
-    )
-    test_mock_result = None
-    test_data = {"some_data": 777}
-    loop_reset_exception = "AssertionError for reset loop!"
+def ws_proc(ws_proc_params_fx, mocker):
+    proc = WsRobotProcess(**ws_proc_params_fx)
+    ws_mock = AsyncMock()
+    # Context manager that will return the mock
+    ws_mock_ctx = mocker.patch("websockets.connect")
+    ws_mock_ctx.return_value.__aenter__.return_value = ws_mock
 
-    def pull(*args, **kwargs):
-        yield json.dumps(test_data).encode()
+    # WEBSOCKET MOCK SETUP
+    # Need to stub out recv and send with some sleep otherwise it hangs the event loop
+    async def recv_called(*args):
+        await asyncio.sleep(0.05)
+        return b"recv_data"
 
-    def publish(response_data, *args, **kwargs):
-        nonlocal test_mock_result
-        test_mock_result = response_data
-        raise AssertionError(loop_reset_exception)
+    ws_mock.recv.side_effect = recv_called
 
-    mocker.patch.object(ws_proc, "publish", publish)
-    mocker.patch.object(ws_proc.ws_connect, "pull", pull)
+    async def send_called(*args):
+        await asyncio.sleep(0.05)
 
-    with pytest.raises(AssertionError) as exc_info:
-        ws_proc.run()
+    ws_mock.send.side_effect = send_called
 
-    assert loop_reset_exception in str(exc_info.value)
-    assert isinstance(test_mock_result, dict)
-    assert test_mock_result == test_data
+    # PROCESS MOCK SETUP
+    # Stubbing out is_empty and consume so we always have something to send
+    mocker.patch.object(proc, "is_empty", return_value=False)
+    mocker.patch.object(proc, "consume", return_value=b"some_data")
 
-
-@pytest.mark.skip
-def test_incorrect_command_type(ws_proc_params_fx):
-    with pytest.raises(Exception) as exc_info:
-        WsRobotProcess(**ws_proc_params_fx, command_type=WsCommandType.PING)
-
-    assert "Unknown/disallowed command type." in str(exc_info.value)
-
-
-@pytest.mark.skip
-def test_incorrect_ws_pull_data_decode(mocker, ws_proc_params_fx):
-    ws_proc = WsRobotProcess(
-        **ws_proc_params_fx, command_type=WsCommandType.PULL, is_decode=True
-    )
-
-    def pull(*args, **kwargs):
-        yield {"some_data": 777}
-
-    mocker.patch.object(ws_proc.ws_connect, "pull", pull)
-    with pytest.raises(Exception) as exc_info:
-        ws_proc.run()
-
-    assert "WS response is not bytes!" in str(exc_info.value)
+    return proc, ws_mock
 
 
 @pytest.mark.parametrize("arg", ["exchange", "command_type"])
 def test_required_args(ws_proc_params_fx, arg):
     del ws_proc_params_fx[arg]
     with pytest.raises(Exception):
-        ws_proc = WsRobotProcess(**ws_proc_params_fx)
+        _ = WsRobotProcess(**ws_proc_params_fx)
+
+
+def test_push_nonbinary_fails(mocker, ws_proc_push):
+    proc: WsRobotProcess = ws_proc_push[0]
+    ws_mock: AsyncMock = ws_proc_push[1]
+
+    mocker.patch.object(proc, "consume", return_value="non-binary data")
+
+    with pytest.raises(RuntimeError) as ex:
+        proc.run()
+    assert "Data to send to ws should be binary" in str(ex.value)
+
+
+def test_first_thing_sent_is_control_packet(mocker, ws_proc_push):
+    proc: WsRobotProcess = ws_proc_push[0]
+    ws_mock: AsyncMock = ws_proc_push[1]
+
+    async def send_mock(*args):
+        raise TestEndError
+
+    ws_mock.send.side_effect = send_mock
+
+    with pytest.raises(TestEndError):
+        proc.run()
+    ws_mock.send.assert_awaited_with(proc.get_control_packet().json())
+
+
+@pytest.mark.timeout(2)
+def test_push_sends_consumed_data(ws_proc_push):
+    proc: WsRobotProcess = ws_proc_push[0]
+    ws_mock: AsyncMock = ws_proc_push[1]
+
+    packets_consumed = 0
+
+    async def send_mock(*args):
+        nonlocal packets_consumed
+        if packets_consumed >= 5:
+            raise TestEndError
+        packets_consumed += 1
+        await asyncio.sleep(0.1)
+
+    ws_mock.send.side_effect = send_mock
+
+    with pytest.raises(TestEndError):
+        proc.run()
+
+    ws_mock.send.assert_awaited_with(proc.consume.return_value)
+
+
+@pytest.mark.timeout(4)
+def test_push_sends_pings(ws_proc_push):
+    proc: WsRobotProcess = ws_proc_push[0]
+    ws_mock: AsyncMock = ws_proc_push[1]
+
+    async def send_mock(*args):
+        packet = args[0]
+        if type(packet) is str and "ping" in packet:
+            raise TestEndError
+        await asyncio.sleep(0.1)
+
+    ws_mock.send.side_effect = send_mock
+
+    with pytest.raises(TestEndError):
+        proc.run()
+
+    ws_mock.send.assert_awaited_with('{"command": "ping"}')
+
+
+@pytest.mark.timeout(2)
+def test_pull_publishes_received_data(mocker, ws_proc_pull):
+    proc: WsRobotProcess = ws_proc_pull[0]
+    ws_mock: AsyncMock = ws_proc_pull[1]
+
+    def publish_mock(*args):
+        raise TestEndError
+
+    pub_mock = MagicMock()
+    pub_mock.side_effect = publish_mock
+    mocker.patch.object(proc, "publish", pub_mock)
+
+    with pytest.raises(TestEndError):
+        proc.run()
+    pub_mock.assert_called_with(b"recv_data")
+
+
+@pytest.mark.parametrize(
+    "data_type,recv_val,expected",
+    [
+        ("json", b'{"command": "hello"}', {"command": "hello"}),
+        ("bytes", b'{"command": "hello"}', b'{"command": "hello"}'),
+        ("str", b'{"command": "hello"}', '{"command": "hello"}'),
+    ],
+)
+def test_pull_type_conversion(mocker, ws_proc_params_fx, data_type, recv_val, expected):
+    ws_proc_params_fx["data_type"] = data_type
+    ws_proc_params_fx["command_type"] = WsCommandType.PULL
+
+    ws_proc_pull = ws_proc(ws_proc_params_fx, mocker)
+    proc: WsRobotProcess = ws_proc_pull[0]
+    ws_mock: AsyncMock = ws_proc_pull[1]
+
+    def publish_mock(*args):
+        raise TestEndError
+
+    pub_mock = MagicMock()
+    pub_mock.side_effect = publish_mock
+    mocker.patch.object(proc, "publish", pub_mock)
+
+    async def recv_called(*args):
+        await asyncio.sleep(0.05)
+        return recv_val
+
+    ws_mock.recv.side_effect = recv_called
+
+    with pytest.raises(TestEndError):
+        proc.run()
+    pub_mock.assert_called_with(expected)
+
+
+def test_pull_doesnt_publish_pings(mocker, ws_proc_pull):
+    proc: WsRobotProcess = ws_proc_pull[0]
+    ws_mock: AsyncMock = ws_proc_pull[1]
+
+    pings_sent = 0
+
+    async def recv_called(*args):
+        nonlocal pings_sent
+        pings_sent += 1
+        if pings_sent >= 3:
+            raise TestEndError
+        await asyncio.sleep(0.05)
+        return "ping"
+
+    ws_mock.recv.side_effect = recv_called
+
+    pub_mock = MagicMock()
+    mocker.patch.object(proc, "publish", pub_mock)
+
+    with pytest.raises(TestEndError):
+        proc.run()
+
+    pub_mock.assert_not_called()
