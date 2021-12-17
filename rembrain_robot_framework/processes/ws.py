@@ -70,10 +70,12 @@ class WsRobotProcess(RobotProcess):
     def run(self) -> None:
         self.log.info(f"{self.__class__.__name__} started, name: {self.name}")
 
+        loop = asyncio.get_event_loop()
+
         if self.command_type == WsCommandType.PULL:
-            asyncio.run(self._pull())
+            loop.run_until_complete(self._pull())
         elif self.command_type == WsCommandType.PUSH_LOOP:
-            asyncio.run(self._push())
+            loop.run_until_complete(self._push())
 
     async def _pull(self) -> None:
         async def _pull_fn(ws):
