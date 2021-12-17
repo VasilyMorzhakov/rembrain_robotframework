@@ -313,7 +313,7 @@ class RobotDispatcher:
                 "project_description": self.project_description,
                 "logging_queue": self.log_queue,
                 "system_queues": self.system_queues,
-                "watcher": self.watcher,
+                # "watcher": self.watcher,
                 **self.processes[proc_name],
                 **kwargs,
             },

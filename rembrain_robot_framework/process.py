@@ -22,7 +22,8 @@ class RobotProcess:
         consume_queues: T.Dict[str, Queue],
         publish_queues: T.Dict[str, T.List[Queue]],
         system_queues: T.Dict[str, Queue],
-        watcher: Watcher,
+        # TODO: FIX
+        # watcher: Watcher,
         *args,
         **kwargs,
     ):
@@ -46,7 +47,7 @@ class RobotProcess:
         if "monitoring" in kwargs and kwargs["monitoring"]:
             self._init_monitoring(self.name)
 
-        self.watcher = watcher
+        # self.watcher = watcher
 
     def run(self) -> None:
         raise NotImplementedError()
