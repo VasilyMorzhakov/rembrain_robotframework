@@ -8,9 +8,13 @@ from rembrain_robot_framework.pack import Unpacker
 
 class VideoUnpacker(RobotProcess):
     """
-    In: Packed binary of two image frames + camera data
-    Out: Tuple of (rgb, depth, camera)
-        Also sets the shared.camera field
+    In:
+        Packed binary of two image frames + camera data
+
+    Out:
+        Tuple of `(rgb, depth, camera)`
+        Also sets the `shared.camera` field, if it exists in the `self.shared` dictionary
+
     """
 
     def __init__(self, *args, **kwargs):

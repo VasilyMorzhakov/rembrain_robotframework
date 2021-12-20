@@ -8,10 +8,19 @@ from rembrain_robot_framework.pack import Packer
 
 class VideoPacker(RobotProcess):
     """
-    In: Tuple of two images (numpy raw pixel arrays)
-    *ASSUMES THAT THERE'S A SHARED CAMERA FIELD*
-    Does: Packs the two images + camera data into a single package using a packer specified in pack_type
-    Out: Binary package of the two frames + camera
+    In:
+        Tuple of two images (numpy raw pixel arrays) and optionally camera data as a third element.
+        If camera data is not supplied, it is taken from the `camera` shared field
+
+    Does:
+        Packs the two images + camera data into a single package using a packer specified in pack_type
+
+    Out:
+        Binary tuple of `(rgb, depth, camera)`
+
+    Args:
+        **[Required]** pack_type: Type of packer to use. Possible values are JPG_PNG and JPG.
+        Used to construct a :class:`~rembrain_robot_framework.pack.Packer` instance
     """
 
     def __init__(self, *args, **kwargs):
@@ -35,7 +44,9 @@ class VideoPacker(RobotProcess):
             elif len(result) == 3:
                 rgb, depth, camera = result
             else:
-                raise Exception("video_packer consumes tuples with 2 or 3 elements")
+                raise Exception(
+                    f"video_packer consumes tuples with 2 or 3 elements. Got {len(result)} elements."
+                )
 
             camera["time"] = datetime.now(timezone.utc).timestamp()
             buffer: bytes = self.packer.pack(rgb, depth, camera)

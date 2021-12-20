@@ -4,7 +4,10 @@ from rembrain_robot_framework import RobotProcess
 
 
 class StubProcess(RobotProcess):
-    """It is just stub without any benefit work."""
+    """
+    Stub process that doesn't do any work.
+    Can be used as e.g. a sink for queues that are not used while debugging
+    """
 
     SLEEP_TIME = 10
 

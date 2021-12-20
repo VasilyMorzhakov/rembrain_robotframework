@@ -13,6 +13,37 @@ from rembrain_robot_framework.ws.ws_log_adapter import WsLogAdapter
 
 
 class WsRobotProcess(RobotProcess):
+    """
+    Process that communicates with a remote websocket server.
+    Pulling/pushing data between the program and the weboscket exchange.
+
+    This is the process you should be using if you want to set up distributed processing of your robot's functionality.
+    For example, you can have your robot push the video feed to the websocket server, and then have an ML-capable PC
+    pull the video feed and perform the ML processing, sending back commands for robot to execute.
+
+    Args:
+        **[Required]** command_type: Either `pull` or `push`. Pull to get data from the remote exchange.
+        Push to push data to the exchange.
+
+        **[Required]** exchange: Name of the exchange the data should be pushed/pulled from.
+
+        url: Websocket gate URL. If not specified, `WEBSOCKET_GATE_URL` env var is used.
+
+        robot_name: Robot, for which we are pushing/pulling data. If not specified, `ROBOT_NAME` env var is used.
+
+        username: Username of user to log in into the exchange. If not specified, `RRF_USERNAME` env var is used.
+
+        password: Password of user to log in into the exchange. If not specified, `RRF_PASSWORD` env var is used.
+
+        data_type: (For pull commands) Determines how the binary data from the exchange should be processed.
+        The output from the WsRobotProcess to the queues will be of the according data_type.
+        Possible values (default: binary): `["json", "binary", "bytes", "str", "string"]`.
+
+        ping_interval: Interval between pings that are being sent to the exchange in seconds. Default value: 1.0
+
+        connection_timeout: Timeout for opening connection to the exchange in seconds. Default value: 1.5
+    """
+
     # Functions to handle binary data coming from pull commands
     _data_type_parse_fns: T.Dict[str, T.Callable[[bytes], T.Any]] = {
         "json": lambda b: json.loads(b.decode("utf-8")),

@@ -8,8 +8,17 @@ from rembrain_robot_framework import RobotProcess
 
 class PingProcess(RobotProcess):
     """
-    For use only in Docker
-    Out: Info about the process to the queue (pushed every second)
+    For use in Docker containers
+
+    Out:
+        Info about the process to the queue (pushed every second)
+        and associated fields (robot and template type)
+        in JSON, encoded as a utf-8 binary string
+
+    Args:
+        associated_robot: Robot that is used. If not specified, `ROBOT_NAME` env var is used
+
+        template_type: If not specified, `TEMPLATE_TYPE` env var is used
     """
 
     def __init__(self, *args, **kwargs):
