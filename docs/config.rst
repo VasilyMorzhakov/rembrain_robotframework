@@ -47,7 +47,7 @@ This way you can add arguments specific to your process class in the config file
 Shared objects
 ---------------
 
-Here you can specify objects that will be shared between processes.
+In the `shared_objects` section you can specify objects that will be shared between processes.
 Each process can access them via `self.shared` NamedTuple
 
 Available types (case sensitive):
@@ -62,5 +62,5 @@ Available types (case sensitive):
 Description
 --------------
 
-This section contains miscelaneous information about the project.
+The `description` section contains miscelaneous information about the project.
 This information is primarily used for logging purposes.
