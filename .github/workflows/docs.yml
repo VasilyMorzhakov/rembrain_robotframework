@@ -14,7 +14,7 @@ jobs:
     - name: Build HTML
       uses: ammaraskar/sphinx-action@0.4
       with:
-        pre-build-command: "apt install -y libgl1-mesa-glx && pip install -r config/requirements/docs.txt"
+        pre-build-command: "apt install -y libgl1-mesa-glx libglib2.0-0 && pip install -r config/requirements/docs.txt"
     - name: Upload artifacts
       uses: actions/upload-artifact@v1
       with:
