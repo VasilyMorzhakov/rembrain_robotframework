@@ -34,6 +34,17 @@ release = "v0.0.33"
 extensions = ["sphinx.ext.autodoc", "sphinx.ext.autosummary"]
 
 autodoc_default_flags = ["members"]
+autodoc_mock_imports = [
+    "pythonjsonlogger",
+    "websockets",
+    "python_logging_rabbitmq",
+    "pydantic",
+    "stopit",
+    "websocket",
+    "pika",
+    "cv2",
+    "numpy",
+]
 autosummary_generate = True
 
 # Add any paths that contain templates here, relative to this directory.
