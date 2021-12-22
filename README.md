@@ -6,7 +6,7 @@ Instructions will be soon.
 `pycodestyle . --config=config/.pycodestyle`
 
 #### Tests:
-`pytest -c config/pytest.ini -n 8`
+`pytest -c config/pytest.ini`
 
 #### Building docs:
 Install requirements from config/requirements/docs.txt then

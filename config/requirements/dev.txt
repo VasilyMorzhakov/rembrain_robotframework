@@ -3,6 +3,5 @@ pycodestyle
 pytest
 pytest-mock
 pytest-timeout
-pytest-xdist
 black
 pre-commit

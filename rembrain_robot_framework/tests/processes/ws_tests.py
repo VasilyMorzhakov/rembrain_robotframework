@@ -7,12 +7,12 @@ from rembrain_robot_framework.processes import WsRobotProcess
 from rembrain_robot_framework.ws import WsCommandType
 
 
-class TestEndError(Exception):
+class EndTestError(Exception):
     ...
 
 
 @pytest.fixture()
-def ws_proc_params_fx(mocker):
+def ws_proc_params_fx():
     return {
         "name": "ws_robot_process",
         "shared_objects": {},
@@ -25,7 +25,7 @@ def ws_proc_params_fx(mocker):
         "robot_name": "tester",
         "username": "tester",
         "password": "tester",
-        "watcher": mocker.MagicMock(),
+        "watcher_queue": None,
     }
 
 
@@ -44,6 +44,7 @@ def ws_proc_pull(ws_proc_params_fx, mocker):
 def ws_proc(ws_proc_params_fx, mocker):
     proc = WsRobotProcess(**ws_proc_params_fx)
     ws_mock = AsyncMock()
+
     # Context manager that will return the mock
     ws_mock_ctx = mocker.patch("websockets.connect")
     ws_mock_ctx.return_value.__aenter__.return_value = ws_mock
@@ -92,11 +93,11 @@ def test_first_thing_sent_is_control_packet(mocker, ws_proc_push):
     ws_mock: AsyncMock = ws_proc_push[1]
 
     async def send_mock(*args):
-        raise TestEndError
+        raise EndTestError
 
     ws_mock.send.side_effect = send_mock
 
-    with pytest.raises(TestEndError):
+    with pytest.raises(EndTestError):
         proc.run()
     ws_mock.send.assert_awaited_with(proc.get_control_packet().json())
 
@@ -111,13 +112,13 @@ def test_push_sends_consumed_data(ws_proc_push):
     async def send_mock(*args):
         nonlocal packets_consumed
         if packets_consumed >= 5:
-            raise TestEndError
+            raise EndTestError
         packets_consumed += 1
         await asyncio.sleep(0.1)
 
     ws_mock.send.side_effect = send_mock
 
-    with pytest.raises(TestEndError):
+    with pytest.raises(EndTestError):
         proc.run()
 
     ws_mock.send.assert_awaited_with(proc.consume.return_value)
@@ -131,12 +132,12 @@ def test_push_sends_pings(ws_proc_push):
     async def send_mock(*args):
         packet = args[0]
         if type(packet) is str and "ping" in packet:
-            raise TestEndError
+            raise EndTestError
         await asyncio.sleep(0.1)
 
     ws_mock.send.side_effect = send_mock
 
-    with pytest.raises(TestEndError):
+    with pytest.raises(EndTestError):
         proc.run()
 
     ws_mock.send.assert_awaited_with('{"command": "ping"}')
@@ -148,13 +149,13 @@ def test_pull_publishes_received_data(mocker, ws_proc_pull):
     ws_mock: AsyncMock = ws_proc_pull[1]
 
     def publish_mock(*args):
-        raise TestEndError
+        raise EndTestError
 
     pub_mock = MagicMock()
     pub_mock.side_effect = publish_mock
     mocker.patch.object(proc, "publish", pub_mock)
 
-    with pytest.raises(TestEndError):
+    with pytest.raises(EndTestError):
         proc.run()
     pub_mock.assert_called_with(b"recv_data")
 
@@ -176,7 +177,7 @@ def test_pull_type_conversion(mocker, ws_proc_params_fx, data_type, recv_val, ex
     ws_mock: AsyncMock = ws_proc_pull[1]
 
     def publish_mock(*args):
-        raise TestEndError
+        raise EndTestError
 
     pub_mock = MagicMock()
     pub_mock.side_effect = publish_mock
@@ -188,7 +189,7 @@ def test_pull_type_conversion(mocker, ws_proc_params_fx, data_type, recv_val, ex
 
     ws_mock.recv.side_effect = recv_called
 
-    with pytest.raises(TestEndError):
+    with pytest.raises(EndTestError):
         proc.run()
     pub_mock.assert_called_with(expected)
 
@@ -203,7 +204,7 @@ def test_pull_doesnt_publish_pings(mocker, ws_proc_pull):
         nonlocal pings_sent
         pings_sent += 1
         if pings_sent >= 3:
-            raise TestEndError
+            raise EndTestError
         await asyncio.sleep(0.05)
         return "ping"
 
@@ -212,7 +213,7 @@ def test_pull_doesnt_publish_pings(mocker, ws_proc_pull):
     pub_mock = MagicMock()
     mocker.patch.object(proc, "publish", pub_mock)
 
-    with pytest.raises(TestEndError):
+    with pytest.raises(EndTestError):
         proc.run()
 
     pub_mock.assert_not_called()
