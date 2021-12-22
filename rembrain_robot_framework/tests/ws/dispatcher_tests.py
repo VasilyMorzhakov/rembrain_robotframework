@@ -49,7 +49,10 @@ def test_correct_ws_push(
 
 @pytest.mark.parametrize("ws_request_fx", (WsCommandType.PUSH_LOOP,), indirect=True)
 def test_correct_ws_push_loop(
-    mocker, ws_dispatcher_fx: WsDispatcher, ws_request_fx: WsRequest, ws_test_data: str
+    mocker: MockerFixture,
+    ws_dispatcher_fx: WsDispatcher,
+    ws_request_fx: WsRequest,
+    ws_test_data: str,
 ) -> None:
     test_response = None
 

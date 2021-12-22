@@ -23,7 +23,7 @@ def packer_fx(img_data_fx, request):
         consume_queues={},
         publish_queues={},
         system_queues={},
-        watcher=Watcher(False),
+        watcher_queue=None,
         pack_type=request.param,
     )
 
@@ -36,7 +36,7 @@ def unpacker_fx(img_data_fx):
         consume_queues={},
         publish_queues={},
         system_queues={},
-        watcher=Watcher(False),
+        watcher_queue=None,
     )
 
 

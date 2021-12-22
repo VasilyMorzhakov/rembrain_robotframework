@@ -14,7 +14,7 @@ def command_timer_fx():
         consume_queues={},
         publish_queues={},
         system_queues={},
-        watcher=Watcher(False),
+        watcher_queue=None,
     )
 
 

@@ -9,4 +9,5 @@ class WsLogAdapter(logging.LoggerAdapter):
         """
         if "websocket" in kwargs["extra"]:
             del kwargs["extra"]["websocket"]
+
         return msg, kwargs

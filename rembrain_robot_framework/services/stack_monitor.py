@@ -9,7 +9,6 @@ import typing as T
 logger = logging.getLogger(__name__)
 
 
-# todo replace to 'services'
 class StackMonitor:
     """
     Uses code from the hanging_threads library: https://github.com/niccokunzmann/hanging_threads
@@ -26,6 +25,7 @@ class StackMonitor:
         self._poll_interval = float(kwargs.get("poll_interval", 0.1))
         self._print_interval = float(kwargs.get("print_interval", 5))
         self._clear_on_print = bool(kwargs.get("clear_on_print", True))
+
         self._stack_counter = {}
         self._stack_lock = threading.Lock()
         self._interval_start = time.time()
@@ -36,6 +36,7 @@ class StackMonitor:
         if not self._monitor_thread:
             self._monitor_thread = StoppableThread(target=self._monitor_fn, daemon=True)
             self._monitor_thread.start()
+
         if not self._print_thread:
             self._print_thread = StoppableThread(target=self._print_stacks, daemon=True)
             self._print_thread.start()
@@ -43,12 +44,16 @@ class StackMonitor:
     def _monitor_fn(self):
         while not self._monitor_thread.is_stopped():
             time.sleep(self._poll_interval)
+
             with self._stack_lock:
                 frames = self._get_frames()
+
                 for thread_name in frames:
                     frame_str = frames[thread_name]
+
                     if thread_name not in self._stack_counter:
                         self._stack_counter[thread_name] = {}
+
                     if frame_str not in self._stack_counter[thread_name]:
                         self._stack_counter[thread_name][frame_str] = 1
                     else:
@@ -60,6 +65,7 @@ class StackMonitor:
         with self._stack_lock:
             if self._monitor_thread:
                 self._monitor_thread.stop()
+
             if self._print_thread:
                 self._print_thread.stop()
 
@@ -67,19 +73,24 @@ class StackMonitor:
         threads = {thread.ident: thread for thread in threading.enumerate()}
         res = {}
         frames = sys._current_frames()
+
         for thread_id, frame in frames.items():
             if thread_id in (self._monitor_thread.ident, self._print_thread.ident):
                 continue
+
             res[threads[thread_id].name] = self.thread2list(frame)
+
         return res
 
     @staticmethod
     def thread2list(frame):
-        l = []
+        frames = []
+
         while frame:
-            l.insert(0, StackMonitor.frame2string(frame))
+            frames.insert(0, StackMonitor.frame2string(frame))
             frame = frame.f_back
-        return "".join(l)
+
+        return "".join(frames)
 
     @staticmethod
     def frame2string(frame):
@@ -87,6 +98,7 @@ class StackMonitor:
         co = frame.f_code
         filename = co.co_filename
         name = co.co_name
+
         s = f"File '{filename}', line {lineno}, in {name}:"
         line = linecache.getline(filename, lineno, frame.f_globals).lstrip()
         return s + f"\r\n\t{line}"
@@ -94,8 +106,10 @@ class StackMonitor:
     def _print_stacks(self):
         while True:
             time.sleep(self._print_interval)
+
             if self._print_thread.is_stopped():
                 break
+
             self.__print()
 
     def __print(self):
@@ -103,9 +117,11 @@ class StackMonitor:
             if len(self._stack_counter):
                 dt = time.time() - self._interval_start
                 res = f"Stack samples for process {os.getpid()}, name {self._name} for the last {dt:.0f} s.:"
+
                 for thread_id, frames_cnt in self._stack_counter.items():
                     res += "\r\n========================================================\r\n"
                     res += f"||THREAD '{thread_id}':||\r\n{self.frame_cnt_to_str(frames_cnt)}"
+
                 # logger.info(res)
                 print(res)
                 if self._clear_on_print:
@@ -117,6 +133,7 @@ class StackMonitor:
         s = ""
         for frame in sorted(frames_cnt, key=frames_cnt.get, reverse=True):
             s += f">>>COUNT: {frames_cnt[frame]}:\r\n{frame}"
+
         return s
 
 

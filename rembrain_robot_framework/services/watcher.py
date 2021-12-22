@@ -1,23 +1,23 @@
-import logging
 import os
+import time
+from multiprocessing import Queue
 
 from rembrain_robot_framework.ws import WsDispatcher, WsRequest, WsCommandType
 
 
 class Watcher:
-    EXCHANGE = "heartbeat"
+    EXCHANGE: str = "heartbeat"
 
-    def __init__(self, in_cluster: bool) -> None:
-        self._in_cluster: bool = in_cluster
+    def __init__(self, queue: Queue) -> None:
         self._connect = WsDispatcher()
-        self.log = logging.getLogger("RobotDispatcher")
+        self.watcher_queue: Queue = queue
 
-    def notify(self, message: str) -> None:
-        if self._in_cluster:
-            self.log.warning("Heartbeat may be used only out of cluster processes.")
-            return
+    def notify(self) -> None:
+        while True:
+            if self.watcher_queue.qsize() > 0:
+                self._send_to_ws(self.watcher_queue.get())
 
-        self._send_to_ws(message)
+            time.sleep(0.1)
 
     def _send_to_ws(self, message: str) -> None:
         self._connect.push(

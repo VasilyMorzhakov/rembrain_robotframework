@@ -147,3 +147,19 @@ class QueueSizeP2(RobotProcess):
 
             if self.shared.finish_dump.value:
                 break
+
+
+class WatcherP1(RobotProcess):
+    TEST_MESSAGE = "Message from process 1."
+
+    def run(self) -> None:
+        time.sleep(1)
+        self.heartbeat(self.TEST_MESSAGE)
+
+
+class WatcherP2(RobotProcess):
+    TEST_MESSAGE = "Message from process 2."
+
+    def run(self) -> None:
+        time.sleep(1)
+        self.heartbeat(self.TEST_MESSAGE)

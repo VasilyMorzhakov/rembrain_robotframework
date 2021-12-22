@@ -5,7 +5,6 @@ import pytest
 from pytest_mock import MockerFixture
 
 from rembrain_robot_framework import RobotProcess
-from rembrain_robot_framework.services.watcher import Watcher
 from rembrain_robot_framework.utils import ConfigurationError
 
 
@@ -17,7 +16,7 @@ def default_proc_params_fx() -> dict:
         "consume_queues": {},
         "publish_queues": {},
         "system_queues": {},
-        "watcher": Watcher(False),
+        "watcher_queue": None,
     }
 
 
@@ -57,47 +56,25 @@ def test_incorrect_publish(mocker: MockerFixture, default_proc_params_fx: dict) 
     default_proc_params_fx.update(consume_queues={"message1": Queue(maxsize=2)})
     r = RobotProcess(**default_proc_params_fx)
 
-    error_message = ""
-
-    def _error(*args):
-        nonlocal error_message
-        error_message = args[0]
-
-    mocker.patch.object(r.log, "error", _error)
-    try:
+    mocker.patch.object(r.log, "error")
+    with pytest.raises(ConfigurationError):
         r.publish("message")
-    except ConfigurationError as e:
-        pass
-    else:
-        assert False
 
     r._publish_queues = {"message1": [Queue(maxsize=2)], "message2": [Queue(maxsize=2)]}
-    try:
+    with pytest.raises(ConfigurationError):
         r.publish("message")
-    except ConfigurationError as e:
-        pass
-    else:
-        assert False
 
 
-def test_incorrect_consume(mocker: MockerFixture, default_proc_params_fx: dict) -> None:
+def test_incorrect_consume(default_proc_params_fx: dict) -> None:
     default_proc_params_fx.update(publish_queues={"message1": Queue(maxsize=2)})
     r = RobotProcess(**default_proc_params_fx)
 
-    try:
+    with pytest.raises(ConfigurationError):
         r.consume("message1")
-    except ConfigurationError as e:
-        pass
-    else:
-        assert False
 
     r._consume_queues = {"message1": Queue(maxsize=2), "message2": Queue(maxsize=2)}
-    try:
+    with pytest.raises(ConfigurationError):
         r.consume()
-    except ConfigurationError as e:
-        pass
-    else:
-        assert False
 
 
 def test_check_is_full(default_proc_params_fx: dict) -> None:

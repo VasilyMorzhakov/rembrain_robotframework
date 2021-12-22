@@ -7,7 +7,6 @@ from threading import Thread
 from uuid import uuid4
 
 from rembrain_robot_framework.models.named_message import NamedMessage
-from rembrain_robot_framework.services.watcher import Watcher
 from rembrain_robot_framework.utils import ConfigurationError
 
 from rembrain_robot_framework.services.stack_monitor import StackMonitor
@@ -22,8 +21,7 @@ class RobotProcess:
         consume_queues: T.Dict[str, Queue],
         publish_queues: T.Dict[str, T.List[Queue]],
         system_queues: T.Dict[str, Queue],
-        # TODO: FIX
-        # watcher: Watcher,
+        watcher_queue: T.Optional[Queue],
         *args,
         **kwargs,
     ):
@@ -47,7 +45,7 @@ class RobotProcess:
         if "monitoring" in kwargs and kwargs["monitoring"]:
             self._init_monitoring(self.name)
 
-        # self.watcher = watcher
+        self.watcher_queue = watcher_queue
 
     def run(self) -> None:
         raise NotImplementedError()
@@ -310,7 +308,9 @@ class RobotProcess:
                 self._received_named_messages[message.id] = message.data
 
     def heartbeat(self, message: str):
-        Thread(target=self.watcher.notify, daemon=True, args=(message,)).start()
+        if self.watcher_queue:
+            # todo what about blocking thread?
+            self.watcher_queue.put(message)
 
     @staticmethod
     def get_arg_with_env_fallback(
@@ -322,8 +322,10 @@ class RobotProcess:
         """
         if key in kwargs:
             return kwargs[key]
+
         if fallback_env_var not in os.environ:
             raise RuntimeError(
                 f"Couldn't get argument value of '{key}' for the process and there was no env var '{fallback_env_var}'"
             )
+
         return os.environ[fallback_env_var]

@@ -83,6 +83,7 @@ def start_process(process_class, *args, **kwargs) -> None:
             process.free_resources()
 
 
+# todo replace it into 'errors.py' or 'exceptions.py'
 class ConfigurationError(Exception):
     """Raised when there are errors in config.yaml or
     process usage conflicts with this configurations"""
@@ -90,6 +91,7 @@ class ConfigurationError(Exception):
     pass
 
 
+# todo replace it into 'errors.py' or 'exceptions.py'
 class ComputationFailure(Exception):
     """returned when there is an exception during RPC call"""
 

@@ -4,6 +4,7 @@ import platform
 import time
 import typing as T
 from logging.handlers import QueueHandler, QueueListener
+from threading import Thread
 
 from rembrain_robot_framework import utils
 from rembrain_robot_framework.logger.utils import setup_logging
@@ -156,7 +157,11 @@ class RobotDispatcher:
         }
 
         # for heartbeat
-        self.watcher = Watcher(self.in_cluster)
+        self.watcher_queue = None
+        if not self.in_cluster:
+            self.watcher_queue = self.mp_context.Queue(maxsize=self.DEFAULT_QUEUE_SIZE)
+            self.watcher = Watcher(self.watcher_queue)
+            Thread(target=self.watcher.notify, daemon=True).start()
 
     def start_processes(self) -> None:
         for process_name in self.processes.keys():
@@ -313,7 +318,7 @@ class RobotDispatcher:
                 "project_description": self.project_description,
                 "logging_queue": self.log_queue,
                 "system_queues": self.system_queues,
-                # "watcher": self.watcher,
+                "watcher_queue": self.watcher_queue,
                 **self.processes[proc_name],
                 **kwargs,
             },

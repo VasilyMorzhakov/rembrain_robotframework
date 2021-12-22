@@ -365,3 +365,28 @@ def test_correct_dispatcher_full_creation() -> None:
     )
 
     robot_dispatcher.stop_logging()
+
+
+def test_correct_watcher(mocker: MockerFixture):
+    processes = {
+        "p1": {"process_class": WatcherP1, "keep_alive": False},
+        "p2": {"process_class": WatcherP2, "keep_alive": False},
+    }
+    robot_dispatcher = RobotDispatcher(
+        {"processes": {"p1": {}, "p2": {}}}, processes, in_cluster=False
+    )
+
+    messages = set()
+    mocker.patch.object(
+        robot_dispatcher.watcher, "_send_to_ws", lambda m: messages.add(m)
+    )
+
+    assert robot_dispatcher.watcher_queue
+    assert robot_dispatcher.watcher_queue._maxsize == RobotDispatcher.DEFAULT_QUEUE_SIZE
+
+    robot_dispatcher.start_processes()
+    time.sleep(5)
+
+    assert len(messages) == 2
+    assert messages == {WatcherP1.TEST_MESSAGE, WatcherP2.TEST_MESSAGE}
+    robot_dispatcher.stop_logging()

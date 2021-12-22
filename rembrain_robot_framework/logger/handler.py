@@ -27,6 +27,7 @@ class LogHandler(logging.Handler):
 
         # Setting up the inner logger (only to stderr)
         self.log = logging.getLogger(__name__)
+
         # Turn off propagation so we don't write to ourselves
         self.log.propagate = False
         for handler in self.log.handlers:
@@ -102,18 +103,22 @@ class LogHandler(logging.Handler):
                 msg = "Connection closed with error."
                 if e.rcvd is not None:
                     msg += f" Reason: {e.rcvd.reason}"
+
                 self.log.error(msg)
                 continue
+
             except websockets.ConnectionClosedOK as e:
                 msg = "Connection closed."
                 if e.rcvd is not None:
                     msg += f" Reason: {e.rcvd.reason}"
+
                 self.log.info(msg)
                 continue
 
     @staticmethod
     async def _ping(ws):
         control_packet = json.dumps({"command": WsCommandType.PING})
+
         while True:
             await asyncio.sleep(1.0)
             await ws.send(control_packet)

@@ -6,12 +6,12 @@ from rembrain_robot_framework.pack import PackType, Packer, Unpacker
 from rembrain_robot_framework.tests.models import Image
 
 
-@pytest.fixture()
+@pytest.fixture
 def img_data_fx():
     return Image.get_data()
 
 
-@pytest.fixture()
+@pytest.fixture
 def pack_buffer_fx(request: SubRequest, img_data_fx) -> bytes:
     return Packer(request.param).pack(
         img_data_fx.rgb, img_data_fx.depth, img_data_fx.camera
