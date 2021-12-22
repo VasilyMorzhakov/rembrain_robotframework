@@ -97,7 +97,9 @@ class LogHandler(logging.Handler):
             try:
                 self.log.info("Sending control packet")
                 await ws.send(control_packet.json())
-                await asyncio.gather(self._ping(ws), self._send_log_record(ws))
+                await asyncio.gather(
+                    self._ping(ws), self._send_log_record(ws), self._recv_sink(ws)
+                )
                 continue
             except websockets.ConnectionClosedError as e:
                 msg = "Connection closed with error."
@@ -122,6 +124,13 @@ class LogHandler(logging.Handler):
         while True:
             await asyncio.sleep(1.0)
             await ws.send(control_packet)
+
+    @staticmethod
+    async def _recv_sink(ws):
+        """Receive and drop incoming packets, otherwise the incoming fills up overloads and the connection crashes"""
+        await asyncio.sleep(1.0)
+        while True:
+            await ws.recv()
 
     async def _send_log_record(self, ws):
         while True:
