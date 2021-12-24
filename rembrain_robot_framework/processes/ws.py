@@ -182,6 +182,7 @@ class WsRobotProcess(RobotProcess):
             self.ws_url,
             logger=WsLogAdapter(self.log, {}),
             open_timeout=self.connection_timeout,
+            max_size=None,
         ) as ws:
             try:
                 self.log.info("Sending control packet")

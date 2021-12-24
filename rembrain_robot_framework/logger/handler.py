@@ -108,7 +108,6 @@ class LogHandler(logging.Handler):
 
                 self.log.error(msg)
                 continue
-
             except websockets.ConnectionClosedOK as e:
                 msg = "Connection closed."
                 if e.rcvd is not None:
@@ -127,7 +126,7 @@ class LogHandler(logging.Handler):
 
     @staticmethod
     async def _recv_sink(ws):
-        """Receive and drop incoming packets, otherwise the incoming fills up overloads and the connection crashes"""
+        """Receive and drop incoming packets, otherwise the incoming queue fills up and the connection crashes"""
         await asyncio.sleep(1.0)
         while True:
             await ws.recv()
