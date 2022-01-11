@@ -97,8 +97,8 @@ class SysP1(RobotProcess):
     TEST_MESSAGE = "REQUEST_TEST_MESSAGE"
 
     def run(self) -> None:
-        personal_id: str = self.publish(
-            self.TEST_MESSAGE, queue_name="messages", named=True
+        personal_id: str = self.publish_request(
+            self.TEST_MESSAGE, queue_name="messages"
         )
         self.shared.response["id"] = personal_id
         self.shared.response["data"] = self.wait_response(request_id=personal_id)

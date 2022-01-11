@@ -73,12 +73,17 @@ class RobotProcess:
         self.close_objects()
         self.clear_queues()
 
-    # todo it's ridiculous - free_resources may be called with super()
+    # todo isn't it's better just to force calling super().free_resources in overridden methods?
     def close_objects(self) -> None:
         """It can be overridden in process implementation."""
         pass
 
     def clear_queues(self) -> None:
+        '''
+        Clear all messages in queues from self.queues_to_clear. Usually this is called when a process stops/restarts.
+        :return:
+        :rtype:
+        '''
         if len(self.queues_to_clear) > 0:
             self.log.info(f"Clearing of queues: {self.queues_to_clear}.")
 
@@ -100,7 +105,6 @@ class RobotProcess:
         message: T.Any,
         queue_name: T.Optional[str] = None,
         clear_on_overflow: bool = False,
-        named: bool = False,
     ) -> T.Optional[str]:
         """
         Sends message to all processes that are configured to listen to the queue_name. If there are several processes
@@ -113,11 +117,6 @@ class RobotProcess:
         :param clear_on_overflow: If this parameter is set and a queue to write is full, publish will empty the queue
         before publishing new messages
         :type clear_on_overflow: bool
-        :param named: If set, it passes message as NamedMessage, adding current process name and message id for the
-        receiving code to be able to respond to this.
-        :type named: bool
-        :return: If was called with named=True return message id, None otherwise.
-        :rtype: T.Optional[str]
         """
         if len(self._publish_queues.keys()) == 0:
             self.log.error(f'Process "{self.name}" has no queues to write.')
@@ -133,24 +132,39 @@ class RobotProcess:
                 raise ConfigurationError(
                     f"Publish called with >1 output queues for process {self.name}"
                 )
-
             queue_name = list(self._publish_queues.keys())[0]
-
-        message_id: T.Optional[str] = None
-        if named:
-            message_id = str(uuid4())
-            message = NamedMessage(
-                id=message_id, client_process=self.name, data=message
-            )
 
         for q in self._publish_queues[queue_name]:
             if clear_on_overflow:
                 while q.full():
                     q.get()
-
             q.put(message)
 
-        return message_id
+    def publish_request(
+        self,
+        message: T.Any,
+        queue_name: T.Optional[str] = None,
+        clear_on_overflow: bool = False) -> T.Optional[str]:
+        """
+        Sends NamedMessage to all processes that are configured to listen to the queue_name. If there are several processes
+        listening than every one will receive a copy of the message. It calls self.publish adding current process name
+         and message id for the receiving code to respond to the message. It returns message id, that should be passed to
+         self.wait_response.
+        :param message: Any pickable data to transfer over interprocess queues.
+        :param queue_name: Name of the queue to send message to. If there is only one output queue it's possible to omit
+        this argument, it will pick this single queue by default (and raise ConfigurationError if there is number of output
+         queues != 1.
+        :type queue_name: str
+        :param clear_on_overflow: If this parameter is set and a queue to write is full, publish will empty the queue
+        before publishing new messages
+        :type clear_on_overflow: bool
+        :return: return message id, None otherwise.
+        :rtype: T.Optional[str]
+        """
+
+        message = NamedMessage(id=str(uuid4()), client_process=self.name, data=message)
+        self.publish(message, queue_name, clear_on_overflow)
+        return message.id
 
     def consume(
         self, queue_name: T.Optional[str] = None, clear_all_messages: bool = False
