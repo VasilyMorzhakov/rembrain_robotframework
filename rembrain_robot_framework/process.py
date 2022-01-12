@@ -5,7 +5,7 @@ from collections import namedtuple
 from multiprocessing import Queue
 from uuid import UUID
 
-from rembrain_robot_framework.models.personal_message import PersonalMessage
+from rembrain_robot_framework.models.request import Request
 from rembrain_robot_framework.utils import ConfigurationError
 from rembrain_robot_framework.services.stack_monitor import StackMonitor
 
@@ -167,42 +167,6 @@ class RobotProcess:
 
         return message
 
-    def publish_personal(
-        self,
-        message: T.Any,
-        queue_name: T.Optional[str] = None,
-        clear_on_overflow: bool = False,
-    ) -> UUID:
-        """
-        Wraps 'message' as PersonalMessage(adding current process name and message id for the
-        receiving code in order to be able to respond) and then sends
-        to all processes that are configured to listen queue_name.
-        If there are several processes for listening then everyone will receive a copy of the message.
-
-        :param message: Any serialized data to transfer over interprocess queues.
-
-        :param queue_name: Name of the queue to send message to.
-        If there is only one output queue it's possible to omit this argument,
-        it will pick this single queue by default.
-        :type queue_name: Optional[str]
-
-        :param bool clear_on_overflow: If this parameter is set and a queue to write is full,
-        publish will empty the queue before publishing of new messages.
-
-        :return: message id.
-        :rtype: str
-
-        :raise: ConfigurationError: if number of queues != 1 and queue name was not given
-        """
-        message = PersonalMessage(client_process=self.name, data=message)
-        self.publish(message, queue_name, clear_on_overflow)
-        return message.uid
-
-    def consume_personal(
-        self, queue_name: T.Optional[str] = None, clear_all_messages: bool = False
-    ) -> PersonalMessage:
-        return self.consume(queue_name, clear_all_messages)
-
     def has_consume_queue(self, queue_name: str) -> bool:
         return queue_name in self._consume_queues
 
@@ -266,26 +230,41 @@ class RobotProcess:
 
         return self._consume_queues[consume_queue_name].empty()
 
-    def respond_to(
-        self, personal_message_uid: UUID, client_process: str, data: T.Any
-    ) -> None:
+    def send_request(
+        self,
+        message: T.Any,
+        queue_name: T.Optional[str] = None,
+        clear_on_overflow: bool = False,
+    ) -> UUID:
         """
-        Respond directly to the requesting process.
-        This response should be awaited with the function wait_response.
-        Computation block should be in try-except clause
-        to prevent stuck the waiting process in case of exceptions.
+        Wraps 'message' as PersonalMessage(adding current process name and message id for the
+        receiving code in order to be able to respond) and then sends
+        to all processes that are configured to listen queue_name.
+        If there are several processes for listening then everyone will receive a copy of the message.
 
-        :param UUID personal_message_uid: a message that provoked computations
-        :param str client_process: the process which sent response and which have been waiting response.
-        :param data: the response. Send
+        :param message: Any serialized data to transfer over interprocess queues.
 
-        :return None
+        :param queue_name: Name of the queue to send message to.
+        If there is only one output queue it's possible to omit this argument,
+        it will pick this single queue by default.
+        :type queue_name: Optional[str]
+
+        :param bool clear_on_overflow: If this parameter is set and a queue to write is full,
+        publish will empty the queue before publishing of new messages.
+
+        :return: message id.
+        :rtype: str
+
+        :raise: ConfigurationError: if number of queues != 1 and queue name was not given
         """
-        self._system_queues[client_process].put(
-            PersonalMessage(
-                uid=personal_message_uid, client_process=client_process, data=data
-            )
-        )
+        message = Request(client_process=self.name, data=message)
+        self.publish(message, queue_name, clear_on_overflow)
+        return message.uid
+
+    def get_request(
+        self, queue_name: T.Optional[str] = None, clear_all_messages: bool = False
+    ) -> Request:
+        return self.consume(queue_name, clear_all_messages)
 
     def wait_response(self, personal_message_uid: UUID) -> T.Any:
         """
@@ -313,7 +292,7 @@ class RobotProcess:
         :returns the computed data
         """
         if personal_message_uid in self._received_personal_messages:
-            personal_message: PersonalMessage = self._received_personal_messages[
+            personal_message: Request = self._received_personal_messages[
                 personal_message_uid
             ]
             del self._received_personal_messages[personal_message_uid]
@@ -323,13 +302,32 @@ class RobotProcess:
             if len(self._received_personal_messages) > 50:
                 raise Exception(f"Overflow of personal messages for '{self.name}'!")
 
-            personal_message: PersonalMessage = self._system_queues[self.name].get()
+            personal_message: Request = self._system_queues[self.name].get()
             if personal_message.uid == personal_message_uid:
                 return personal_message.data
 
             self._received_personal_messages[
                 personal_message.uid
             ] = personal_message.data
+
+    def respond_to(
+        self, personal_message_uid: UUID, client_process: str, data: T.Any
+    ) -> None:
+        """
+        Respond directly to the requesting process.
+        This response should be awaited with the function wait_response.
+        Computation block should be in try-except clause
+        to prevent stuck the waiting process in case of exceptions.
+
+        :param UUID personal_message_uid: a message that provoked computations
+        :param str client_process: the process which sent response and which have been waiting response.
+        :param data: the response. Send
+
+        :return None
+        """
+        self._system_queues[client_process].put(
+            Request(uid=personal_message_uid, client_process=client_process, data=data)
+        )
 
     def heartbeat(self, message: str):
         if self.watcher_queue:

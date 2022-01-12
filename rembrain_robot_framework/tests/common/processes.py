@@ -5,7 +5,7 @@ from uuid import UUID
 import numpy as np
 
 from rembrain_robot_framework import RobotProcess
-from rembrain_robot_framework.models.personal_message import PersonalMessage
+from rembrain_robot_framework.models.request import Request
 
 
 class P1(RobotProcess):
@@ -98,9 +98,7 @@ class SysP1(RobotProcess):
     TEST_MESSAGE = "REQUEST_TEST_MESSAGE"
 
     def run(self) -> None:
-        personal_id: UUID = self.publish_personal(
-            self.TEST_MESSAGE, queue_name="messages"
-        )
+        personal_id: UUID = self.send_request(self.TEST_MESSAGE, queue_name="messages")
         self.shared.response["id"] = personal_id
         self.shared.response["data"] = self.wait_response(personal_id)
 
@@ -110,7 +108,7 @@ class SysP2(RobotProcess):
 
     def run(self) -> None:
         time.sleep(2)
-        personal_message: PersonalMessage = self.consume_personal(queue_name="messages")
+        personal_message: Request = self.get_request(queue_name="messages")
 
         self.shared.request["id"] = personal_message.uid
         self.shared.request["data"] = personal_message.data

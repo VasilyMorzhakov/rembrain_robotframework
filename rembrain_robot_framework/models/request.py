@@ -4,7 +4,7 @@ from uuid import UUID, uuid4
 from pydantic import BaseModel, Field
 
 
-class PersonalMessage(BaseModel):
+class Request(BaseModel):
     """
     Personal struct for sending messages thorough queues.
     Args:
