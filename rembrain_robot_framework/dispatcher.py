@@ -22,6 +22,7 @@ WARNING FOR MAINTAINERS:
 class RobotDispatcher:
     DEFAULT_QUEUE_SIZE = 50
 
+    # todo remove in_cluster from here. It's has too narrow usage, it should be a part of logging setting
     def __init__(
         self,
         config: T.Any = None,
@@ -29,6 +30,17 @@ class RobotDispatcher:
         project_description: T.Optional[dict] = None,
         in_cluster: bool = True,
     ):
+        '''
+        Set up processes and queues configuration
+        :param config: A description of how do processes communicate and their additional variables
+        :type config: dict
+        :param processes: A map from process names to their classes
+        :type processes: dict
+        :param project_description: Additional info to pass to the logger
+        :type project_description: dict
+        :param in_cluster: Flag for logging since it has different set up inside/outside of cluster. Should be deprecated.
+        :type in_cluster: bool
+        '''
         self.shared_objects = {}
         self.process_pool: T.Dict[str, Process] = {}
         self.in_cluster: bool = in_cluster
@@ -198,6 +210,7 @@ class RobotDispatcher:
         self._run_process(process_name, **kwargs)
         self.log.info(f"New process {process_name} was  created successfully.")
 
+    # todo make shared objects deprecated
     def add_shared_object(self, object_name: str, object_type: str) -> None:
         if object_name in self.shared_objects.keys():
             raise Exception(f"Shared object {object_name} already exists.")
@@ -206,6 +219,7 @@ class RobotDispatcher:
             object_type, self.manager, self.mp_context
         )
 
+    # todo make shared objects deprecated
     def del_shared_object(self, object_name: str) -> None:
         if object_name not in self.shared_objects.keys():
             self.log.warning(f"Shared object {object_name} does not exist.")
@@ -227,6 +241,7 @@ class RobotDispatcher:
         del self.processes[process_name]
 
     def check_queues_overflow(self) -> bool:
+        #todo @Rassel please, add a description here
         is_overflow = False
         if platform.system() == "Darwin":
             return is_overflow

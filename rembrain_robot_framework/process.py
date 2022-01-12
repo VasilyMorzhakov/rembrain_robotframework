@@ -71,12 +71,17 @@ class RobotProcess:
         self.close_objects()
         self.clear_queues()
 
-    # todo it's ridiculous - free_resources may be called with super()
+    # todo isn't it's better just to force calling super().free_resources in overridden methods?
     def close_objects(self) -> None:
         """It can be overridden in process implementation."""
         pass
 
     def clear_queues(self) -> None:
+        """
+        Clear all messages in queues from self.queues_to_clear. Usually this is called when a process stops/restarts.
+        :return:
+        :rtype:
+        """
         if len(self.queues_to_clear) > 0:
             self.log.info(f"Clearing of queues: {self.queues_to_clear}.")
 
@@ -131,14 +136,12 @@ class RobotProcess:
                 raise ConfigurationError(
                     f"Publish called with >1 output queues for process {self.name}"
                 )
-
             queue_name = list(self._publish_queues.keys())[0]
 
         for q in self._publish_queues[queue_name]:
             if clear_on_overflow:
                 while q.full():
                     q.get()
-
             q.put(message)
 
     def consume(
