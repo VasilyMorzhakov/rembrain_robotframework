@@ -3,12 +3,10 @@ import os
 import typing as T
 from collections import namedtuple
 from multiprocessing import Queue
-from threading import Thread
-from uuid import uuid4
+from uuid import UUID
 
-from rembrain_robot_framework.models.named_message import NamedMessage
+from rembrain_robot_framework.models.personal_message import PersonalMessage
 from rembrain_robot_framework.utils import ConfigurationError
-
 from rembrain_robot_framework.services.stack_monitor import StackMonitor
 
 
@@ -35,7 +33,7 @@ class RobotProcess:
         self._shared: T.Any = namedtuple("_", shared_objects.keys())(**shared_objects)
 
         self._system_queues: T.Dict[str, Queue] = system_queues
-        self._received_named_messages = {}
+        self._received_personal_messages = {}
 
         # in case of exception these queues are cleared
         self.queues_to_clear: T.List[str] = []
@@ -100,24 +98,24 @@ class RobotProcess:
         message: T.Any,
         queue_name: T.Optional[str] = None,
         clear_on_overflow: bool = False,
-        named: bool = False,
-    ) -> T.Optional[str]:
+    ) -> None:
         """
-        Sends message to all processes that are configured to listen to the queue_name. If there are several processes
-        listening than every one will receive a copy of the message.
-        :param message: Any pickable data to transfer over interprocess queues.
-        :param queue_name: Name of the queue to send message to. If there is only one output queue it's possible to omit
-        this argument, it will pick this single queue by default (and raise ConfigurationError if there is number of output
-         queues != 1.
-        :type queue_name: str
-        :param clear_on_overflow: If this parameter is set and a queue to write is full, publish will empty the queue
-        before publishing new messages
-        :type clear_on_overflow: bool
-        :param named: If set, it passes message as NamedMessage, adding current process name and message id for the
-        receiving code to be able to respond to this.
-        :type named: bool
-        :return: If was called with named=True return message id, None otherwise.
-        :rtype: T.Optional[str]
+        Sends message to all processes that are configured to listen to the queue_name.
+        If there are several processes for listening then everyone will receive a copy of the message.
+
+        :param message: Any serialized data to transfer over interprocess queues.
+
+        :param queue_name: Name of the queue to send message to.
+        If there is only one output queue it's possible to omit this argument,
+        it will pick this single queue by default.
+        :type queue_name: Optional[str]
+
+        :param bool clear_on_overflow: If this parameter is set and a queue to write is full,
+        publish will empty the queue before publishing of new messages.
+
+        :return: None
+
+        :raise: ConfigurationError: if number of queues != 1 and queue name was not given
         """
         if len(self._publish_queues.keys()) == 0:
             self.log.error(f'Process "{self.name}" has no queues to write.')
@@ -136,21 +134,12 @@ class RobotProcess:
 
             queue_name = list(self._publish_queues.keys())[0]
 
-        message_id: T.Optional[str] = None
-        if named:
-            message_id = str(uuid4())
-            message = NamedMessage(
-                id=message_id, client_process=self.name, data=message
-            )
-
         for q in self._publish_queues[queue_name]:
             if clear_on_overflow:
                 while q.full():
                     q.get()
 
             q.put(message)
-
-        return message_id
 
     def consume(
         self, queue_name: T.Optional[str] = None, clear_all_messages: bool = False
@@ -174,6 +163,42 @@ class RobotProcess:
                 message = self._consume_queues[queue_name].get()
 
         return message
+
+    def publish_personal(
+        self,
+        message: T.Any,
+        queue_name: T.Optional[str] = None,
+        clear_on_overflow: bool = False,
+    ) -> UUID:
+        """
+        Wraps 'message' as PersonalMessage(adding current process name and message id for the
+        receiving code in order to be able to respond) and then sends
+        to all processes that are configured to listen queue_name.
+        If there are several processes for listening then everyone will receive a copy of the message.
+
+        :param message: Any serialized data to transfer over interprocess queues.
+
+        :param queue_name: Name of the queue to send message to.
+        If there is only one output queue it's possible to omit this argument,
+        it will pick this single queue by default.
+        :type queue_name: Optional[str]
+
+        :param bool clear_on_overflow: If this parameter is set and a queue to write is full,
+        publish will empty the queue before publishing of new messages.
+
+        :return: message id.
+        :rtype: str
+
+        :raise: ConfigurationError: if number of queues != 1 and queue name was not given
+        """
+        message = PersonalMessage(client_process=self.name, data=message)
+        self.publish(message, queue_name, clear_on_overflow)
+        return message.uid
+
+    def consume_personal(
+        self, queue_name: T.Optional[str] = None, clear_all_messages: bool = False
+    ) -> PersonalMessage:
+        return self.consume(queue_name, clear_all_messages)
 
     def has_consume_queue(self, queue_name: str) -> bool:
         return queue_name in self._consume_queues
@@ -238,74 +263,70 @@ class RobotProcess:
 
         return self._consume_queues[consume_queue_name].empty()
 
-    def _init_monitoring(self, name):
+    def respond_to(
+        self, personal_message_uid: UUID, client_process: str, data: T.Any
+    ) -> None:
         """
-        Initializes stack monitoring
-        This feature will sample the stacks of all threads in the process for a period, then log them out
-        """
-        self._stack_monitor = StackMonitor(name)
-        self._stack_monitor.start_monitoring()
+        Respond directly to the requesting process.
+        This response should be awaited with the function wait_response.
+        Computation block should be in try-except clause
+        to prevent stuck the waiting process in case of exceptions.
 
-    def respond_to(self, message: NamedMessage, data: T.Any) -> None:
+        :param UUID personal_message_uid: a message that provoked computations
+        :param str client_process: the process which sent response and which have been waiting response.
+        :param data: the response. Send
+
+        :return None
         """
-        Respond directly to the requesting process. This response should be awaited with the function wait_response.
-        Computation block should be in try-except clause to prevent stucking the waiting process in case of exceptions.
-        :param message: a message that provoked computations
-        :type message: NamedMessage
-        :param data: the response. Send ComputationFailure if an exception happend during the computations.
-        """
-        personal_id: str = message.id
-        client_process: str = message.client_process
         self._system_queues[client_process].put(
-            NamedMessage(id=personal_id, client_process=client_process, data=data)
+            PersonalMessage(
+                uid=personal_message_uid, client_process=client_process, data=data
+            )
         )
 
-    def wait_response(self, request_id: str) -> T.Any:
+    def wait_response(self, personal_message_uid: UUID) -> T.Any:
         """
-        Get a response after publishing a named message. The order of getting responses doesn't matter.
+        Get a response after publishing a personal message. The order of getting responses doesn't matter.
         It blocks the process until it gets the result.
 
         Example:
         P1:
-        request1 = self.publish("compute_calibration", "robot_commands", named=True)
-        request2 = self.publish("get_position", "robot_commands", named=True)
+        personal_message_uid_1 = self.publish_personal(message="compute_calibration", queue_name="robot_commands")
+        personal_message_uid_2 = self.publish_personal(message="get_position", queue_name="robot_commands")
 
-        position = self.wait_response(request2)
-        calibration = self.wait_response(request1)
+        position = self.wait_response(personal_message_uid_2)
+        calibration = self.wait_response(personal_message_uid_1)
 
         P2:
-        message = self.consume(robot_commands)
-        try:
-            assert (message is NamedMessage)
+        personal_message:PersonalMessage = self.consume_personal(queue_name="robot_commands")
 
-            if message.data == "get_position":
-                self.respond_to(message, [1,1,1])
-            if message.data == "compute_calibration":
-                self.respond_to(message, [0, 2])
-        except Exception as e:
-            self.respond_to(message, ComputationFailure)
-            raise e
+        if personal_message.data == "get_position":
+            self.respond_to(personal_message.uid, personal_message.client_process, [1,1,1])
 
-        :param request_id: the result of publish(..., named=True)
-        :type request_id: str
-        Returns the computed data if everything is fine.
-        Returns ComputationFailure if there was an exception during computations.
+        if personal_message.data == "compute_calibration":
+            self.respond_to(personal_message.uid, [0, 2])
+
+        :param UUID personal_message_uid: the result of publish_personal(...)
+        :returns the computed data
         """
-        if request_id in self._received_named_messages:
-            message: NamedMessage = self._received_named_messages[request_id]
-            del self._received_named_messages[request_id]
-            return message.data
+        if personal_message_uid in self._received_personal_messages:
+            personal_message: PersonalMessage = self._received_personal_messages[
+                personal_message_uid
+            ]
+            del self._received_personal_messages[personal_message_uid]
+            return personal_message.data
 
         while True:
-            # todo exception or logging?
-            if len(self._received_named_messages) > 50:
+            if len(self._received_personal_messages) > 50:
                 raise Exception(f"Overflow of personal messages for '{self.name}'!")
 
-            message: NamedMessage = self._system_queues[self.name].get()
-            if message.id == request_id:
-                return message.data
-            else:
-                self._received_named_messages[message.id] = message.data
+            personal_message: PersonalMessage = self._system_queues[self.name].get()
+            if personal_message.uid == personal_message_uid:
+                return personal_message.data
+
+            self._received_personal_messages[
+                personal_message.uid
+            ] = personal_message.data
 
     def heartbeat(self, message: str):
         if self.watcher_queue:
@@ -329,3 +350,11 @@ class RobotProcess:
             )
 
         return os.environ[fallback_env_var]
+
+    def _init_monitoring(self, name):
+        """
+        Initializes stack monitoring
+        This feature will sample the stacks of all threads in the process for a period, then log them out
+        """
+        self._stack_monitor = StackMonitor(name)
+        self._stack_monitor.start_monitoring()

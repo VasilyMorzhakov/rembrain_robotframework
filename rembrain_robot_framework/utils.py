@@ -89,10 +89,3 @@ class ConfigurationError(Exception):
     process usage conflicts with this configurations"""
 
     pass
-
-
-# todo replace it into 'errors.py' or 'exceptions.py'
-class ComputationFailure(Exception):
-    """returned when there is an exception during RPC call"""
-
-    pass

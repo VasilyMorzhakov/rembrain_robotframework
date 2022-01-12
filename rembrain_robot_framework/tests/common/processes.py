@@ -1,10 +1,11 @@
 import time
 import typing as T
+from uuid import UUID
 
 import numpy as np
 
 from rembrain_robot_framework import RobotProcess
-from rembrain_robot_framework.models.named_message import NamedMessage
+from rembrain_robot_framework.models.personal_message import PersonalMessage
 
 
 class P1(RobotProcess):
@@ -97,11 +98,11 @@ class SysP1(RobotProcess):
     TEST_MESSAGE = "REQUEST_TEST_MESSAGE"
 
     def run(self) -> None:
-        personal_id: str = self.publish(
-            self.TEST_MESSAGE, queue_name="messages", named=True
+        personal_id: UUID = self.publish_personal(
+            self.TEST_MESSAGE, queue_name="messages"
         )
         self.shared.response["id"] = personal_id
-        self.shared.response["data"] = self.wait_response(request_id=personal_id)
+        self.shared.response["data"] = self.wait_response(personal_id)
 
 
 class SysP2(RobotProcess):
@@ -109,11 +110,15 @@ class SysP2(RobotProcess):
 
     def run(self) -> None:
         time.sleep(2)
-        named_message: NamedMessage = self.consume(queue_name="messages")
+        personal_message: PersonalMessage = self.consume_personal(queue_name="messages")
 
-        self.shared.request["id"] = named_message.id
-        self.shared.request["data"] = named_message.data
-        self.respond_to(named_message, data=self.TEST_MESSAGE)
+        self.shared.request["id"] = personal_message.uid
+        self.shared.request["data"] = personal_message.data
+        self.respond_to(
+            personal_message.uid,
+            personal_message.client_process,
+            data=self.TEST_MESSAGE,
+        )
 
 
 class QueueSizeP1(RobotProcess):

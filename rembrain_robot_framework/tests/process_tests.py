@@ -1,5 +1,6 @@
 from multiprocessing import Queue
 import time
+from queue import Empty
 
 import pytest
 from pytest_mock import MockerFixture
@@ -20,21 +21,19 @@ def default_proc_params_fx() -> dict:
     }
 
 
-# todo fix it
-@pytest.mark.skip
 def test_correct_clear_queue(default_proc_params_fx: dict) -> None:
     q1 = Queue(maxsize=2)
     q1.put("q1")
     q1.put("q2")
+    time.sleep(2)
 
     default_proc_params_fx.update(consume_queues={"message1": q1})
     r = RobotProcess(**default_proc_params_fx)
     r.queues_to_clear = ["message1"]
     r.clear_queues()
-    time.sleep(5)
 
-    # TODO IT DOES NOT CLEAN r.consume_queues['message1'].get() ! Why?!
-    # assert r.consume_queues['message1'].get(timeout=2) is None
+    with pytest.raises(Empty):
+        r.consume_queues["message1"].get(timeout=2)
 
 
 def test_correct_publish_and_consume(default_proc_params_fx: dict) -> None:
