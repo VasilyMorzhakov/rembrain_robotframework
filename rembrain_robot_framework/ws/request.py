@@ -1,5 +1,6 @@
 import typing as T
 
+from pika.exchange_type import ExchangeType
 from pydantic.main import BaseModel
 
 
@@ -16,9 +17,12 @@ class WsRequest(BaseModel):
     """
 
     command: str
-    exchange: str
     robot_name: str
     access_token: str = ""
     username: str = ""
     password: str = ""
     message: T.Any = None
+
+    exchange: str
+    exchange_type: T.Union[ExchangeType, str] = ExchangeType.fanout.value
+    exchange_bind_key: str = ""
