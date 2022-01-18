@@ -24,5 +24,5 @@ class WsRequest(BaseModel):
     message: T.Any = None
 
     exchange: str
-    exchange_type: T.Union[ExchangeType, str] = ExchangeType.fanout.value
+    exchange_type: str = ExchangeType.fanout.value
     exchange_bind_key: str = ""
