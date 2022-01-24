@@ -4,9 +4,15 @@ import sys
 from envyaml import EnvYAML
 
 # Adding the repository root to the sys path so exports work properly
+
 sys.path.append(os.path.abspath(os.path.join(__file__, "..", "..", "..")))
 
-from examples.common.processes import ImageCapture, GUIProcess, DepthMixin  # noqa: E402
+from examples.common.processes import (
+    ImageCapture,
+    GUIProcess,
+    DepthMixin,
+    EchoProcess,
+)  # noqa: E402
 from examples.external.utils import query_env_vars  # noqa: E402
 from rembrain_robot_framework import RobotDispatcher  # noqa: E402
 from rembrain_robot_framework.processes import (
@@ -25,6 +31,8 @@ def run_dispatcher():
         "orig_pusher": WsRobotProcess,
         "processed_receiver": WsRobotProcess,
         "video_unpacker": VideoUnpacker,
+        "heartbeat_receiver": WsRobotProcess,
+        "heartbeat_echo": EchoProcess,
     }
 
     config = EnvYAML(

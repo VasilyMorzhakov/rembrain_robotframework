@@ -41,6 +41,16 @@ processes:
     publish:
       - image_processed
 
+  heartbeat_receiver:
+    command_type: pull
+    exchange: "heartbeat"
+    publish:
+      - to_heartbeat
+
+  heartbeat_echo:
+    consume:
+      - to_heartbeat
+
 
 shared_objects:
   camera: "dict"

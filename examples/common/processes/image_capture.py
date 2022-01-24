@@ -34,4 +34,9 @@ class ImageCapture(RobotProcess):
             )
 
             self.publish(img)
+
+            if self.frame_number % 30 == 0:
+                self.log.info("Sending heartbeat")
+                self.heartbeat(f"Hello! Sent {self.frame_number} messages")
+
             time.sleep(1.0 / self.FPS)
