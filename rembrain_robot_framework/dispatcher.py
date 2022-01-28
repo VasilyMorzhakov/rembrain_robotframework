@@ -11,15 +11,15 @@ from rembrain_robot_framework.logger.utils import setup_logging
 from rembrain_robot_framework.services.watcher import Watcher
 from multiprocessing import Queue, Process
 
-"""
-WARNING FOR MAINTAINERS:
-    This class uses its own multiprocessing context.
-    Do NOT use basic multiprocessing.Queue for mp instances
-    Instead use either self.mp_context.Queue, or self.manager.Queue (depending on which one you need)
-"""
-
 
 class RobotDispatcher:
+    """
+    WARNING FOR MAINTAINERS:
+        This class uses its own multiprocessing context.
+        Do NOT use basic multiprocessing.Queue for mp instances
+        Instead use either self.mp_context.Queue, or self.manager.Queue (depending on which one you need)
+    """
+
     DEFAULT_QUEUE_SIZE = 50
 
     # todo remove in_cluster from here. It's has too narrow usage, it should be a part of logging setting
@@ -252,7 +252,14 @@ class RobotDispatcher:
         del self.processes[process_name]
 
     def check_queues_overflow(self) -> bool:
-        # todo @Rassel please, add a description here
+        """
+        Check queues on overflowing - at least if one queue is overflow - return True.
+        For every overflowed queue it prints warnings to logs.
+        For 'Darwin' OS systems - always return False.
+
+        :return: bool
+        :returns if any queue is overflow - return True, otherwise False.
+        """
         is_overflow = False
         if platform.system() == "Darwin":
             return is_overflow
