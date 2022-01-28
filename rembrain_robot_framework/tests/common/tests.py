@@ -1,5 +1,4 @@
 import os
-from multiprocessing import Queue
 from unittest import mock
 
 import pytest
@@ -13,9 +12,7 @@ from rembrain_robot_framework.tests.common.processes import *
 
 @pytest.fixture()
 def robot_dispatcher_fx(request) -> RobotDispatcher:
-    config: T.Any = EnvYAML(
-        os.path.join(os.path.dirname(__file__), "configs", request.param[0])
-    )
+    config: T.Any = EnvYAML(os.path.join(os.path.dirname(__file__), "configs", request.param[0]))
     robot_dispatcher = RobotDispatcher(config, request.param[1])
     robot_dispatcher.start_processes()
 
@@ -47,15 +44,15 @@ def robot_dispatcher_class_fx(request, mocker: MockerFixture) -> RobotDispatcher
 @pytest.mark.parametrize(
     "robot_dispatcher_fx",
     (
-        (
-            "config1.yaml",
-            {
-                "p1": {"process_class": P1, "keep_alive": False},
-                "p1_new": {"process_class": P1, "keep_alive": False},
-                "p2": {"process_class": P2, "keep_alive": False},
-                "p2_new": {"process_class": P2, "keep_alive": False},
-            },
-        ),
+            (
+                    "config1.yaml",
+                    {
+                        "p1": {"process_class": P1, "keep_alive": False},
+                        "p1_new": {"process_class": P1, "keep_alive": False},
+                        "p2": {"process_class": P2, "keep_alive": False},
+                        "p2_new": {"process_class": P2, "keep_alive": False},
+                    },
+            ),
     ),
     indirect=True,
 )
@@ -68,14 +65,14 @@ def test_queues_are_the_same(robot_dispatcher_fx: RobotDispatcher) -> None:
 @pytest.mark.parametrize(
     "robot_dispatcher_fx",
     (
-        (
-            "config2.yaml",
-            {
-                "p1": {"process_class": P1, "keep_alive": False},
-                "p1_new": {"process_class": P1, "keep_alive": False},
-                "p3": {"process_class": P3, "keep_alive": False},
-            },
-        ),
+            (
+                    "config2.yaml",
+                    {
+                        "p1": {"process_class": P1, "keep_alive": False},
+                        "p1_new": {"process_class": P1, "keep_alive": False},
+                        "p3": {"process_class": P3, "keep_alive": False},
+                    },
+            ),
     ),
     indirect=True,
 )
@@ -89,14 +86,14 @@ def test_input_queues_different(robot_dispatcher_fx: RobotDispatcher) -> None:
 @pytest.mark.parametrize(
     "robot_dispatcher_fx",
     (
-        (
-            "config3.yaml",
-            {
-                "p4": {"process_class": P4, "keep_alive": False},
-                "p2": {"process_class": P2, "keep_alive": False, "expect": "hi1"},
-                "p2_new": {"process_class": P2, "keep_alive": False},
-            },
-        ),
+            (
+                    "config3.yaml",
+                    {
+                        "p4": {"process_class": P4, "keep_alive": False},
+                        "p2": {"process_class": P2, "keep_alive": False, "expect": "hi1"},
+                        "p2_new": {"process_class": P2, "keep_alive": False},
+                    },
+            ),
     ),
     indirect=True,
 )
@@ -108,13 +105,13 @@ def test_output_queues_different(robot_dispatcher_fx: RobotDispatcher) -> None:
 @pytest.mark.parametrize(
     "robot_dispatcher_fx",
     (
-        (
-            "config4.yaml",
-            {
-                "p1": {"process_class": VideoSender, "keep_alive": False},
-                "p2": {"process_class": VideoConsumer, "keep_alive": False},
-            },
-        ),
+            (
+                    "config4.yaml",
+                    {
+                        "p1": {"process_class": VideoSender, "keep_alive": False},
+                        "p2": {"process_class": VideoConsumer, "keep_alive": False},
+                    },
+            ),
     ),
     indirect=True,
 )
@@ -171,21 +168,21 @@ def test_empty_config(robot_dispatcher_class_fx: tuple):
 @pytest.mark.parametrize(
     "robot_dispatcher_fx",
     (
-        (
-            "config_with_system_queues.yaml",
-            {
-                "sys_p1": {"process_class": SysP1, "keep_alive": False},
-                "sys_p2": {"process_class": SysP2, "keep_alive": False},
-            },
-        ),
+            (
+                    "config_with_system_queues.yaml",
+                    {
+                        "sys_p1": {"process_class": SysP1, "keep_alive": False},
+                        "sys_p2": {"process_class": SysP2, "keep_alive": False},
+                    },
+            ),
     ),
     indirect=True,
 )
 def test_system_queue(robot_dispatcher_fx: RobotDispatcher) -> None:
     time.sleep(5.0)
     assert (
-        robot_dispatcher_fx.shared_objects["request"]["id"]
-        == robot_dispatcher_fx.shared_objects["response"]["id"]
+            robot_dispatcher_fx.shared_objects["request"]["id"]
+            == robot_dispatcher_fx.shared_objects["response"]["id"]
     )
     assert robot_dispatcher_fx.shared_objects["request"]["data"] == SysP1.TEST_MESSAGE
     assert robot_dispatcher_fx.shared_objects["response"]["data"] == SysP2.TEST_MESSAGE
@@ -214,18 +211,18 @@ def test_description_from_config() -> None:
 @pytest.mark.parametrize(
     "robot_dispatcher_fx",
     (
-        (
-            "config_with_queue_sizes.yaml",
-            {
-                "p1": {"process_class": QueueSizeP1, "keep_alive": False},
-                "p2": {"process_class": QueueSizeP2, "keep_alive": False},
-            },
-        ),
+            (
+                    "config_with_queue_sizes.yaml",
+                    {
+                        "p1": {"process_class": QueueSizeP1, "keep_alive": False},
+                        "p2": {"process_class": QueueSizeP2, "keep_alive": False},
+                    },
+            ),
     ),
     indirect=True,
 )
 def test_check_overflow(
-    mocker: MockerFixture, robot_dispatcher_fx: RobotDispatcher
+        mocker: MockerFixture, robot_dispatcher_fx: RobotDispatcher
 ) -> None:
     warn_message = ""
 
@@ -250,7 +247,7 @@ def test_check_overflow(
     time.sleep(2)
     assert robot_dispatcher_fx.check_queues_overflow()
     assert (
-        warn_message == "Consume queue messages1 of process p2 has reached 2 messages."
+            warn_message == "Consume queue messages1 of process p2 has reached 2 messages."
     )
 
     # 2 from 3
@@ -270,7 +267,7 @@ def test_check_overflow(
     time.sleep(2)
     assert robot_dispatcher_fx.check_queues_overflow()
     assert (
-        warn_message == "Consume queue messages4 of process p2 has reached 9 messages."
+            warn_message == "Consume queue messages4 of process p2 has reached 9 messages."
     )
 
     warn_message = ""
@@ -293,7 +290,7 @@ def test_check_overflow(
     time.sleep(2)
     assert robot_dispatcher_fx.check_queues_overflow()
     assert (
-        warn_message == "Consume queue messages3 of process p2 has reached 4 messages."
+            warn_message == "Consume queue messages3 of process p2 has reached 4 messages."
     )
 
     robot_dispatcher_fx.shared_objects["finish_load"].value = True
@@ -304,7 +301,7 @@ def test_check_overflow(
     time.sleep(2)
     assert robot_dispatcher_fx.check_queues_overflow()  # "messages3" stayed full
     assert (
-        warn_message == "Consume queue messages3 of process p2 has reached 4 messages."
+            warn_message == "Consume queue messages3 of process p2 has reached 4 messages."
     )
 
     warn_message = ""

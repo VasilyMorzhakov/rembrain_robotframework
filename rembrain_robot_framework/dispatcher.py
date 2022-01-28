@@ -30,7 +30,7 @@ class RobotDispatcher:
         project_description: T.Optional[dict] = None,
         in_cluster: bool = True,
     ):
-        '''
+        """
         Set up processes and queues configuration
         :param config: A description of how do processes communicate and their additional variables
         :type config: dict
@@ -40,7 +40,7 @@ class RobotDispatcher:
         :type project_description: dict
         :param in_cluster: Flag for logging since it has different set up inside/outside of cluster. Should be deprecated.
         :type in_cluster: bool
-        '''
+        """
         self.shared_objects = {}
         self.process_pool: T.Dict[str, Process] = {}
         self.in_cluster: bool = in_cluster
@@ -97,6 +97,14 @@ class RobotDispatcher:
         # p[0] is process class, p[1] is the process name
         if any([p not in self.config["processes"] for p in self.processes]):
             raise Exception("Process was not found in config.")
+
+        for proc_name, proc_params in self.config["processes"].items():
+            consume_q = proc_params.get("consume")
+            publish_q = proc_params.get("publish")
+            if consume_q and publish_q and bool(set(publish_q) & set(consume_q)):
+                raise Exception(
+                    f"Process {proc_name} has the same queue for consume and publish."
+                )
 
         # create queues
         consume_queues = {}  # consume from queues
@@ -241,7 +249,7 @@ class RobotDispatcher:
         del self.processes[process_name]
 
     def check_queues_overflow(self) -> bool:
-        #todo @Rassel please, add a description here
+        # todo @Rassel please, add a description here
         is_overflow = False
         if platform.system() == "Darwin":
             return is_overflow
