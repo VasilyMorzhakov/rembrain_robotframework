@@ -15,11 +15,12 @@ class WebsocketServer:
         self.messages: T.List[T.Any] = []
 
     async def handle_msg(
-        self, websocket: websockets.WebSocketServerProtocol, path: str
+            self, websocket: websockets.WebSocketServerProtocol, path: str
     ) -> None:
         async for message in websocket:
             if type(message) is bytes:
                 message = message.decode("utf-8")
+
             if message == self.dump_message:
                 await websocket.send(json.dumps(self.messages))
             else:
@@ -33,6 +34,7 @@ class WebsocketServer:
                 if self.close_flag.value:
                     print("Stopping websocket server")
                     return
+
                 await asyncio.sleep(0.2)
 
 

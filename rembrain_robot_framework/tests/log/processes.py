@@ -6,7 +6,7 @@ from rembrain_robot_framework import RobotProcess
 class FailingProcess(RobotProcess):
     """
     Process that fails after :fail_threshold loops
-    waits for :sleep_interval inbetween
+    waits for :sleep_interval in between
     """
 
     def __init__(self, *args, **kwargs):

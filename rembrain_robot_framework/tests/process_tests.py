@@ -108,10 +108,7 @@ def test_check_is_empty(default_proc_params_fx: dict) -> None:
     with pytest.raises(ConfigurationError) as exc_info:
         r.is_empty()
 
-    assert (
-        "Process 'rp' has more than one read queue. Specify a consume queue name."
-        in str(exc_info.value)
-    )
+    assert "Process 'rp' has more than one read queue. Specify a consume queue name." in str(exc_info.value)
 
     q = Queue(maxsize=2)
     q.put("q")

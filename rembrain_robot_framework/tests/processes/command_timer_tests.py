@@ -3,7 +3,7 @@ import json
 import pytest
 
 from rembrain_robot_framework.processes import CommandTimer
-from rembrain_robot_framework.services.watcher import Watcher
+from rembrain_robot_framework.tests.exceptions import FinishTestException
 
 
 @pytest.fixture()
@@ -18,20 +18,20 @@ def command_timer_fx():
     )
 
 
-def test_correct_command_timer(mocker, command_timer_fx):
+def test_correct_command_timer(mocker, command_timer_fx: CommandTimer):
     test_mock_result = {}
-    loop_reset_exception = "AssertionError for reset loop!"
+    loop_reset_exception = "Error for reset loop!"
 
     def publish(message: bytes, *args):
         nonlocal test_mock_result
         test_mock_result = json.loads(message.decode())
-        raise AssertionError(loop_reset_exception)
+        raise FinishTestException(loop_reset_exception)
 
     mocker.patch.object(
         command_timer_fx, "consume", return_value=json.dumps({"some_data": 777})
     )
     mocker.patch.object(command_timer_fx, "publish", publish)
-    with pytest.raises(AssertionError) as exc_info:
+    with pytest.raises(FinishTestException) as exc_info:
         command_timer_fx.run()
 
     assert loop_reset_exception in str(exc_info.value)
@@ -40,11 +40,9 @@ def test_correct_command_timer(mocker, command_timer_fx):
     assert test_mock_result["some_data"] == 777
 
 
-def test_incorrect_json_for_command_timer(mocker, command_timer_fx):
+def test_incorrect_json_for_command_timer(mocker, command_timer_fx: CommandTimer):
     mocker.patch.object(command_timer_fx, "consume", return_value={"some_data": 777})
     with pytest.raises(TypeError) as exc_info:
         command_timer_fx.run()
 
-    assert "JSON object must be str, bytes or bytearray, not dict" in str(
-        exc_info.value
-    )
+    assert "JSON object must be str, bytes or bytearray, not dict" in str(exc_info.value)

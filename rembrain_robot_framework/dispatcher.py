@@ -99,11 +99,14 @@ class RobotDispatcher:
             raise Exception("Process was not found in config.")
 
         for proc_name, proc_params in self.config["processes"].items():
+            if not proc_params:
+                continue
+
             consume_q = proc_params.get("consume")
             publish_q = proc_params.get("publish")
             if consume_q and publish_q and bool(set(publish_q) & set(consume_q)):
                 raise Exception(
-                    f"Process {proc_name} has the same queue for consume and publish."
+                    f"Process '{proc_name}' has the same queue for consume and publish."
                 )
 
         # create queues

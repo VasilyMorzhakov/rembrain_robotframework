@@ -1,0 +1,20 @@
+processes:
+  p1:
+    keep_alive: False
+    eternal_loop: False
+
+    publish:
+      - messages1
+      - messages2
+    consume:
+      - messages3
+  p2:
+    keep_alive: False
+    eternal_loop: False
+
+    publish:
+      - messages3
+      - messages1
+    consume:
+      - messages1
+      - messages2
