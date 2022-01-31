@@ -96,7 +96,7 @@ def test_first_thing_sent_is_control_packet(ws_proc_push_fx):
     with pytest.raises(FinishTestException):
         proc.run()
 
-    ws_mock.send.assert_awaited_with(proc.get_control_packet().json())
+    ws_mock.send.assert_awaited_with(proc.get_control_packet())
 
 
 @pytest.mark.timeout(2)
