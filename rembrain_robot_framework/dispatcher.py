@@ -22,7 +22,6 @@ class RobotDispatcher:
 
     DEFAULT_QUEUE_SIZE = 50
 
-    # todo remove in_cluster from here. It's has too narrow usage, it should be a part of logging setting
     def __init__(
         self,
         config: T.Any = None,

@@ -2,9 +2,14 @@ import logging
 import os
 import typing as T
 from collections import namedtuple
+from datetime import datetime
 from multiprocessing import Queue
+from os import environ
+from queue import Full
+from time import time
 from uuid import UUID
 
+from rembrain_robot_framework.models.heartbeat_message import HeartbeatMessage
 from rembrain_robot_framework.models.request import Request
 from rembrain_robot_framework.utils import ConfigurationError
 from rembrain_robot_framework.services.stack_monitor import StackMonitor
@@ -192,7 +197,6 @@ class RobotProcess:
                     f"Consume queue with name = '{consume_queue_name}' does not exist."
                 )
 
-            # TODO check if it's used anywhere
             return self._consume_queues[consume_queue_name].full()
 
         # if publish queue
@@ -253,7 +257,7 @@ class RobotProcess:
         publish will empty the queue before publishing of new messages.
 
         :return: message id.
-        :rtype: str
+        :rtype: UUID
 
         :raise: ConfigurationError: if number of queues != 1 and queue name was not given
         """
@@ -273,14 +277,14 @@ class RobotProcess:
 
         Example:
         P1:
-        personal_message_uid_1 = self.publish_personal(message="compute_calibration", queue_name="robot_commands")
-        personal_message_uid_2 = self.publish_personal(message="get_position", queue_name="robot_commands")
+        personal_message_uid_1 = self.send_request(message="compute_calibration", queue_name="robot_commands")
+        personal_message_uid_2 = self.send_request(message="get_position", queue_name="robot_commands")
 
         position = self.wait_response(personal_message_uid_2)
         calibration = self.wait_response(personal_message_uid_1)
 
         P2:
-        personal_message:PersonalMessage = self.consume_personal(queue_name="robot_commands")
+        personal_message:PersonalMessage = self.get_request(queue_name="robot_commands")
 
         if personal_message.data == "get_position":
             self.respond_to(personal_message.uid, personal_message.client_process, [1,1,1])
@@ -330,9 +334,21 @@ class RobotProcess:
         )
 
     def heartbeat(self, message: str):
-        if self.watcher_queue:
-            # todo what about blocking thread?
-            self.watcher_queue.put(message)
+        if not self.watcher_queue:
+            return
+
+        message = HeartbeatMessage(
+            robot_name=str(environ.get("ROBOT_NAME", "")),
+            process_name=self.name,
+            process_class=self.__class__.__name__,
+            timestamp=str(datetime.now()),
+            data=message,
+        )
+
+        try:
+            self.watcher_queue.put(message, timeout=2.0)
+        except Full:
+            self.log.warning("Heartbeat queue is full.")
 
     @staticmethod
     def get_arg_with_env_fallback(

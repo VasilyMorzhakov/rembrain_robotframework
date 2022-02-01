@@ -334,8 +334,8 @@ def test_correct_watcher(mocker: MockerFixture):
     }
     robot_dispatcher = RobotDispatcher(config, processes, in_cluster=False)
 
-    messages = set()
-    mocker.patch.object(robot_dispatcher.watcher, "_send_to_ws", lambda m: messages.add(m))
+    messages = []
+    mocker.patch.object(robot_dispatcher.watcher, "_send_to_ws", lambda m: messages.append(m))
 
     assert robot_dispatcher.watcher_queue
     assert robot_dispatcher.watcher_queue._maxsize == RobotDispatcher.DEFAULT_QUEUE_SIZE
@@ -344,7 +344,16 @@ def test_correct_watcher(mocker: MockerFixture):
     time.sleep(5)
 
     assert len(messages) == 2
-    assert messages == {WatcherP1.TEST_MESSAGE, WatcherP2.TEST_MESSAGE}
+    result = {'names': set(), 'classes': set(), 'data': set()}
+    for i in messages:
+        result['names'].add(i.process_name)
+        result['classes'].add(i.process_class)
+        result['data'].add(i.data)
+
+    assert result['names'] == {'p1', 'p2'}
+    assert result['classes'] == {'WatcherP1', 'WatcherP2'}
+    assert result['data'] == {WatcherP1.TEST_MESSAGE, WatcherP2.TEST_MESSAGE}
+
     robot_dispatcher.stop_logging()
 
 

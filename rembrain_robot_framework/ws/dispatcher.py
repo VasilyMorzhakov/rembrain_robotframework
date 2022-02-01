@@ -12,7 +12,6 @@ import websocket
 from rembrain_robot_framework.ws import WsCommandType, WsRequest
 
 
-# todo WEBSOCKET_GATE_URL pass to constructor?
 class WsDispatcher:
     CONNECTION_RETRIES = 3
 
@@ -26,24 +25,26 @@ class WsDispatcher:
         self.log = self._get_logger(propagate_log, proc_name)
 
     def open(self) -> None:
-        if not self.ws or not self.ws.connected:
-            self.log.info("Opening websocket connection")
-            # Turn on SO_REUSEADDR so we can reuse hung sockets
-            for i in range(self.CONNECTION_RETRIES):
-                with stopit.ThreadingTimeout(1.5):
-                    self.ws = websocket.WebSocket(
-                        sockopt=((socket.SOL_SOCKET, socket.SO_REUSEADDR, 1),)
-                    )
-                    self.ws.connect(os.environ["WEBSOCKET_GATE_URL"])
-                    break
-            else:
-                err_msg = f"Method 'websocket.connect()' failed to connect after {self.CONNECTION_RETRIES} retries"
-                self.log.error(err_msg)
-                raise Exception(err_msg)
+        if self.ws and self.ws.connected:
+            return
 
-            # todo remove it ?
-            self.ws.settimeout(10.0)
-            self._end_silent_reader()
+        self.log.info("Opening websocket connection")
+
+        # Turn on SO_REUSEADDR so we can reuse hung sockets
+        for i in range(self.CONNECTION_RETRIES):
+            with stopit.ThreadingTimeout(1.5):
+                self.ws = websocket.WebSocket(
+                    sockopt=((socket.SOL_SOCKET, socket.SO_REUSEADDR, 1),)
+                )
+                self.ws.connect(os.environ["WEBSOCKET_GATE_URL"])
+                break
+        else:
+            err_msg = f"Method 'websocket.connect()' failed to connect after {self.CONNECTION_RETRIES} retries"
+            self.log.error(err_msg)
+            raise Exception(err_msg)
+
+        self.ws.settimeout(10.0)
+        self._end_silent_reader()
 
     def close(self) -> None:
         try:
@@ -84,18 +85,15 @@ class WsDispatcher:
             time.sleep(5)
             self.close()
 
-    # todo refactor params
     def push(
         self,
         request: WsRequest,
         retry_times: T.Optional[int] = None,
-        delay: T.Optional[int] = None,
     ) -> T.Optional[T.Union[str, bytes]]:
         """
         Open socket and send 'PUSH' command to websocket.
         :param request - request body
         :param retry_times - repeats, if retry_times is None => infinite generator
-        :param delay - (optional) sleep interval in seconds if it needs
         :return: ws response
         """
         repeats: T.Iterator = (
@@ -117,10 +115,6 @@ class WsDispatcher:
                     f"WsDispatcher: Send '{WsCommandType.PUSH}' command failed. Reason: {format_exc()}."
                 )
                 self.close()
-
-        # todo try to remove this code
-        if delay:
-            time.sleep(delay)
 
     def push_loop(
         self, request: WsRequest, data: T.Union[str, bytes] = b""
