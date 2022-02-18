@@ -96,7 +96,7 @@ class WsRobotProcess(RobotProcess):
         if self.command_type == WsCommandType.PULL:
             asyncio.run(self._connect_ws(self._pull_callback))
         elif self.command_type == WsCommandType.PUSH_LOOP:
-            asyncio.run(self._connect_ws(self._push_callback))
+            asyncio.run(self._connect_ws(self._push_loop_callback))
 
     async def _pull_callback(self, ws):
         while True:
@@ -117,7 +117,7 @@ class WsRobotProcess(RobotProcess):
                     f"Data: {data}"
                 )
 
-    async def _push_callback(self, ws):
+    async def _push_loop_callback(self, ws):
         """
         Push handler has three long running function:
         - one for sending pings in keep_alive interval
