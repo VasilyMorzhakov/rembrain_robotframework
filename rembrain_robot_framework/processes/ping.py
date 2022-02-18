@@ -4,6 +4,7 @@ import subprocess
 import time
 
 from rembrain_robot_framework import RobotProcess
+from rembrain_robot_framework.utils import get_arg_with_env_fallback
 
 
 class PingProcess(RobotProcess):
@@ -24,10 +25,10 @@ class PingProcess(RobotProcess):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.associated_robot = self.get_arg_with_env_fallback(
+        self.associated_robot = get_arg_with_env_fallback(
             kwargs, "associated_robot", "ROBOT_NAME"
         )
-        self.template_type = self.get_arg_with_env_fallback(
+        self.template_type = get_arg_with_env_fallback(
             kwargs, "template_type", "TEMPLATE_TYPE"
         )
 

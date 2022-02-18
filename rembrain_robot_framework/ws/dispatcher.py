@@ -12,6 +12,7 @@ import websocket
 from rembrain_robot_framework.ws import WsCommandType, WsRequest
 
 
+# todo deprecated ?
 class WsDispatcher:
     CONNECTION_RETRIES = 3
 

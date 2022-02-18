@@ -1,12 +1,22 @@
 import asyncio
 import json
 import typing as T
+from typing import Optional
 
 import websockets
+from pika.exchange_type import ExchangeType
 
 from rembrain_robot_framework import RobotProcess
+from rembrain_robot_framework.models.request import Request
+from rembrain_robot_framework.utils import get_arg_with_env_fallback
 from rembrain_robot_framework.ws import WsCommandType, WsRequest
 from rembrain_robot_framework.ws.ws_log_adapter import WsLogAdapter
+
+
+class WsRobotProcessType:
+    SERVER = "server"
+    CLIENT = "client"
+    DEFAULT = "default"
 
 
 class WsRobotProcess(RobotProcess):
@@ -32,6 +42,8 @@ class WsRobotProcess(RobotProcess):
 
         password: Password of user to log in into the exchange. If not specified, `RRF_PASSWORD` env var is used.
 
+        is_service: Flag for using by services - they work with personal messages. Default value: False.
+
         data_type: (For pull commands) Determines how the binary data from the exchange should be processed.
         The output from the WsRobotProcess to the queues will be of the according data_type.
         Possible values (default: binary): `["json", "binary", "bytes", "str", "string"]`.
@@ -42,12 +54,13 @@ class WsRobotProcess(RobotProcess):
     """
 
     # Functions to handle binary data coming from pull commands
-    _DATA_TYPE_PARSE_FNS: T.Dict[str, T.Callable[[bytes], T.Any]] = {
+    _DATA_TYPE_PARSERS: T.Dict[str, T.Callable[[bytes], T.Any]] = {
         "json": lambda b: json.loads(b.decode("utf-8")),
         "str": lambda b: b.decode("utf-8"),
         "string": lambda b: b.decode("utf-8"),
         "bytes": lambda b: b,
         "binary": lambda b: b,
+        "request": lambda b: Request(**json.loads(b.decode("utf-8"))),
     }
 
     def __init__(self, *args, **kwargs):
@@ -59,37 +72,42 @@ class WsRobotProcess(RobotProcess):
             WsCommandType.PULL,
             WsCommandType.PUSH_LOOP,
         ):
-            raise RuntimeError("Unknown/disallowed command type")
+            raise RuntimeError("Unknown/disallowed command type.")
 
-        if self.command_type == WsCommandType.PUSH_LOOP:
-            self.log.warning(
-                "Command type push_loop is now the same as push, change your config since push_loop is deprecated."
-            )
-            self.command_type = WsCommandType.PUSH
+        # todo actually this process works only with push_loop and pull! It requires refactoring!
+        if self.command_type == WsCommandType.PUSH:
+            self.command_type = WsCommandType.PUSH_LOOP
 
         self.exchange: str = kwargs["exchange"]
-        self.ws_url: str = self.get_arg_with_env_fallback(
+        self.ws_url: str = get_arg_with_env_fallback(
             kwargs, "url", "WEBSOCKET_GATE_URL"
         )
-        self.robot_name: str = self.get_arg_with_env_fallback(
+        self.robot_name: str = get_arg_with_env_fallback(
             kwargs, "robot_name", "ROBOT_NAME"
         )
-        self.username: str = self.get_arg_with_env_fallback(
+        self.username: str = get_arg_with_env_fallback(
             kwargs, "username", "RRF_USERNAME"
         )
-        self.password: str = self.get_arg_with_env_fallback(
+        self.password: str = get_arg_with_env_fallback(
             kwargs, "password", "RRF_PASSWORD"
         )
 
+        self._type: bool = kwargs.get(
+            "ws_robot_process_type", WsRobotProcessType.DEFAULT
+        )
+        self.service_queue_name: T.Optional[str] = None
+        if self._type == WsRobotProcessType.CLIENT:
+            self.service_queue_name: T.Optional[str] = kwargs["service_queue_name"]
+
         # Data type handling for pull commands
         self.data_type: str = kwargs.get("data_type", "binary").lower()
-        if self.data_type not in self._DATA_TYPE_PARSE_FNS:
+        if self.data_type not in self._DATA_TYPE_PARSERS:
             raise RuntimeError(
                 f"Data type {self.data_type} is not in allowed types.\r\n"
-                f"Please use one of following: {', '.join(self._DATA_TYPE_PARSE_FNS.keys())}"
+                f"Please use one of following: {', '.join(self._DATA_TYPE_PARSERS.keys())}"
             )
 
-        self._parse_fn = self._DATA_TYPE_PARSE_FNS[self.data_type]
+        self._parser = self._DATA_TYPE_PARSERS[self.data_type]
         self.ping_interval = float(kwargs.get("ping_interval", 1.0))
         self.connection_timeout = float(kwargs.get("connection_timeout", 1.5))
 
@@ -110,8 +128,15 @@ class WsRobotProcess(RobotProcess):
             # that should be handled according to the process's data_type
             # If it's a string, then it's a control(ping) packet
             if type(data) is bytes:
-                parsed = self._parse_fn(data)
-                self.publish(parsed)
+                parsed = self._parser(data)
+                if self.is_service:
+                    self.respond_to(
+                        personal_message_uid=parsed.uid,
+                        client_process=parsed.client_process,
+                        data=parsed.data,
+                    )
+                else:
+                    self.publish(parsed)
 
             # Strings are received only for control packets - right now it's only pings
             elif type(data) is str and data != WsCommandType.PING:
@@ -142,7 +167,18 @@ class WsRobotProcess(RobotProcess):
                     await asyncio.sleep(0.01)
                     continue
 
-                data = self.consume()
+                if self._type == WsRobotProcessType.CLIENT:
+                    request: Request = self.get_request()
+                    data: bytes = self.wrap_personal_message_to_ws_request(request)
+                elif self._type == WsRobotProcessType.SERVER:
+                    self.respond_to(
+                        personal_message_uid=parsed.uid,
+                        client_process=parsed.client_process,
+                        data=parsed.data,
+                    )
+                else:
+                    data: bytes = self.consume()
+
                 if not isinstance(data, bytes):
                     self.log.error(f"Trying to send non-binary data to push: {data}")
                     raise RuntimeError("Data to send to ws should be binary")
@@ -190,10 +226,37 @@ class WsRobotProcess(RobotProcess):
                 self.log.info(msg)
 
     def get_control_packet(self) -> str:
+        extra_params = {}
+        if self.is_service:
+            if self.command_type == WsCommandType.PULL:
+                extra_params["exchange_bind_key"] = "#"
+            else:
+                extra_params[
+                    "exchange_bind_key"
+                ] = f"{self.robot_name}.{self.service_queue_name}"
+
         return WsRequest(
             command=self.command_type,
             exchange=self.exchange,
             robot_name=self.robot_name,
             username=self.username,
             password=self.password,
+            **extra_params,
         ).json()
+
+    def wrap_personal_message_to_ws_request(self, personal_request: Request) -> bytes:
+        if self.command_type == WsCommandType.PULL:
+            exchange_bind_key = "#"
+        else:
+            exchange_bind_key = f"{self.robot_name}.{personal_request.client_process}"
+
+        return WsRequest(
+            command=self.command_type,
+            robot_name=self.robot_name,
+            username=self.username,
+            password=self.password,
+            message=personal_request.bson(encoded=False),
+            exchange=self.exchange,
+            exchange_type=ExchangeType.topic.value,
+            exchange_bind_key=exchange_bind_key,
+        ).bson()

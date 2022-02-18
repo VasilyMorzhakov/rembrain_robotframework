@@ -1,4 +1,5 @@
 amqp
+bson
 opencv-contrib-python
 pika
 python-json-logger

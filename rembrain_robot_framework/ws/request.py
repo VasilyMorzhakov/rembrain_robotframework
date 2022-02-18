@@ -1,5 +1,6 @@
 import typing as T
 
+import bson
 from pika.exchange_type import ExchangeType
 from pydantic.main import BaseModel
 
@@ -18,7 +19,7 @@ class WsRequest(BaseModel):
 
     command: str
     robot_name: str
-    access_token: str = ""
+    access_token: str = ""  # todo maybe use  Field(..., alias='accessToken') ?
     username: str = ""
     password: str = ""
     message: T.Any = None
@@ -26,3 +27,12 @@ class WsRequest(BaseModel):
     exchange: str
     exchange_type: str = ExchangeType.fanout.value
     exchange_bind_key: str = ""
+
+    def bson(self, encoded=True):
+        data = self.dict(
+            exclude={
+                "message",
+            }
+        )
+        bson_data = bson.dumps({"message": self.message, **data})
+        return bson_data.encode("utf-8") if encoded else bson_data
