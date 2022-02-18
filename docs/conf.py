@@ -23,7 +23,7 @@ copyright = "2021, Rembrain"
 author = "Rembrain"
 
 # The full version, including alpha/beta/rc tags
-release = "v0.1.5"
+release = "v0.1.6"
 
 
 # -- General configuration ---------------------------------------------------
