@@ -61,11 +61,8 @@ class WsRobotProcess(RobotProcess):
         ):
             raise RuntimeError("Unknown/disallowed command type")
 
-        if self.command_type == WsCommandType.PUSH_LOOP:
-            self.log.warning(
-                "Command type push_loop is now the same as push, change your config since push_loop is deprecated."
-            )
-            self.command_type = WsCommandType.PUSH
+        if self.command_type == WsCommandType.PUSH:
+            self.command_type = WsCommandType.PUSH_LOOP
 
         self.exchange: str = kwargs["exchange"]
         self.ws_url: str = self.get_arg_with_env_fallback(
@@ -98,7 +95,7 @@ class WsRobotProcess(RobotProcess):
 
         if self.command_type == WsCommandType.PULL:
             asyncio.run(self._connect_ws(self._pull_callback))
-        elif self.command_type == WsCommandType.PUSH:
+        elif self.command_type == WsCommandType.PUSH_LOOP:
             asyncio.run(self._connect_ws(self._push_callback))
 
     async def _pull_callback(self, ws):
