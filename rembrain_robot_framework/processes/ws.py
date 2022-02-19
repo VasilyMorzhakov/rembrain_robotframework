@@ -1,22 +1,23 @@
 import asyncio
 import json
 import typing as T
-from typing import Optional
 
 import websockets
 from pika.exchange_type import ExchangeType
 
 from rembrain_robot_framework import RobotProcess
 from rembrain_robot_framework.models.request import Request
+from rembrain_robot_framework.models.ws_bind_request import WsBindRequest
 from rembrain_robot_framework.utils import get_arg_with_env_fallback
 from rembrain_robot_framework.ws import WsCommandType, WsRequest
 from rembrain_robot_framework.ws.ws_log_adapter import WsLogAdapter
 
 
-class WsRobotProcessType:
-    SERVER = "server"
-    CLIENT = "client"
-    DEFAULT = "default"
+#
+# class WsRobotProcessType:
+#     SERVER = "server"
+#     CLIENT = "client"
+#     DEFAULT = "default"
 
 
 class WsRobotProcess(RobotProcess):
@@ -60,7 +61,7 @@ class WsRobotProcess(RobotProcess):
         "string": lambda b: b.decode("utf-8"),
         "bytes": lambda b: b,
         "binary": lambda b: b,
-        "request": lambda b: Request(**json.loads(b.decode("utf-8"))),
+        "bind_request": lambda b: WsBindRequest.from_bson(b),
     }
 
     def __init__(self, *args, **kwargs):
@@ -79,6 +80,9 @@ class WsRobotProcess(RobotProcess):
             self.command_type = WsCommandType.PUSH_LOOP
 
         self.exchange: str = kwargs["exchange"]
+        self.exchange_type: str = kwargs.get("exchange_type", ExchangeType.fanout.value)
+        self.exchange_bind_key: str = kwargs.get("exchange_bind_key", "")
+
         self.ws_url: str = get_arg_with_env_fallback(
             kwargs, "url", "WEBSOCKET_GATE_URL"
         )
@@ -92,12 +96,7 @@ class WsRobotProcess(RobotProcess):
             kwargs, "password", "RRF_PASSWORD"
         )
 
-        self._type: bool = kwargs.get(
-            "ws_robot_process_type", WsRobotProcessType.DEFAULT
-        )
-        self.service_queue_name: T.Optional[str] = None
-        if self._type == WsRobotProcessType.CLIENT:
-            self.service_queue_name: T.Optional[str] = kwargs["service_queue_name"]
+        self.is_personal: bool = bool(kwargs.get("is_personal", False))
 
         # Data type handling for pull commands
         self.data_type: str = kwargs.get("data_type", "binary").lower()
@@ -117,7 +116,7 @@ class WsRobotProcess(RobotProcess):
         if self.command_type == WsCommandType.PULL:
             asyncio.run(self._connect_ws(self._pull_callback))
         elif self.command_type == WsCommandType.PUSH:
-            asyncio.run(self._connect_ws(self._push_callback))
+            asyncio.run(self._connect_ws(self._push_loop_callback))
 
     async def _pull_callback(self, ws):
         while True:
@@ -129,11 +128,13 @@ class WsRobotProcess(RobotProcess):
             # If it's a string, then it's a control(ping) packet
             if type(data) is bytes:
                 parsed = self._parser(data)
-                if self.is_service:
+
+                if self.is_personal:
+                    request = parsed.request
                     self.respond_to(
-                        personal_message_uid=parsed.uid,
-                        client_process=parsed.client_process,
-                        data=parsed.data,
+                        personal_message_uid=request.uid,
+                        client_process=request.client_process,
+                        data=request.data,
                     )
                 else:
                     self.publish(parsed)
@@ -145,7 +146,7 @@ class WsRobotProcess(RobotProcess):
                     f"Data: {data}"
                 )
 
-    async def _push_callback(self, ws):
+    async def _push_loop_callback(self, ws):
         """
         Push handler has three long running function:
         - one for sending pings in keep_alive interval
@@ -167,15 +168,9 @@ class WsRobotProcess(RobotProcess):
                     await asyncio.sleep(0.01)
                     continue
 
-                if self._type == WsRobotProcessType.CLIENT:
-                    request: Request = self.get_request()
-                    data: bytes = self.wrap_personal_message_to_ws_request(request)
-                elif self._type == WsRobotProcessType.SERVER:
-                    self.respond_to(
-                        personal_message_uid=parsed.uid,
-                        client_process=parsed.client_process,
-                        data=parsed.data,
-                    )
+                if self.is_personal:
+                    personal_message: Request = self.get_request()
+                    data: bytes = personal_message.to_bson()
                 else:
                     data: bytes = self.consume()
 
@@ -227,13 +222,9 @@ class WsRobotProcess(RobotProcess):
 
     def get_control_packet(self) -> str:
         extra_params = {}
-        if self.is_service:
-            if self.command_type == WsCommandType.PULL:
-                extra_params["exchange_bind_key"] = "#"
-            else:
-                extra_params[
-                    "exchange_bind_key"
-                ] = f"{self.robot_name}.{self.service_queue_name}"
+        if self.exchange_type == ExchangeType.topic.value:
+            extra_params["exchange_type"] = self.exchange_type
+            extra_params["exchange_bind_key"] = self.exchange_bind_key
 
         return WsRequest(
             command=self.command_type,
@@ -243,20 +234,3 @@ class WsRobotProcess(RobotProcess):
             password=self.password,
             **extra_params,
         ).json()
-
-    def wrap_personal_message_to_ws_request(self, personal_request: Request) -> bytes:
-        if self.command_type == WsCommandType.PULL:
-            exchange_bind_key = "#"
-        else:
-            exchange_bind_key = f"{self.robot_name}.{personal_request.client_process}"
-
-        return WsRequest(
-            command=self.command_type,
-            robot_name=self.robot_name,
-            username=self.username,
-            password=self.password,
-            message=personal_request.bson(encoded=False),
-            exchange=self.exchange,
-            exchange_type=ExchangeType.topic.value,
-            exchange_bind_key=exchange_bind_key,
-        ).bson()

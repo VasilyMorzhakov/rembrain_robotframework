@@ -102,6 +102,11 @@ def get_arg_with_env_fallback(
     return os.environ[fallback_env_var]
 
 
+# todo update it
+def create_bind_key(params):
+    return ".".join(params)
+
+
 # todo replace it into 'errors.py' or 'exceptions.py'
 class ConfigurationError(Exception):
     """Raised when there are errors in config.yaml or

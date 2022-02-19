@@ -18,14 +18,11 @@ class Request(BaseModel):
     client_process: str
     data: T.Any
 
-    def bson(self, *, encoded=True):
-        data = self.dict(
-            exclude={
-                "data",
-            }
-        )
-        bson_data = bson.dumps({"data": self.data, **data})
-        return bson_data.encode("utf-8") if encoded else bson_data
+    def to_bson(self):
+        bson_data = bson.dumps(self.dict())
+        return bson_data.encode("utf-8")
 
-    def bind_key(self):
-        pass
+    @classmethod
+    def from_bson(cls, bytes_data):
+        data = bson.loads(bytes_data.decode("utf-8"))
+        return cls(**data)
