@@ -6,18 +6,12 @@ import websockets
 from pika.exchange_type import ExchangeType
 
 from rembrain_robot_framework import RobotProcess
+from rembrain_robot_framework.enums.ws_type import WsType
 from rembrain_robot_framework.models.request import Request
 from rembrain_robot_framework.models.ws_bind_request import WsBindRequest
 from rembrain_robot_framework.utils import get_arg_with_env_fallback
 from rembrain_robot_framework.ws import WsCommandType, WsRequest
 from rembrain_robot_framework.ws.ws_log_adapter import WsLogAdapter
-
-
-#
-# class WsRobotProcessType:
-#     SERVER = "server"
-#     CLIENT = "client"
-#     DEFAULT = "default"
 
 
 class WsRobotProcess(RobotProcess):
@@ -61,6 +55,7 @@ class WsRobotProcess(RobotProcess):
         "string": lambda b: b.decode("utf-8"),
         "bytes": lambda b: b,
         "binary": lambda b: b,
+        "request": lambda b: Request.from_bson(b),
         "bind_request": lambda b: WsBindRequest.from_bson(b),
     }
 
@@ -96,7 +91,7 @@ class WsRobotProcess(RobotProcess):
             kwargs, "password", "RRF_PASSWORD"
         )
 
-        self.is_personal: bool = bool(kwargs.get("is_personal", False))
+        self.ws_type: str = kwargs.get("ws_type", WsType.DEFAULT)
 
         # Data type handling for pull commands
         self.data_type: str = kwargs.get("data_type", "binary").lower()
@@ -115,7 +110,7 @@ class WsRobotProcess(RobotProcess):
 
         if self.command_type == WsCommandType.PULL:
             asyncio.run(self._connect_ws(self._pull_callback))
-        elif self.command_type == WsCommandType.PUSH:
+        elif self.command_type == WsCommandType.PUSH_LOOP:
             asyncio.run(self._connect_ws(self._push_loop_callback))
 
     async def _pull_callback(self, ws):
@@ -129,13 +124,16 @@ class WsRobotProcess(RobotProcess):
             if type(data) is bytes:
                 parsed = self._parser(data)
 
-                if self.is_personal:
-                    request = parsed.request
+                if self.ws_type == WsType.CLIENT:
+                    # parsed is Request
                     self.respond_to(
-                        personal_message_uid=request.uid,
-                        client_process=request.client_process,
-                        data=request.data,
+                        personal_message_uid=parsed.uid,
+                        client_process=parsed.client_process,
+                        data=parsed.data,
                     )
+                elif self.ws_type == WsType.SERVER:
+                    # parsed is WsBindRequest
+                    self.publish(parsed)
                 else:
                     self.publish(parsed)
 
@@ -153,39 +151,9 @@ class WsRobotProcess(RobotProcess):
         - one for consuming from queue and publishing
         - one for receiving and dropping any packages coming from the websocket
         """
-
-        async def _ping():
-            """Sends out ping packet ever self.ping_interval seconds"""
-            control_packet = json.dumps({"command": WsCommandType.PING})
-            while True:
-                await asyncio.sleep(self.ping_interval)
-                await ws.send(control_packet)
-
-        async def _get_then_send():
-            """Gets data to send from the consume_queue (MUST be binary) and sends it to websocket"""
-            while True:
-                if self.is_empty():
-                    await asyncio.sleep(0.01)
-                    continue
-
-                if self.is_personal:
-                    personal_message: Request = self.get_request()
-                    data: bytes = personal_message.to_bson()
-                else:
-                    data: bytes = self.consume()
-
-                if not isinstance(data, bytes):
-                    self.log.error(f"Trying to send non-binary data to push: {data}")
-                    raise RuntimeError("Data to send to ws should be binary")
-
-                await ws.send(data)
-
-        async def _recv_sink():
-            """Receive and drop incoming packets"""
-            while True:
-                await ws.recv()
-
-        await asyncio.gather(_ping(), _get_then_send(), _recv_sink())
+        await asyncio.gather(
+            self._ping(ws), self._send_to_ws(ws), self._silent_recv(ws)
+        )
 
     async def _connect_ws(self, callback) -> None:
         """
@@ -202,7 +170,7 @@ class WsRobotProcess(RobotProcess):
             try:
                 self.log.info("Sending control packet")
 
-                await ws.send(self.get_control_packet())
+                await ws.send(self._get_control_packet())
                 await callback(ws)
 
                 self.log.info("Handler function exited")
@@ -220,7 +188,41 @@ class WsRobotProcess(RobotProcess):
 
                 self.log.info(msg)
 
-    def get_control_packet(self) -> str:
+    async def _ping(self, ws):
+        """Sends out ping packet ever self.ping_interval seconds"""
+        control_packet = json.dumps({"command": WsCommandType.PING})
+        while True:
+            await asyncio.sleep(self.ping_interval)
+            await ws.send(control_packet)
+
+    async def _send_to_ws(self, ws):
+        """Gets data to send from the consume_queue (MUST be binary) and sends it to websocket"""
+        while True:
+            if self.is_empty():
+                await asyncio.sleep(0.01)
+                continue
+
+            if self.ws_type == WsType.CLIENT:
+                personal_message: Request = self.get_request()
+                data: bytes = personal_message.to_bson()
+            elif self.ws_type == WsType.SERVER:
+                personal_bind_message: WsBindRequest = self.consume()
+                data: bytes = personal_bind_message.to_bson()
+            else:
+                data: bytes = self.consume()
+
+            if not isinstance(data, bytes):
+                self.log.error(f"Trying to send non-binary data to push: {data}")
+                raise RuntimeError("Data to send to ws should be binary")
+
+            await ws.send(data)
+
+    async def _silent_recv(self, ws):
+        """Receive and drop incoming packets"""
+        while True:
+            await ws.recv()
+
+    def _get_control_packet(self) -> str:
         extra_params = {}
         if self.exchange_type == ExchangeType.topic.value:
             extra_params["exchange_type"] = self.exchange_type
