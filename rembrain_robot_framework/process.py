@@ -1,12 +1,10 @@
 import logging
-import os
 import typing as T
 from collections import namedtuple
 from datetime import datetime
 from multiprocessing import Queue
 from os import environ
 from queue import Full
-from time import time
 from uuid import UUID
 
 from rembrain_robot_framework.models.heartbeat_message import HeartbeatMessage
@@ -314,6 +312,7 @@ class RobotProcess:
                 personal_message.uid
             ] = personal_message.data
 
+    # todo maybe it just must receive ready Request?
     def respond_to(
         self, personal_message_uid: UUID, client_process: str, data: T.Any
     ) -> None:
@@ -349,24 +348,6 @@ class RobotProcess:
             self.watcher_queue.put(message, timeout=2.0)
         except Full:
             self.log.warning("Heartbeat queue is full.")
-
-    @staticmethod
-    def get_arg_with_env_fallback(
-        kwargs: T.Dict[str, T.Any], key: str, fallback_env_var: str
-    ) -> T.Any:
-        """
-        Gets argument for the process from the kwargs by the `key`.
-        If it doesn't exist, tries to get it from the environment using `fallback_env_var`
-        """
-        if key in kwargs:
-            return kwargs[key]
-
-        if fallback_env_var not in os.environ:
-            raise RuntimeError(
-                f"Couldn't get argument value of '{key}' for the process and there was no env var '{fallback_env_var}'"
-            )
-
-        return os.environ[fallback_env_var]
 
     def _init_monitoring(self, name):
         """

@@ -1,14 +1,15 @@
 import logging
+import os
 import time
 import typing as T
+
 from ctypes import c_bool, c_int, c_float, c_char_p
 from functools import wraps
 from logging.handlers import QueueHandler
-from multiprocessing import Value, Lock, Manager
-from multiprocessing.context import BaseContext
+from multiprocessing import context, Manager
 
 
-def generate(name: str, manager: Manager, ctx: BaseContext) -> T.Any:
+def generate(name: str, manager: Manager, ctx: context.BaseContext) -> T.Any:
     # Important: Since we are using a separate context for the RobotProcesses, always instantiate from it
     if name == "dict":
         return manager.dict()
@@ -81,6 +82,29 @@ def start_process(process_class, *args, **kwargs) -> None:
     finally:
         if process:
             process.free_resources()
+
+
+def get_arg_with_env_fallback(
+    kwargs: T.Dict[str, T.Any], key: str, fallback_env_var: str
+) -> T.Any:
+    """
+    Gets argument for the process from the kwargs by the `key`.
+    If it doesn't exist, tries to get it from the environment using `fallback_env_var`
+    """
+    if key in kwargs:
+        return kwargs[key]
+
+    if fallback_env_var not in os.environ:
+        raise RuntimeError(
+            f"Couldn't get argument value of '{key}' for the process and there was no env var '{fallback_env_var}'"
+        )
+
+    return os.environ[fallback_env_var]
+
+
+# todo update it
+def create_bind_key(params):
+    return ".".join(params)
 
 
 # todo replace it into 'errors.py' or 'exceptions.py'

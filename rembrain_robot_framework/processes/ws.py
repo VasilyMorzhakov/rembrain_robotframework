@@ -61,6 +61,7 @@ class WsRobotProcess(RobotProcess):
         ):
             raise RuntimeError("Unknown/disallowed command type")
 
+        # todo actually this process works only with push_loop and pull! It requires refactoring!
         if self.command_type == WsCommandType.PUSH:
             self.command_type = WsCommandType.PUSH_LOOP
 
@@ -95,8 +96,8 @@ class WsRobotProcess(RobotProcess):
 
         if self.command_type == WsCommandType.PULL:
             asyncio.run(self._connect_ws(self._pull_callback))
-        elif self.command_type == WsCommandType.PUSH_LOOP:
-            asyncio.run(self._connect_ws(self._push_loop_callback))
+        elif self.command_type == WsCommandType.PUSH:
+            asyncio.run(self._connect_ws(self._push_callback))
 
     async def _pull_callback(self, ws):
         while True:
@@ -117,7 +118,7 @@ class WsRobotProcess(RobotProcess):
                     f"Data: {data}"
                 )
 
-    async def _push_loop_callback(self, ws):
+    async def _push_callback(self, ws):
         """
         Push handler has three long running function:
         - one for sending pings in keep_alive interval
