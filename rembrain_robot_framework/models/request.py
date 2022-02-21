@@ -18,11 +18,9 @@ class Request(BaseModel):
     client_process: str
     data: T.Any
 
-    def to_bson(self):
-        bson_data = bson.dumps(self.dict())
-        return bson_data.encode("utf-8")
+    def to_bson(self) -> bytes:
+        return bson.BSON.encode(self.dict())
 
     @classmethod
     def from_bson(cls, bytes_data):
-        data = bson.loads(bytes_data.decode("utf-8"))
-        return cls(**data)
+        return cls(**bson.BSON.decode(bytes_data))

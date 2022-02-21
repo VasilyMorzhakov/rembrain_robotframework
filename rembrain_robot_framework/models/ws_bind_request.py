@@ -29,12 +29,11 @@ class WsBindRequest(BaseModel):
             request = self.request.dict()
 
         # 'request' is either dict or bytes
-        bson_data = bson.dumps({"request": request, **data})
-        return bson_data.encode("utf-8")
+        return bson.BSON.encode({"request": request, **data})
 
     @classmethod
     def from_bson(cls, bytes_data):
-        data = bson.loads(bytes_data.decode("utf-8"))
+        data: dict = bson.BSON.decode(bytes_data)
 
         request_data = data["request"]
         if isinstance(request_data, bytes):

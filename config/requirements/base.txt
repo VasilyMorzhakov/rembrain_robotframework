@@ -7,6 +7,6 @@ envyaml
 websocket-client
 websockets>=10.0
 pydantic
-pymongo[tls,srv]
+pymongo[tls,srv]==3.8.0
 wheel
 stopit
