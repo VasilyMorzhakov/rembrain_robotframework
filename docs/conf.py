@@ -15,7 +15,6 @@ import sys
 
 sys.path.insert(0, os.path.abspath(".."))
 
-
 # -- Project information -----------------------------------------------------
 
 project = "Rembrain Robot Framework"
@@ -23,8 +22,7 @@ copyright = "2021, Rembrain"
 author = "Rembrain"
 
 # The full version, including alpha/beta/rc tags
-release = "v0.1.6"
-
+release = "0.1.7alpha"
 
 # -- General configuration ---------------------------------------------------
 
@@ -54,7 +52,6 @@ templates_path = ["_templates"]
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
 exclude_patterns = []
-
 
 # -- Options for HTML output -------------------------------------------------
 
