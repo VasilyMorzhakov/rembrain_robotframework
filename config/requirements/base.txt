@@ -1,5 +1,4 @@
 amqp
-bson
 opencv-contrib-python
 pika
 python-json-logger
@@ -8,5 +7,6 @@ envyaml
 websocket-client
 websockets>=10.0
 pydantic
+pymongo[tls,srv]
 wheel
 stopit
