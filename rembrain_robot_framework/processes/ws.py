@@ -131,9 +131,6 @@ class WsRobotProcess(RobotProcess):
                         client_process=parsed.client_process,
                         data=parsed.data,
                     )
-                elif self.ws_type == WsType.SERVER:
-                    # parsed is WsBindRequest
-                    self.publish(parsed)
                 else:
                     self.publish(parsed)
 

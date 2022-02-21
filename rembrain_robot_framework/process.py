@@ -1,5 +1,4 @@
 import logging
-import os
 import typing as T
 from collections import namedtuple
 from datetime import datetime
