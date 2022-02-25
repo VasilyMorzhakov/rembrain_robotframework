@@ -15,7 +15,8 @@ class Request(BaseModel):
     """
 
     uid: UUID = Field(default_factory=uuid4)
-    client_process: str
+    client_process: str = Field(min_length=1)
+    service_name: str = ""
     data: T.Any
 
     def to_bson(self) -> bytes:

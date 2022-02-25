@@ -15,6 +15,8 @@ class WsRequest(BaseModel):
     username:  username - only access_token does not exist
     password:  password - only access_token does not exist
     message:  message for request
+    exchange:  exchange name
+    exchange_type:  exchange type(allowed values: 'fanout', 'topic')
     """
 
     command: str

@@ -235,6 +235,7 @@ class RobotProcess:
     def send_request(
         self,
         message: T.Any,
+        service_name: str = "",
         queue_name: T.Optional[str] = None,
         clear_on_overflow: bool = False,
     ) -> UUID:
@@ -251,6 +252,9 @@ class RobotProcess:
         it will pick this single queue by default.
         :type queue_name: Optional[str]
 
+        :param service_name: name of remote service - it is required for work thorough ws
+        :type service_name: str
+
         :param bool clear_on_overflow: If this parameter is set and a queue to write is full,
         publish will empty the queue before publishing of new messages.
 
@@ -259,7 +263,9 @@ class RobotProcess:
 
         :raise: ConfigurationError: if number of queues != 1 and queue name was not given
         """
-        message = Request(client_process=self.name, data=message)
+        message = Request(
+            client_process=self.name, service_name=service_name, data=message
+        )
         self.publish(message, queue_name, clear_on_overflow)
         return message.uid
 
@@ -312,25 +318,17 @@ class RobotProcess:
                 personal_message.uid
             ] = personal_message.data
 
-    # todo maybe it just must receive ready Request?
-    def respond_to(
-        self, personal_message_uid: UUID, client_process: str, data: T.Any
-    ) -> None:
+    def respond_to(self, request: Request) -> None:
         """
         Respond directly to the requesting process.
         This response should be awaited with the function wait_response.
         Computation block should be in try-except clause
         to prevent stuck the waiting process in case of exceptions.
 
-        :param UUID personal_message_uid: a message that provoked computations
-        :param str client_process: the process which sent response and which have been waiting response.
-        :param data: the response. Send
-
+        :param Request request: request with response data
         :return None
         """
-        self._system_queues[client_process].put(
-            Request(uid=personal_message_uid, client_process=client_process, data=data)
-        )
+        self._system_queues[request.client_process].put(request)
 
     def heartbeat(self, message: str):
         if not self.watcher_queue:

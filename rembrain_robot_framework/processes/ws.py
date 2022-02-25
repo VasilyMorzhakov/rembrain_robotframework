@@ -29,6 +29,11 @@ class WsRobotProcess(RobotProcess):
 
         **[Required]** exchange: Name of the exchange the data should be pushed/pulled from.
 
+        exchange_type: Type of the exchange.
+         Possible values (default: fanout): `["fanout", "topic"]`.
+
+        exchange_bind_key: Bind key.
+
         url: Websocket gate URL. If not specified, `WEBSOCKET_GATE_URL` env var is used.
 
         robot_name: Robot, for which we are pushing/pulling data. If not specified, `ROBOT_NAME` env var is used.
@@ -37,11 +42,11 @@ class WsRobotProcess(RobotProcess):
 
         password: Password of user to log in into the exchange. If not specified, `RRF_PASSWORD` env var is used.
 
-        is_service: Flag for using by services - they work with personal messages. Default value: False.
+        ws_type: an enum value of 'WsType' for 'topic' type exchange. It sets a concrete way for work thorough ws.
 
         data_type: (For pull commands) Determines how the binary data from the exchange should be processed.
         The output from the WsRobotProcess to the queues will be of the according data_type.
-        Possible values (default: binary): `["json", "binary", "bytes", "str", "string"]`.
+        Possible values (default: binary): `["json", "binary", "bytes", "str", "string", "request", "bind_request"]`.
 
         ping_interval: Interval between pings that are being sent to the exchange in seconds. Default value: 1.0
 
@@ -75,8 +80,13 @@ class WsRobotProcess(RobotProcess):
             self.command_type = WsCommandType.PUSH_LOOP
 
         self.exchange: str = kwargs["exchange"]
-        self.exchange_type: str = kwargs.get("exchange_type", ExchangeType.fanout.value)
         self.exchange_bind_key: str = kwargs.get("exchange_bind_key", "")
+        self.exchange_type: str = kwargs.get("exchange_type", ExchangeType.fanout.value)
+        if self.exchange_type not in (
+            ExchangeType.topic.value,
+            ExchangeType.fanout.value,
+        ):
+            raise RuntimeError("Unknown/disallowed exchange type.")
 
         self.ws_url: str = get_arg_with_env_fallback(
             kwargs, "url", "WEBSOCKET_GATE_URL"
@@ -122,15 +132,10 @@ class WsRobotProcess(RobotProcess):
             # that should be handled according to the process's data_type
             # If it's a string, then it's a control(ping) packet
             if type(data) is bytes:
-                parsed = self._parser(data)
+                parsed: T.Any = self._parser(data)
 
                 if self.ws_type == WsType.CLIENT:
-                    # parsed is Request
-                    self.respond_to(
-                        personal_message_uid=parsed.uid,
-                        client_process=parsed.client_process,
-                        data=parsed.data,
-                    )
+                    self.respond_to(parsed)
                 else:
                     self.publish(parsed)
 
@@ -201,6 +206,10 @@ class WsRobotProcess(RobotProcess):
 
             if self.ws_type == WsType.CLIENT:
                 personal_message: Request = self.get_request()
+                # todo what to do if service never exists ? for example server name is incorrect
+                if not personal_message.service_name:
+                    raise RuntimeError("Service name for personal message is absent.")
+
                 data: bytes = personal_message.to_bson()
             elif self.ws_type == WsType.SERVER:
                 personal_bind_message: WsBindRequest = self.consume()
@@ -214,22 +223,19 @@ class WsRobotProcess(RobotProcess):
 
             await ws.send(data)
 
+    async def _get_control_packet(self) -> str:
+        return WsRequest(
+            command=self.command_type,
+            robot_name=self.robot_name,
+            username=self.username,
+            password=self.password,
+            exchange=self.exchange,
+            exchange_type=self.exchange_type,
+            exchange_bind_key=self.exchange_bind_key,
+        ).json()
+
+    @classmethod
     async def _silent_recv(self, ws):
         """Receive and drop incoming packets"""
         while True:
             await ws.recv()
-
-    def _get_control_packet(self) -> str:
-        extra_params = {}
-        if self.exchange_type == ExchangeType.topic.value:
-            extra_params["exchange_type"] = self.exchange_type
-            extra_params["exchange_bind_key"] = self.exchange_bind_key
-
-        return WsRequest(
-            command=self.command_type,
-            exchange=self.exchange,
-            robot_name=self.robot_name,
-            username=self.username,
-            password=self.password,
-            **extra_params,
-        ).json()
