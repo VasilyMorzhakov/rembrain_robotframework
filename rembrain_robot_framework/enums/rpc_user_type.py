@@ -1,4 +1,4 @@
-class WsType:
-    SERVER = "server"
+class RpcUserType:
+    SERVICE = "service"
     CLIENT = "client"
     DEFAULT = "default"

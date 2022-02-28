@@ -235,8 +235,8 @@ class RobotProcess:
     def send_request(
         self,
         message: T.Any,
-        service_name: str = "",
         queue_name: T.Optional[str] = None,
+        service_name: str = "",
         clear_on_overflow: bool = False,
     ) -> UUID:
         """

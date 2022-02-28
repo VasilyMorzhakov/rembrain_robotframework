@@ -6,7 +6,7 @@ import websockets
 from pika.exchange_type import ExchangeType
 
 from rembrain_robot_framework import RobotProcess
-from rembrain_robot_framework.enums.ws_type import WsType
+from rembrain_robot_framework.enums.rpc_user_type import RpcUserType
 from rembrain_robot_framework.models.request import Request
 from rembrain_robot_framework.models.ws_bind_request import WsBindRequest
 from rembrain_robot_framework.utils import get_arg_with_env_fallback
@@ -14,6 +14,7 @@ from rembrain_robot_framework.ws import WsCommandType, WsRequest
 from rembrain_robot_framework.ws.ws_log_adapter import WsLogAdapter
 
 
+# todo divide into 2 classes!
 class WsRobotProcess(RobotProcess):
     """
     Process that communicates with a remote websocket server.
@@ -32,8 +33,6 @@ class WsRobotProcess(RobotProcess):
         exchange_type: Type of the exchange.
          Possible values (default: fanout): `["fanout", "topic"]`.
 
-        exchange_bind_key: Bind key.
-
         url: Websocket gate URL. If not specified, `WEBSOCKET_GATE_URL` env var is used.
 
         robot_name: Robot, for which we are pushing/pulling data. If not specified, `ROBOT_NAME` env var is used.
@@ -42,7 +41,10 @@ class WsRobotProcess(RobotProcess):
 
         password: Password of user to log in into the exchange. If not specified, `RRF_PASSWORD` env var is used.
 
-        ws_type: an enum value of 'WsType' for 'topic' type exchange. It sets a concrete way for work thorough ws.
+        rpc_user_type: an enum value of 'RpcUserType' for 'topic' type exchange.
+        It sets a concrete way for work with personal messages.
+
+        service_name: it is required only for rpc_user_type=='service'
 
         data_type: (For pull commands) Determines how the binary data from the exchange should be processed.
         The output from the WsRobotProcess to the queues will be of the according data_type.
@@ -80,7 +82,6 @@ class WsRobotProcess(RobotProcess):
             self.command_type = WsCommandType.PUSH_LOOP
 
         self.exchange: str = kwargs["exchange"]
-        self.exchange_bind_key: str = kwargs.get("exchange_bind_key", "")
         self.exchange_type: str = kwargs.get("exchange_type", ExchangeType.fanout.value)
         if self.exchange_type not in (
             ExchangeType.topic.value,
@@ -101,7 +102,9 @@ class WsRobotProcess(RobotProcess):
             kwargs, "password", "RRF_PASSWORD"
         )
 
-        self.ws_type: str = kwargs.get("ws_type", WsType.DEFAULT)
+        self.rpc_user_type: str = kwargs.get("rpc_user_type", RpcUserType.DEFAULT)
+        if self.rpc_user_type == RpcUserType.SERVICE:
+            self.service_name = kwargs["service_name"]
 
         # Data type handling for pull commands
         self.data_type: str = kwargs.get("data_type", "binary").lower()
@@ -134,7 +137,7 @@ class WsRobotProcess(RobotProcess):
             if type(data) is bytes:
                 parsed: T.Any = self._parser(data)
 
-                if self.ws_type == WsType.CLIENT:
+                if self.rpc_user_type == RpcUserType.CLIENT:
                     self.respond_to(parsed)
                 else:
                     self.publish(parsed)
@@ -204,16 +207,18 @@ class WsRobotProcess(RobotProcess):
                 await asyncio.sleep(0.01)
                 continue
 
-            if self.ws_type == WsType.CLIENT:
+            if self.rpc_user_type == RpcUserType.CLIENT:
                 personal_message: Request = self.get_request()
                 # todo what to do if service never exists ? for example server name is incorrect
                 if not personal_message.service_name:
                     raise RuntimeError("Service name for personal message is absent.")
 
                 data: bytes = personal_message.to_bson()
-            elif self.ws_type == WsType.SERVER:
+
+            elif self.rpc_user_type == RpcUserType.SERVICE:
                 personal_bind_message: WsBindRequest = self.consume()
                 data: bytes = personal_bind_message.to_bson()
+
             else:
                 data: bytes = self.consume()
 
@@ -224,6 +229,15 @@ class WsRobotProcess(RobotProcess):
             await ws.send(data)
 
     async def _get_control_packet(self) -> str:
+        extra_params = {}
+
+        if self.command_type == WsCommandType.PULL:
+            if self.rpc_user_type == RpcUserType.CLIENT:
+                extra_params["exchange_bind_key"] = f"{self.robot_name}.*"
+
+            elif self.rpc_user_type == RpcUserType.SERVICE:
+                extra_params["exchange_bind_key"] = f"*.{self.service_name}"
+
         return WsRequest(
             command=self.command_type,
             robot_name=self.robot_name,
@@ -231,7 +245,7 @@ class WsRobotProcess(RobotProcess):
             password=self.password,
             exchange=self.exchange,
             exchange_type=self.exchange_type,
-            exchange_bind_key=self.exchange_bind_key,
+            **extra_params,
         ).json()
 
     @classmethod
