@@ -6,7 +6,7 @@ from pydantic import BaseModel
 from rembrain_robot_framework.models.request import Request
 
 
-class WsBindRequest(BaseModel):
+class BindRequest(BaseModel):
     """
     Personal struct for sending messages thorough queues.
     Args:

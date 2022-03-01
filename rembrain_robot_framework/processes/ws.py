@@ -8,13 +8,13 @@ from pika.exchange_type import ExchangeType
 from rembrain_robot_framework import RobotProcess
 from rembrain_robot_framework.enums.rpc_user_type import RpcUserType
 from rembrain_robot_framework.models.request import Request
-from rembrain_robot_framework.models.ws_bind_request import WsBindRequest
+from rembrain_robot_framework.models.bind_request import BindRequest
 from rembrain_robot_framework.utils import get_arg_with_env_fallback
 from rembrain_robot_framework.ws import WsCommandType, WsRequest
 from rembrain_robot_framework.ws.ws_log_adapter import WsLogAdapter
 
 
-# todo divide into 2 classes!
+# todo divide into 2 classes ?
 class WsRobotProcess(RobotProcess):
     """
     Process that communicates with a remote websocket server.
@@ -25,13 +25,13 @@ class WsRobotProcess(RobotProcess):
     pull the video feed and perform the ML processing, sending back commands for robot to execute.
 
     Args:
-        **[Required]** command_type: Either `pull` or `push`. Pull to get data from the remote exchange.
+        **[Required]** command_type: Either `pull` or `push`.
+        Pull to get data from the remote exchange.
         Push to push data to the exchange.
 
         **[Required]** exchange: Name of the exchange the data should be pushed/pulled from.
 
-        exchange_type: Type of the exchange.
-         Possible values (default: fanout): `["fanout", "topic"]`.
+        exchange_type: Type of the exchange for RabbitMq. Possible values (default: fanout): `["fanout", "topic"]`.
 
         url: Websocket gate URL. If not specified, `WEBSOCKET_GATE_URL` env var is used.
 
@@ -48,7 +48,7 @@ class WsRobotProcess(RobotProcess):
 
         data_type: (For pull commands) Determines how the binary data from the exchange should be processed.
         The output from the WsRobotProcess to the queues will be of the according data_type.
-        Possible values (default: binary): `["json", "binary", "bytes", "str", "string", "request", "bind_request"]`.
+        Possible values (default: "binary"): `["json", "binary", "bytes", "str", "string", "request", "bind_request"]`.
 
         ping_interval: Interval between pings that are being sent to the exchange in seconds. Default value: 1.0
 
@@ -56,65 +56,25 @@ class WsRobotProcess(RobotProcess):
     """
 
     # Functions to handle binary data coming from pull commands
-    _DATA_TYPE_PARSERS: T.Dict[str, T.Callable[[bytes], T.Any]] = {
+    _PARSERS: T.Dict[str, T.Callable[[bytes], T.Any]] = {
         "json": lambda b: json.loads(b.decode("utf-8")),
         "str": lambda b: b.decode("utf-8"),
         "string": lambda b: b.decode("utf-8"),
         "bytes": lambda b: b,
         "binary": lambda b: b,
         "request": lambda b: Request.from_bson(b),
-        "bind_request": lambda b: WsBindRequest.from_bson(b),
+        "bind_request": lambda b: BindRequest.from_bson(b),
     }
 
     def __init__(self, *args, **kwargs):
         super(WsRobotProcess, self).__init__(*args, **kwargs)
 
-        self.command_type: str = kwargs["command_type"]
-        if self.command_type not in (
-            WsCommandType.PUSH,
-            WsCommandType.PULL,
-            WsCommandType.PUSH_LOOP,
-        ):
-            raise RuntimeError("Unknown/disallowed command type.")
+        self._set_command_type(kwargs)
+        self._set_exchange_params(kwargs)
+        self._set_base_params_with_env(kwargs)
+        self._set_rpc_params(kwargs)
+        self._set_parser(kwargs)
 
-        # todo actually this process works only with push_loop and pull! It requires refactoring!
-        if self.command_type == WsCommandType.PUSH:
-            self.command_type = WsCommandType.PUSH_LOOP
-
-        self.exchange: str = kwargs["exchange"]
-        self.exchange_type: str = kwargs.get("exchange_type", ExchangeType.fanout.value)
-        if self.exchange_type not in (
-            ExchangeType.topic.value,
-            ExchangeType.fanout.value,
-        ):
-            raise RuntimeError("Unknown/disallowed exchange type.")
-
-        self.ws_url: str = get_arg_with_env_fallback(
-            kwargs, "url", "WEBSOCKET_GATE_URL"
-        )
-        self.robot_name: str = get_arg_with_env_fallback(
-            kwargs, "robot_name", "ROBOT_NAME"
-        )
-        self.username: str = get_arg_with_env_fallback(
-            kwargs, "username", "RRF_USERNAME"
-        )
-        self.password: str = get_arg_with_env_fallback(
-            kwargs, "password", "RRF_PASSWORD"
-        )
-
-        self.rpc_user_type: str = kwargs.get("rpc_user_type", RpcUserType.DEFAULT)
-        if self.rpc_user_type == RpcUserType.SERVICE:
-            self.service_name = kwargs["service_name"]
-
-        # Data type handling for pull commands
-        self.data_type: str = kwargs.get("data_type", "binary").lower()
-        if self.data_type not in self._DATA_TYPE_PARSERS:
-            raise RuntimeError(
-                f"Data type {self.data_type} is not in allowed types.\r\n"
-                f"Please use one of following: {', '.join(self._DATA_TYPE_PARSERS.keys())}"
-            )
-
-        self._parser = self._DATA_TYPE_PARSERS[self.data_type]
         self.ping_interval = float(kwargs.get("ping_interval", 1.0))
         self.connection_timeout = float(kwargs.get("connection_timeout", 1.5))
 
@@ -216,7 +176,7 @@ class WsRobotProcess(RobotProcess):
                 data: bytes = personal_message.to_bson()
 
             elif self.rpc_user_type == RpcUserType.SERVICE:
-                personal_bind_message: WsBindRequest = self.consume()
+                personal_bind_message: BindRequest = self.consume()
                 data: bytes = personal_bind_message.to_bson()
 
             else:
@@ -253,3 +213,68 @@ class WsRobotProcess(RobotProcess):
         """Receive and drop incoming packets"""
         while True:
             await ws.recv()
+
+    def _set_exchange_params(self, kwargs):
+        self.exchange: str = kwargs["exchange"]
+
+        self.exchange_type: str = kwargs.get("exchange_type", ExchangeType.fanout.value)
+        if self.exchange_type not in (
+            ExchangeType.topic.value,
+            ExchangeType.fanout.value,
+        ):
+            raise RuntimeError("Unknown/disallowed exchange type.")
+
+    def _set_command_type(self, kwargs: dict) -> None:
+        self.command_type: str = kwargs["command_type"]
+
+        if self.command_type not in (
+            WsCommandType.PUSH,
+            WsCommandType.PULL,
+            WsCommandType.PUSH_LOOP,
+        ):
+            raise RuntimeError("Unknown/disallowed command type.")
+
+        # todo actually this process works only with push_loop and pull! It requires refactoring!
+        if self.command_type == WsCommandType.PUSH:
+            self.command_type = WsCommandType.PUSH_LOOP
+
+    def _set_parser(self, kwargs):
+        # Data type handling for pull commands
+        self.data_type: str = kwargs.get("data_type", "binary").lower()
+        if self.data_type not in self._PARSERS:
+            raise RuntimeError(
+                f"Data type {self.data_type} is not in allowed types.\r\n"
+                f"Please use one of following: {', '.join(self._PARSERS.keys())}"
+            )
+
+        self._parser = self._PARSERS[self.data_type]
+
+    def _set_base_params_with_env(self, kwargs):
+        self.ws_url: str = get_arg_with_env_fallback(
+            kwargs, "url", "WEBSOCKET_GATE_URL"
+        )
+        self.robot_name: str = get_arg_with_env_fallback(
+            kwargs, "robot_name", "ROBOT_NAME"
+        )
+        self.username: str = get_arg_with_env_fallback(
+            kwargs, "username", "RRF_USERNAME"
+        )
+        self.password: str = get_arg_with_env_fallback(
+            kwargs, "password", "RRF_PASSWORD"
+        )
+
+    def _set_rpc_params(self, kwargs):
+        self.rpc_user_type: str = kwargs.get("rpc_user_type", RpcUserType.DEFAULT)
+
+        incorrect_rpc_user_type = (
+            self.exchange_type == ExchangeType.topic.value
+            and self.rpc_user_type not in (RpcUserType.CLIENT, RpcUserType.SERVICE)
+        )
+
+        if incorrect_rpc_user_type:
+            raise RuntimeError(
+                "'Topic' exchange type requires correct 'rpc_user_type' value in config data !"
+            )
+
+        if self.rpc_user_type == RpcUserType.SERVICE:
+            self.service_name = kwargs["service_name"]
