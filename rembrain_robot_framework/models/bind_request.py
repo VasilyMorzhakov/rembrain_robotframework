@@ -35,6 +35,7 @@ class BindRequest(BaseModel):
     def from_bson(cls, bytes_data):
         data: dict = bson.BSON.decode(bytes_data)
 
+        print("REQ: ", data)
         request_data = data["request"]
         if isinstance(request_data, bytes):
             request = Request.from_bson(request_data)
