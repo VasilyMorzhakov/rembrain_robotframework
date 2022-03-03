@@ -14,7 +14,7 @@ class Watcher:
 
     def notify(self) -> None:
         while True:
-            if self.watcher_queue.qsize() > 0:
+            if not self.watcher_queue.empty():
                 self._send_to_ws(self.watcher_queue.get())
 
             time.sleep(0.1)
