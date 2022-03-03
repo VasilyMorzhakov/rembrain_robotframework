@@ -316,7 +316,7 @@ class RobotProcess:
 
             self._received_personal_messages[
                 personal_message.uid
-            ] = personal_message.data
+            ] = personal_message
 
     def respond_to(self, request: Request) -> None:
         """
