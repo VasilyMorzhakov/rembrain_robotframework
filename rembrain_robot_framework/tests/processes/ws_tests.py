@@ -8,7 +8,7 @@ from rembrain_robot_framework.tests.exceptions import FinishTestException
 from rembrain_robot_framework.ws import WsCommandType
 
 
-@pytest.fixture()
+@pytest.fixture
 def ws_proc_params_fx():
     return {
         "name": "ws_robot_process",
@@ -26,13 +26,13 @@ def ws_proc_params_fx():
     }
 
 
-@pytest.fixture()
+@pytest.fixture
 def ws_proc_push_fx(ws_proc_params_fx, mocker):
     ws_proc_params_fx["command_type"] = WsCommandType.PUSH
     return ws_proc(ws_proc_params_fx, mocker)
 
 
-@pytest.fixture()
+@pytest.fixture
 def ws_proc_pull_fx(ws_proc_params_fx, mocker):
     ws_proc_params_fx["command_type"] = WsCommandType.PULL
     return ws_proc(ws_proc_params_fx, mocker)

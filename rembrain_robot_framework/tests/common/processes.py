@@ -113,9 +113,11 @@ class SysP2(RobotProcess):
         self.shared.request["id"] = personal_message.uid
         self.shared.request["data"] = personal_message.data
         self.respond_to(
-            personal_message.uid,
-            personal_message.client_process,
-            data=self.TEST_MESSAGE,
+            Request(
+                uid=personal_message.uid,
+                client_process=personal_message.client_process,
+                data=self.TEST_MESSAGE,
+            )
         )
 
 

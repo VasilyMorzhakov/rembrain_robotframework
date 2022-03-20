@@ -135,7 +135,7 @@ class WsRobotProcess(RobotProcess):
             try:
                 self.log.info("Sending control packet")
 
-                await ws.send(await self._get_control_packet())
+                await ws.send(self._get_control_packet())
                 await callback(ws)
 
                 self.log.info("Handler function exited")
@@ -188,7 +188,7 @@ class WsRobotProcess(RobotProcess):
 
             await ws.send(data)
 
-    async def _get_control_packet(self) -> str:
+    def _get_control_packet(self) -> str:
         extra_params = {}
 
         if self.command_type == WsCommandType.PULL:

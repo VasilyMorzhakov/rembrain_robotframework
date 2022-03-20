@@ -10,7 +10,7 @@ from rembrain_robot_framework.processes import StubProcess
 from rembrain_robot_framework.tests.common.processes import *
 
 
-@pytest.fixture()
+@pytest.fixture
 def robot_dispatcher_fx(request) -> RobotDispatcher:
     config: T.Any = EnvYAML(os.path.join(os.path.dirname(__file__), "configs", request.param[0]))
     robot_dispatcher = RobotDispatcher(config, request.param[1])
@@ -22,7 +22,7 @@ def robot_dispatcher_fx(request) -> RobotDispatcher:
 
 
 # second way
-@pytest.fixture()
+@pytest.fixture
 def robot_dispatcher_class_fx(request, mocker: MockerFixture) -> RobotDispatcher:
     config: T.Any = EnvYAML(os.path.join(os.path.dirname(__file__), "configs", request.param[0]))
 
@@ -105,16 +105,11 @@ def test_performance(robot_dispatcher_fx: RobotDispatcher) -> None:
     assert robot_dispatcher_fx.shared_objects["frames_processed"].value == 4000
 
 
-@pytest.mark.parametrize(
-    "robot_dispatcher_class_fx",
-    (("config_empty.yaml",),),
-    indirect=True,
-)
-def test_add_custom_processes(robot_dispatcher_class_fx: tuple) -> None:
+def test_add_custom_processes() -> None:
     name = "aps"
     test_message = "TEST MESSAGE"
 
-    robot_dispatcher = robot_dispatcher_class_fx[0]()
+    robot_dispatcher = RobotDispatcher({"processes": {}})
     queue = robot_dispatcher.manager.Queue(maxsize=30)
 
     robot_dispatcher.add_shared_object("success", "Value:bool")
@@ -137,6 +132,8 @@ def test_add_custom_processes(robot_dispatcher_class_fx: tuple) -> None:
 
     time.sleep(3.0)
     assert robot_dispatcher.shared_objects["success"].value
+
+    robot_dispatcher.stop_logging()
 
 
 @pytest.mark.parametrize(
@@ -184,6 +181,8 @@ def test_description_from_config() -> None:
         assert all((i in ("subsystem", "robot") for i in rd.project_description))
         assert rd.project_description["subsystem"] == "test_subsystem"
         assert rd.project_description["robot"] == robot_name
+
+        rd.stop_logging()
 
 
 @pytest.mark.parametrize(
