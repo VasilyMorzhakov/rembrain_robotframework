@@ -42,6 +42,7 @@ autodoc_mock_imports = [
     "pika",
     "cv2",
     "numpy",
+    "bson",
 ]
 autosummary_generate = True
 
