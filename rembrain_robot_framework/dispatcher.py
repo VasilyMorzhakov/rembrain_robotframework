@@ -189,7 +189,7 @@ class RobotDispatcher:
         for process_name in self.processes.keys():
             self._run_process(process_name)
             proc = self.process_pool[process_name]
-            self.log.info(f"Process {process_name} on PID {proc.pid} started")
+            self.log.info(f"Process {process_name} on PID {proc.pid} was started")
 
     def add_process(
         self,
