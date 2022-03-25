@@ -240,26 +240,26 @@ class RobotProcess:
         clear_on_overflow: bool = False,
     ) -> UUID:
         """
-        Wraps 'message' as PersonalMessage(adding current process name and message id for the
+        Wraps 'message' as a Request object (adding current process name and message id for the
         receiving code in order to be able to respond) and then sends
         to all processes that are configured to listen queue_name.
         If there are several processes for listening then everyone will receive a copy of the message.
 
-        :param message: Any serialized data to transfer over interprocess queues.
+        :param message: Any serializable data to transfer over interprocess queues.
 
         :param queue_name: Name of the queue to send message to.
         If there is only one output queue it's possible to omit this argument,
         it will pick this single queue by default.
         :type queue_name: Optional[str]
 
-        :param service_name: name of remote service - it is required for work thorough ws
+        :param service_name: name of remote service - it is required for the service queues to work accross the network
         :type service_name: str
 
         :param bool clear_on_overflow: If this parameter is set and a queue to write is full,
         publish will empty the queue before publishing of new messages.
 
         :return: message id.
-        :rtype: UUID
+        :rtype: UUID of the request. You can use it in wait_response() to wait for the response from the remote service
 
         :raise: ConfigurationError: if number of queues != 1 and queue name was not given
         """
@@ -276,27 +276,31 @@ class RobotProcess:
 
     def wait_response(self, personal_message_uid: UUID) -> T.Any:
         """
-        Get a response after publishing a personal message. The order of getting responses doesn't matter.
-        It blocks the process until it gets the result.
+        Waits for the response Request object created after publishing a personal message.
+        The process is blocked until the result of a message with the personal_message_uid arrives.
+        Returns the data contained in the response
+        Note: responses can be delivered out of order
 
         Example:
-        P1:
+        (Consuming process P1):
         personal_message_uid_1 = self.send_request(message="compute_calibration", queue_name="robot_commands")
         personal_message_uid_2 = self.send_request(message="get_position", queue_name="robot_commands")
 
         position = self.wait_response(personal_message_uid_2)
         calibration = self.wait_response(personal_message_uid_1)
 
-        P2:
-        personal_message:PersonalMessage = self.get_request(queue_name="robot_commands")
+        (Service process that handles messages P2):
+        req: Request = self.get_request(queue_name="robot_commands")
+        response = req.copy()
 
-        if personal_message.data == "get_position":
-            self.respond_to(personal_message.uid, personal_message.client_process, [1,1,1])
+        if req.data == "get_position":
+            response.data = [1,1,1]
+        if req.data == "compute_calibration":
+            response.data = [0,2]
 
-        if personal_message.data == "compute_calibration":
-            self.respond_to(personal_message.uid, [0, 2])
+        self.respond_to(response)
 
-        :param UUID personal_message_uid: the result of publish_personal(...)
+        :param UUID personal_message_uid: UID of the message to wait for
         :returns the computed data
         """
         if personal_message_uid in self._received_personal_messages:
@@ -314,9 +318,7 @@ class RobotProcess:
             if personal_message.uid == personal_message_uid:
                 return personal_message.data
 
-            self._received_personal_messages[
-                personal_message.uid
-            ] = personal_message
+            self._received_personal_messages[personal_message.uid] = personal_message
 
     def respond_to(self, request: Request) -> None:
         """
