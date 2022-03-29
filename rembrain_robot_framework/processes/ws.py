@@ -11,7 +11,7 @@ from rembrain_robot_framework.models.request import Request
 from rembrain_robot_framework.models.bind_request import BindRequest
 from rembrain_robot_framework.utils import get_arg_with_env_fallback
 from rembrain_robot_framework.ws import WsCommandType, WsRequest
-from rembrain_robot_framework.ws.ws_log_adapter import WsLogAdapter
+from rembrain_robot_framework.ws.log_adapter import WsLogAdapter
 
 
 # todo divide into 2 classes ?

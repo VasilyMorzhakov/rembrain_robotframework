@@ -178,8 +178,12 @@ class RobotDispatcher:
             for p in self.processes
         }
 
+        self._set_watcher()
+
+    def _set_watcher(self):
         # for heartbeat
         self.watcher_queue = None
+
         if not self.in_cluster:
             self.watcher_queue = self.mp_context.Queue(maxsize=self.DEFAULT_QUEUE_SIZE)
             self.watcher = Watcher(self.watcher_queue)

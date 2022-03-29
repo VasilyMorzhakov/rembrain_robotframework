@@ -11,13 +11,14 @@ from unittest import mock
 
 import websocket
 from envyaml import EnvYAML
+from pytest_mock import MockerFixture
 
 from rembrain_robot_framework import RobotDispatcher
 from rembrain_robot_framework.tests.log.processes import FailingProcess
 from rembrain_robot_framework.tests.log.websocket_server import start_ws_server
 
 
-def test_crashing_doesnt_create_another_logger() -> None:
+def test_crashing_doesnt_create_another_logger(mocker: MockerFixture) -> None:
     """
     Testing that there are no duplicate loggers by creating a count-up-then-fail process
     Keeping it running for a couple failures
@@ -29,6 +30,10 @@ def test_crashing_doesnt_create_another_logger() -> None:
 
     std_errors = StringIO()
     with redirect_stderr(std_errors):
+        def _set_watcher(self):
+            self.watcher_queue = None
+
+        mocker.patch.object(RobotDispatcher, "_set_watcher", _set_watcher)
         robot_dispatcher = RobotDispatcher(config, processes, in_cluster=False)
         robot_dispatcher.start_processes()
         # Wait for more than 10 or so seconds because process restart takes 5 seconds

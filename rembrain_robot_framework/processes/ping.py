@@ -17,7 +17,6 @@ class PingProcess(RobotProcess):
 
     Args:
         associated_robot: Robot that is used. If not specified, `ROBOT_NAME` env var is used
-
         template_type: If not specified, `TEMPLATE_TYPE` env var is used
     """
 
@@ -51,6 +50,7 @@ class PingProcess(RobotProcess):
                 "active": self.shared.processor_active.value,
                 "id": self.container_id,
             }
+
             to_send = json.dumps(processor_info).encode("utf-8")
             self.publish(to_send)
             time.sleep(1)

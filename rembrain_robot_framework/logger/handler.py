@@ -10,11 +10,7 @@ from traceback import format_exc
 import websockets
 from python_logging_rabbitmq import FieldFilter
 
-from rembrain_robot_framework.ws import (
-    WsRequest,
-    WsCommandType,
-    WsLogAdapter,
-)
+from rembrain_robot_framework.ws import WsRequest, WsCommandType, WsLogAdapter
 
 
 class LogHandler(logging.Handler):

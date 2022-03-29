@@ -325,37 +325,6 @@ def test_correct_dispatcher_full_creation(robot_dispatcher_fx: RobotDispatcher) 
     assert len(robot_dispatcher_fx.system_queues) == len(processes_names)
 
 
-def test_correct_watcher(mocker: MockerFixture):
-    config = {"processes": {"p1": {}, "p2": {}}}
-    processes = {
-        "p1": {"process_class": WatcherP1, "keep_alive": False},
-        "p2": {"process_class": WatcherP2, "keep_alive": False},
-    }
-    robot_dispatcher = RobotDispatcher(config, processes, in_cluster=False)
-
-    messages = []
-    mocker.patch.object(robot_dispatcher.watcher, "_send_to_ws", lambda m: messages.append(m))
-
-    assert robot_dispatcher.watcher_queue
-    assert robot_dispatcher.watcher_queue._maxsize == RobotDispatcher.DEFAULT_QUEUE_SIZE
-
-    robot_dispatcher.start_processes()
-    time.sleep(5)
-
-    assert len(messages) == 2
-    result = {'names': set(), 'classes': set(), 'data': set()}
-    for i in messages:
-        result['names'].add(i.process_name)
-        result['classes'].add(i.process_class)
-        result['data'].add(i.data)
-
-    assert result['names'] == {'p1', 'p2'}
-    assert result['classes'] == {'WatcherP1', 'WatcherP2'}
-    assert result['data'] == {WatcherP1.TEST_MESSAGE, WatcherP2.TEST_MESSAGE}
-
-    robot_dispatcher.stop_logging()
-
-
 @pytest.mark.parametrize(
     "robot_dispatcher_class_fx",
     (("config_queue_in_process_twice.yaml",),),

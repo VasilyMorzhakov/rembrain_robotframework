@@ -6,7 +6,7 @@ from rembrain_robot_framework import RobotProcess
 class StubProcess(RobotProcess):
     """
     Stub process that doesn't do any work.
-    Can be used as e.g. a sink for queues that are not used while debugging
+    Can be used as e.g. a sink for queues that are not used while debugging.
     """
 
     SLEEP_TIME = 10

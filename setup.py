@@ -12,7 +12,7 @@ with open(
 
 setuptools.setup(
     name="rembrain_robot_framework",
-    version="0.1.12",
+    version="0.1.13",
     author="Rembrain",
     author_email="info@rembrain.ai",
     description="Rembrain Robot Framework",
