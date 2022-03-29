@@ -5,7 +5,7 @@
     <meta name="color-scheme" content="light dark"><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 <link rel="index" title="Index" href="../genindex.html" /><link rel="search" title="Search" href="../search.html" /><link rel="prev" title="Process configuration" href="../config.html" />
 
-    <meta name="generator" content="sphinx-4.4.0, furo 2022.03.04"/>
+    <meta name="generator" content="sphinx-4.5.0, furo 2022.03.04"/>
         <title>Included Processes - Rembrain Robot Framework 0.1.12 documentation</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?digest=935aa2abcc5c1da4283d1dc201fb1f0add16d23a" />
@@ -194,26 +194,21 @@
 <span class="target" id="module-rembrain_robot_framework.processes"></span><dl class="py class">
 <dt class="sig sig-object py" id="rembrain_robot_framework.processes.CommandTimer">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">rembrain_robot_framework.processes.</span></span><span class="sig-name descname"><span class="pre">CommandTimer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">shared_objects</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">consume_queues</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">multiprocessing.context.BaseContext.Queue</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">publish_queues</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">multiprocessing.context.BaseContext.Queue</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">system_queues</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">multiprocessing.context.BaseContext.Queue</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">watcher_queue</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">multiprocessing.context.BaseContext.Queue</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#rembrain_robot_framework.processes.CommandTimer" title="Permalink to this definition">#</a></dt>
-<dd><dl class="simple">
-<dt>In:</dt><dd><p>JSON dictionary</p>
-</dd>
-<dt>Does:</dt><dd><p>Adds a <cite>timestamp</cite> field with the current UTC timestamp</p>
-</dd>
-<dt>Out:</dt><dd><p>JSON dictionary, encoded as a utf-8 binary string</p>
-</dd>
-</dl>
+<dd><p>In: JSON dictionary
+Does: Adds a <cite>timestamp</cite> field with the current UTC timestamp
+Out: JSON dictionary, encoded as a utf-8 binary string</p>
 </dd></dl>
 <dl class="py class">
 <dt class="sig sig-object py" id="rembrain_robot_framework.processes.PingProcess">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">rembrain_robot_framework.processes.</span></span><span class="sig-name descname"><span class="pre">PingProcess</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#rembrain_robot_framework.processes.PingProcess" title="Permalink to this definition">#</a></dt>
 <dd><p>For use in Docker containers</p>
-<dl>
+<dl class="simple">
 <dt>Out:</dt><dd><p>Info about the process to the queue (pushed every second)
 and associated fields (robot and template type)
 in JSON, encoded as a utf-8 binary string</p>
 </dd>
-<dt>Args:</dt><dd><p>associated_robot: Robot that is used. If not specified, <cite>ROBOT_NAME</cite> env var is used</p>
-<p>template_type: If not specified, <cite>TEMPLATE_TYPE</cite> env var is used</p>
+<dt>Args:</dt><dd><p>associated_robot: Robot that is used. If not specified, <cite>ROBOT_NAME</cite> env var is used
+template_type: If not specified, <cite>TEMPLATE_TYPE</cite> env var is used</p>
 </dd>
 </dl>
 </dd></dl>
@@ -221,7 +216,7 @@ in JSON, encoded as a utf-8 binary string</p>
 <dt class="sig sig-object py" id="rembrain_robot_framework.processes.StubProcess">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">rembrain_robot_framework.processes.</span></span><span class="sig-name descname"><span class="pre">StubProcess</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">eternal_loop</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#rembrain_robot_framework.processes.StubProcess" title="Permalink to this definition">#</a></dt>
 <dd><p>Stub process that doesn’t do any work.
-Can be used as e.g. a sink for queues that are not used while debugging</p>
+Can be used as e.g. a sink for queues that are not used while debugging.</p>
 </dd></dl>
 <dl class="py class">
 <dt class="sig sig-object py" id="rembrain_robot_framework.processes.VideoPacker">
@@ -279,7 +274,7 @@ Possible values (default: “binary”): <cite>[“json”, “binary”, “byt
 </dd>
 </dl>
 </dd></dl>
-<div class="table-wrapper"><table class="longtable docutils align-default">
+<div class="table-wrapper"><table class="autosummary longtable docutils align-default">
 <colgroup>
 <col style="width: 10%"/>
 <col style="width: 90%"/>
