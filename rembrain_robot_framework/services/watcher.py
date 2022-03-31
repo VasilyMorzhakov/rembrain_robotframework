@@ -20,7 +20,7 @@ class Watcher:
         self.password = os.environ["RRF_PASSWORD"]
 
     def notify(self) -> None:
-        loop = asyncio.new_event_loop()
+        loop = asyncio.get_event_loop()
         loop.run_until_complete(self._send_to_ws())
 
     async def _send_to_ws(self):
@@ -39,8 +39,7 @@ class Watcher:
                             message=message,
                         )
                     )
-
-                time.sleep(0.1)
+                await asyncio.sleep(0.1)
 
             except websockets.ConnectionClosedError as e:
                 # todo how to log ?
@@ -48,5 +47,3 @@ class Watcher:
 
             except (websockets.ConnectionClosed, websockets.ConnectionClosedOK):
                 pass
-
-            continue
