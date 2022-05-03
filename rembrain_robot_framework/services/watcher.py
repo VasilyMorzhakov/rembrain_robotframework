@@ -37,7 +37,7 @@ class Watcher:
                             username=self.username,
                             password=self.password,
                             message=message,
-                        )
+                        ).json()
                     )
                 await asyncio.sleep(0.1)
 

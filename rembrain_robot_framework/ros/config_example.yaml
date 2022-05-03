@@ -1,0 +1,4 @@
+exchange: 'test_exchange'
+queue: messages
+queue_size: 5
+item_type: String
