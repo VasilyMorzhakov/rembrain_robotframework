@@ -20,7 +20,13 @@ class Watcher:
         self.password = os.environ["RRF_PASSWORD"]
 
     def notify(self) -> None:
-        loop = asyncio.get_event_loop()
+        try:
+            loop = asyncio.get_event_loop()
+        except RuntimeError:
+            # In case we aren't running in the main thread,
+            # where get_event_loop doesn't create a loop if it doesn't exist
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
         loop.run_until_complete(self._send_to_ws())
 
     async def _send_to_ws(self):
