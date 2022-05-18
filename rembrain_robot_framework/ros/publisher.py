@@ -12,12 +12,12 @@ from std_msgs.msg import String
 
 class WsPublisher(Node):
     def __init__(self, config_file):
-        super().__init__('WsPublisher')
+        super().__init__(self.__class__.__name__)
 
         config = EnvYAML(config_file)
-        self.exchange = config["exchange"]
         queue = config["queue"]
         queue_size = config["queue_size"]
+        self.exchange = config["exchange"]
         self.item_type = config["item_type"]
 
         self.ws = websocket.WebSocket()
@@ -26,6 +26,7 @@ class WsPublisher(Node):
         self.username = os.environ["RRF_USERNAME"]
         self.password = os.environ["RRF_PASSWORD"]
 
+        # todo there are a lot of other types
         if self.item_type == 'String':
             self.publisher_ = self.create_publisher(String, queue, queue_size)
         else:
@@ -58,16 +59,14 @@ class WsPublisher(Node):
 
         msg.data = response
         self.publisher_.publish(msg)
-        self.get_logger().info(f'Publishing: {msg.data}')
+        self.get_logger().info(f'Publishing completed.')
 
 
 if __name__ == '__main__':
     args = None
 
-    rclpy.init(args=args)
+    ws_publisher = WsPublisher(config_file="config_example.yaml")
+    rclpy.spin(ws_publisher)
 
-    minimal_publisher = WsPublisher(config_file="config_example.yaml")
-    rclpy.spin(minimal_publisher)
-
-    minimal_publisher.destroy_node()
+    ws_publisher.destroy_node()
     rclpy.shutdown()

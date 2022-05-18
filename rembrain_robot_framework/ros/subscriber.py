@@ -14,7 +14,7 @@ from std_msgs.msg import String
 class WsSubscriber(Node):
 
     def __init__(self, config_file):
-        super().__init__('WsSubscriber')
+        super().__init__(self.__class__.__name__)
 
         config = EnvYAML(config_file)
         self.exchange = config["exchange"]
@@ -28,6 +28,7 @@ class WsSubscriber(Node):
         self.username = os.environ["RRF_USERNAME"]
         self.password = os.environ["RRF_PASSWORD"]
 
+        # todo there are a lot of other types
         if self.item_type == 'String':
             self.subscription = self.create_subscription(
                 String, queue, self.listener_callback, queue_size
@@ -52,7 +53,7 @@ class WsSubscriber(Node):
         )
 
         # todo how to check response
-        response = self.ws.recv()
+        self.ws.recv()
 
 
 def main(args=None):
