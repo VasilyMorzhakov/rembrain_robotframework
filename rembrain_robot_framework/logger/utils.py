@@ -59,7 +59,6 @@ def get_log_handler(project_description: dict, in_cluster: bool = True) -> T.Any
             return None
 
         formatter = JsonFormatter()
-        formatter.log_fields = project_description
 
         handler = LogHandler(fields=project_description)
         handler.setFormatter(formatter)

@@ -78,7 +78,7 @@ class RobotDispatcher:
         self.log_queue: T.Optional[Queue] = None
         self._log_listener: T.Optional[QueueListener] = None
         self.log: T.Optional[logging.Logger] = None
-        self.run_logging(project_description, in_cluster)
+        self.run_logging(self.project_description, in_cluster)
 
         self.log.info("RobotHost is configuring processes.")
 
