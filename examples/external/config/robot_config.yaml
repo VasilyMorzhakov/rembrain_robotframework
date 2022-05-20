@@ -26,12 +26,13 @@ processes:
   orig_pusher:
     command_type: push_loop
     exchange: "image_original"
+#    log_level: "DEBUG"
     consume:
       - to_push
 
   processed_receiver:
     command_type: pull
-    exchange: "image_processed"
+    exchange: "camera0"
     publish:
       - to_unpack
 
@@ -59,3 +60,4 @@ shared_objects:
 description:
   subsystem: remote_example_robot
   robot: ${ROBOT_NAME}
+  username: ${RRF_USERNAME}

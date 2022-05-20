@@ -27,7 +27,7 @@ processes:
 
   processed_pusher:
     command_type: push_loop
-    exchange: "image_processed"
+    exchange: "camera0"
     consume:
       - image_processed
 
@@ -38,3 +38,4 @@ shared_objects:
 description:
   subsystem: remote_example_processor
   robot: ${ROBOT_NAME}
+  username: ${RRF_USERNAME}
