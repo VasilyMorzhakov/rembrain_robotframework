@@ -1,15 +1,15 @@
 <!doctype html>
-<html class="no-js">
+<html class="no-js" lang="en" data-content_root="./">
   <head><meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
-    <meta name="color-scheme" content="light dark"><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+    <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
 <link rel="index" title="Index" href="genindex.html" /><link rel="search" title="Search" href="search.html" /><link rel="next" title="Included Processes" href="processes/index.html" /><link rel="prev" title="Welcome to Rembrain Robot Framework’s documentation!" href="index.html" />
 
-    <meta name="generator" content="sphinx-4.5.0, furo 2022.04.07"/>
+    <!-- Generated with Sphinx 7.2.6 and Furo 2023.09.10 -->
         <title>Process configuration - Rembrain Robot Framework 0.1.16 documentation</title>
-      <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
-    <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?digest=68f4518137b9aefe99b631505a2064c3c42c9852" />
-    <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?digest=30d1aed668e5c3a91c3e3bf6a60b675221979f0e" />
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=a746c00c" />
+    <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?v=135e06be" />
+    <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?v=36a5483c" />
     
     
 
@@ -149,7 +149,7 @@
   <span class="sidebar-brand-text">Rembrain Robot Framework 0.1.16 documentation</span>
   
 </a><form class="sidebar-search-container" method="get" action="search.html" role="search">
-  <input class="sidebar-search" placeholder=Search name="q" aria-label="Search">
+  <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
   <input type="hidden" name="check_keywords" value="yes">
   <input type="hidden" name="area" value="default">
 </form>
@@ -175,7 +175,9 @@
           </svg>
           <span>Back to top</span>
         </a>
-        <div class="content-icon-container"><div class="theme-toggle-container theme-toggle-content">
+        <div class="content-icon-container">
+          
+<div class="theme-toggle-container theme-toggle-content">
             <button class="theme-toggle">
               <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
               <svg class="theme-icon-when-auto"><use href="#svg-sun-half"></use></svg>
@@ -190,34 +192,34 @@
         </div>
         <article role="main">
           <section id="process-configuration">
-<h1>Process configuration<a class="headerlink" href="#process-configuration" title="Permalink to this headline">#</a></h1>
+<h1>Process configuration<a class="headerlink" href="#process-configuration" title="Link to this heading">#</a></h1>
 <p>Here is an example configuration from the <cite>examples</cite> folder. Specifically the local example.
 This config file is parsed at the start and passed to the <code class="xref py py-class docutils literal notranslate"><span class="pre">RobotDispatcher</span></code> constructor</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">processes</span><span class="p">:</span><span class="w"></span>
-<span class="w">  </span><span class="nt">gui</span><span class="p">:</span><span class="w"></span>
-<span class="w">    </span><span class="nt">title</span><span class="p">:</span><span class="w"> </span><span class="s">"Rembrain</span><span class="nv"> </span><span class="s">Robot</span><span class="nv"> </span><span class="s">Framework</span><span class="nv"> </span><span class="s">Example</span><span class="nv"> </span><span class="s">(Local)"</span><span class="w"></span>
-<span class="w">    </span><span class="nt">keep_alive</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span><span class="w"></span>
-<span class="w">    </span><span class="nt">consume</span><span class="p">:</span><span class="w"></span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">image_orig</span><span class="w"></span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">image_processed</span><span class="w"></span>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">processes</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">gui</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">title</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Rembrain</span><span class="nv"> </span><span class="s">Robot</span><span class="nv"> </span><span class="s">Framework</span><span class="nv"> </span><span class="s">Example</span><span class="nv"> </span><span class="s">(Local)&quot;</span>
+<span class="w">    </span><span class="nt">keep_alive</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+<span class="w">    </span><span class="nt">consume</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">image_orig</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">image_processed</span>
 
-<span class="w">  </span><span class="nt">image_capture</span><span class="p">:</span><span class="w"></span>
-<span class="w">    </span><span class="nt">publish</span><span class="p">:</span><span class="w"></span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">image_orig</span><span class="w"></span>
+<span class="w">  </span><span class="nt">image_capture</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">publish</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">image_orig</span>
 
-<span class="w">  </span><span class="nt">processor</span><span class="p">:</span><span class="w"></span>
-<span class="w">    </span><span class="nt">device</span><span class="p">:</span><span class="w"> </span><span class="s">"cpu"</span><span class="w"></span>
-<span class="w">    </span><span class="nt">publish</span><span class="p">:</span><span class="w"></span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">image_processed</span><span class="w"></span>
-<span class="w">    </span><span class="nt">consume</span><span class="p">:</span><span class="w"></span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">image_orig</span><span class="w"></span>
+<span class="w">  </span><span class="nt">processor</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">device</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;cpu&quot;</span>
+<span class="w">    </span><span class="nt">publish</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">image_processed</span>
+<span class="w">    </span><span class="nt">consume</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">image_orig</span>
 
-<span class="nt">shared_objects</span><span class="p">:</span><span class="w"></span>
-<span class="w">  </span><span class="nt">exit_flag</span><span class="p">:</span><span class="w"> </span><span class="s">"Value:bool"</span><span class="w"></span>
+<span class="nt">shared_objects</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">exit_flag</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Value:bool&quot;</span>
 
-<span class="nt">description</span><span class="p">:</span><span class="w"></span>
-<span class="w">  </span><span class="nt">subsystem</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">local_example</span><span class="w"></span>
-<span class="w">  </span><span class="nt">robot</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">local_example_robot</span><span class="w"></span>
+<span class="nt">description</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">subsystem</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">local_example</span>
+<span class="w">  </span><span class="nt">robot</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">local_example_robot</span>
 </pre></div>
 </div>
 <div class="admonition note">
@@ -225,7 +227,7 @@ This config file is parsed at the start and passed to the <code class="xref py p
 <p>We recommend using YAML for configuration, but any format that is parsable into Python dicts is fine.</p>
 </div>
 <section id="processes">
-<h2>Processes<a class="headerlink" href="#processes" title="Permalink to this headline">#</a></h2>
+<h2>Processes<a class="headerlink" href="#processes" title="Link to this heading">#</a></h2>
 <p>The <cite>processes</cite> section describes the processes that RobotDispatcher will start after calling the <cite>run()</cite> method</p>
 <p>The key of each section (<cite>gui</cite>/<cite>image_capture</cite>/<cite>processor</cite>) is the name of the process.</p>
 <div class="admonition note">
@@ -235,7 +237,7 @@ The dispatcher accepts a <cite>processes</cite> argument that should have this m
 See the examples folder of the repo for an example of how to generate the process map.</p>
 </div>
 <section id="process-arguments">
-<h3>Process arguments<a class="headerlink" href="#process-arguments" title="Permalink to this headline">#</a></h3>
+<h3>Process arguments<a class="headerlink" href="#process-arguments" title="Link to this heading">#</a></h3>
 <dl>
 <dt>Inside of the process section is the process’s configuration. Every process has following arguments:</dt><dd><p>consume: List of names of the consume queues</p>
 <p>publish: List of names of the publish queues</p>
@@ -256,7 +258,7 @@ This way you can add arguments specific to your process class in the config file
 </section>
 </section>
 <section id="shared-objects">
-<h2>Shared objects<a class="headerlink" href="#shared-objects" title="Permalink to this headline">#</a></h2>
+<h2>Shared objects<a class="headerlink" href="#shared-objects" title="Link to this heading">#</a></h2>
 <p>In the <cite>shared_objects</cite> section you can specify objects that will be shared between processes.
 Each process can access them via <cite>self.shared</cite> NamedTuple</p>
 <dl class="simple">
@@ -273,7 +275,7 @@ Each process can access them via <cite>self.shared</cite> NamedTuple</p>
 </dl>
 </section>
 <section id="description">
-<h2>Description<a class="headerlink" href="#description" title="Permalink to this headline">#</a></h2>
+<h2>Description<a class="headerlink" href="#description" title="Link to this heading">#</a></h2>
 <p>The <cite>description</cite> section contains miscelaneous information about the project.
 This information is primarily used for logging purposes.</p>
 </section>
@@ -291,10 +293,10 @@ This information is primarily used for logging purposes.</p>
                 </div>
                 <div class="title">Included Processes</div>
               </div>
-              <svg><use href="#svg-arrow-right"></use></svg>
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
             </a>
           <a class="prev-page" href="index.html">
-              <svg><use href="#svg-arrow-right"></use></svg>
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
               <div class="page-info">
                 <div class="context">
                   <span>Previous</span>
@@ -316,9 +318,7 @@ This information is primarily used for logging purposes.</p>
             
           </div>
           <div class="right-details">
-            <div class="icons">
-              
-            </div>
+            
           </div>
         </div>
         
@@ -330,7 +330,7 @@ This information is primarily used for logging purposes.</p>
       <div class="toc-sticky toc-scroll">
         <div class="toc-title-container">
           <span class="toc-title">
-            Contents
+            On this page
           </span>
         </div>
         <div class="toc-tree-container">
@@ -354,10 +354,9 @@ This information is primarily used for logging purposes.</p>
       
     </aside>
   </div>
-</div><script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
-    <script src="_static/jquery.js"></script>
-    <script src="_static/underscore.js"></script>
-    <script src="_static/doctools.js"></script>
-    <script src="_static/scripts/furo.js"></script>
+</div><script src="_static/documentation_options.js?v=d50bcae4"></script>
+    <script src="_static/doctools.js?v=888ff710"></script>
+    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/scripts/furo.js?v=32e29ea5"></script>
     </body>
 </html>
