@@ -17,6 +17,7 @@ class LogHandler(logging.Handler):
     _RABBIT_EXCHANGE = os.environ.get("LOG_EXCHANGE", "logstash")
     _MAX_LOG_SIZE: int = 128
     _SEND_RETRIES = 2
+    warning_overloaded_happened = False
 
     def __init__(self, fields: T.Optional[dict] = None, *args, **kwargs):
         super(LogHandler, self).__init__(*args, **kwargs)
@@ -49,10 +50,13 @@ class LogHandler(logging.Handler):
 
             if self.logs_queue.qsize() < self._MAX_LOG_SIZE:
                 self.logs_queue.put(binary_record)
+                self.warning_overloaded_happened=False
             else:
-                self.log.warning(
-                    "WARNING! Log queue overloaded, message wasn't delivered to websocket"
-                )
+                if not self.warning_overloaded_happened:
+                    self.log.warning(
+                        "WARNING! Log queue overloaded, message wasn't delivered to websocket"
+                    )
+                    self.warning_overloaded_happened=True
         except Exception:
             self.log.error(
                 "Attention: logger exception - record was not written! Reason:",
