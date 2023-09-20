@@ -27,6 +27,7 @@ class RobotDispatcher:
         config: T.Any = None,
         processes: T.Optional[dict] = None,
         project_description: T.Optional[dict] = None,
+        format_string: str = "%(levelname)s:%(name)s:%(message)s",
         in_cluster: bool = True,
     ):
         """
@@ -363,10 +364,10 @@ class RobotDispatcher:
         self.process_pool[proc_name] = process
 
     # todo replace all logging logic in partial class
-    def run_logging(self, project_description: dict, in_cluster: bool) -> None:
+    def run_logging(self, project_description: dict,format_string:str, in_cluster: bool) -> None:
         # Set up logging
         self.log_queue, self._log_listener = setup_logging(
-            project_description, self.mp_context, in_cluster
+            project_description, self.mp_context, format_string, in_cluster
         )
         self._log_listener.start()
 
