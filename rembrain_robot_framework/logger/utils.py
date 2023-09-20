@@ -65,15 +65,15 @@ def get_log_handler(project_description: dict, in_cluster: bool = True) -> T.Any
         return handler
 
 
-def get_console_handler() -> logging.StreamHandler:
+def get_console_handler(format_string:str) -> logging.StreamHandler:
     console_handler = logging.StreamHandler()
-    format_string = "%(levelname)s:%(name)s:%(message)s"
+    format_string = format_string
     console_handler.setFormatter(logging.Formatter(format_string))
     return console_handler
 
 
 def setup_logging(
-    project_description: dict, ctx: BaseContext, in_cluster: bool = True
+    project_description: dict, ctx: BaseContext, format_string:str,in_cluster: bool = True
 ) -> T.Tuple[Queue, QueueListener]:
     """
     Sets up a QueueListener that listens to the main logging queue and passes data to the handlers
@@ -85,7 +85,7 @@ def setup_logging(
     Don't forget to start the listener
     """
     log_queue = ctx.Queue()
-    handlers = [get_console_handler()]
+    handlers = [get_console_handler(format_string)]
 
     out_handler = get_log_handler(project_description, in_cluster)
     if out_handler is not None:
