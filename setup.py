@@ -1,4 +1,5 @@
 import os
+import sys
 try:
     import cv2
     has_cv2 = True
@@ -16,6 +17,13 @@ with open(
     requirements = [i.strip() for i in f]
 if not has_cv2:
     requirements.append("opencv-python")
+
+# downgrade websocket for python<3.7
+if sys.version_info.major==3 and sys.version_info.minor<7:
+    for i in range(len(requirements)):
+        if requirements[i] == "websockets>=10":
+            requirements[i] = "websockets==9.1"
+    
 
 setuptools.setup(
     name="rembrain_robot_framework",
