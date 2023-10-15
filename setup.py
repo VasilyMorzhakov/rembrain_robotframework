@@ -27,7 +27,7 @@ if sys.version_info.major==3 and sys.version_info.minor<7:
 
 setuptools.setup(
     name="rembrain_robot_framework",
-    version="0.1.17",
+    version="0.1.18",
     author="Rembrain",
     author_email="info@rembrain.ai",
     description="Rembrain Robot Framework",
@@ -38,9 +38,9 @@ setuptools.setup(
     packages=setuptools.find_packages(),
     install_requires=requirements,
     classifiers=[
-        "Programming Language :: Python :: 3.7",
+        "Programming Language :: Python :: 3.6",
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
     ],
-    python_requires=">=3.7",
+    python_requires=">=3.6",
 )
