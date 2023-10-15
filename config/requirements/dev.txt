@@ -4,3 +4,4 @@ pytest
 pytest-mock
 black
 pre-commit
+opencv-python
