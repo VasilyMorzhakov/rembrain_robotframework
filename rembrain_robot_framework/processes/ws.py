@@ -12,7 +12,13 @@ from rembrain_robot_framework.models.bind_request import BindRequest
 from rembrain_robot_framework.utils import get_arg_with_env_fallback
 from rembrain_robot_framework.ws import WsCommandType, WsRequest
 from rembrain_robot_framework.ws.log_adapter import WsLogAdapter
+import sys
 
+
+if sys.version_info.minor<7:
+    over_python37=False
+else:
+    over_python37=True
 
 # todo divide into 2 classes ?
 class WsRobotProcess(RobotProcess):
@@ -80,12 +86,20 @@ class WsRobotProcess(RobotProcess):
 
     def run(self) -> None:
         self.log.info(f"{self.__class__.__name__} started, name: {self.name}")
-
+        if not over_python37:
+            loop = asyncio.get_event_loop()
+            
         if self.command_type == WsCommandType.PULL:
-            asyncio.run(self._connect_ws(self._pull_callback))
+            if over_python37:
+                asyncio.run(self._connect_ws(self._pull_callback))
+            else:
+                loop.run_until_complete(self._pull())
         elif self.command_type == WsCommandType.PUSH_LOOP:
-            asyncio.run(self._connect_ws(self._push_loop_callback))
-
+            if over_python37:
+                asyncio.run(self._connect_ws(self._push_loop_callback))
+            else:
+                loop.run_until_complete(self._push())
+                
     async def _pull_callback(self, ws):
         while True:
             data = await ws.recv()
