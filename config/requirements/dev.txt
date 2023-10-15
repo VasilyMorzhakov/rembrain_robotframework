@@ -5,3 +5,4 @@ pytest-mock
 pytest-timeout
 black
 pre-commit
+opencv-python
