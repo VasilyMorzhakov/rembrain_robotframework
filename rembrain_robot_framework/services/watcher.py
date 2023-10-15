@@ -30,22 +30,23 @@ class Watcher:
         loop.run_until_complete(self._send_to_ws())
 
     async def _send_to_ws(self):
-        async for ws in websockets.connect(self.ws_url, open_timeout=1.5):
+        while True:
             try:
-                if not self.watcher_queue.empty():
-                    message = self.watcher_queue.get()
+                async with websockets.connect(self.ws_url) as ws:
+                    if not self.watcher_queue.empty():
+                        message = self.watcher_queue.get()
 
-                    await ws.send(
-                        WsRequest(
-                            command=WsCommandType.PUSH,
-                            exchange=self.EXCHANGE,
-                            robot_name=self.robot_name,
-                            username=self.username,
-                            password=self.password,
-                            message=message,
+                        await ws.send(
+                            WsRequest(
+                                command=WsCommandType.PUSH,
+                                exchange=self.EXCHANGE,
+                                robot_name=self.robot_name,
+                                username=self.username,
+                                password=self.password,
+                                message=message,
+                            )
                         )
-                    )
-                await asyncio.sleep(0.1)
+                    await asyncio.sleep(0.03)
 
             except websockets.ConnectionClosedError as e:
                 # todo how to log ?
@@ -53,3 +54,4 @@ class Watcher:
 
             except (websockets.ConnectionClosed, websockets.ConnectionClosedOK):
                 pass
+            time.sleep(0.5)

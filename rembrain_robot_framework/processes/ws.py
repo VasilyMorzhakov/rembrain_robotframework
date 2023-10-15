@@ -84,10 +84,10 @@ class WsRobotProcess(RobotProcess):
         self.log.info(f"{self.__class__.__name__} started, name: {self.name}")
             
         if self.command_type == WsCommandType.PULL:
-            asyncio.run(self._connect_ws(self._pull_callback))
+            asyncio.get_event_loop().run_until_complete(self._connect_ws(self._pull_callback))
 
         elif self.command_type == WsCommandType.PUSH_LOOP:
-            asyncio.run(self._connect_ws(self._push_loop_callback))
+            asyncio.get_event_loop().run_until_complete(self._connect_ws(self._push_loop_callback))
                 
     async def _pull_callback(self, ws):
         while True:
@@ -131,8 +131,8 @@ class WsRobotProcess(RobotProcess):
 
         async with websockets.connect(
             self.ws_url,
-            logger=WsLogAdapter(self.log, {}),
-            open_timeout=self.connection_timeout,
+            #logger=WsLogAdapter(self.log, {}),
+            #open_timeout=self.connection_timeout,
             max_size=None,
         ) as ws:
             try:

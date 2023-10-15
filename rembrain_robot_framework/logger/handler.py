@@ -89,18 +89,15 @@ class LogHandler(logging.Handler):
         This always runs in an infinite loop and restarts if cancels
         """
 
-        async for ws in websockets.connect(
-            os.environ["WEBSOCKET_GATE_URL"],
-            logger=WsLogAdapter(self.log, {}),
-            open_timeout=1.5,
-        ):
+        while True:
             try:
-                self.log.info("Sending control packet")
-                await ws.send(control_packet.json())
-                await asyncio.gather(
-                    self._ping(ws), self._send_log_record(ws), self._recv_sink(ws)
-                )
-                continue
+                async with websockets.connect(os.environ["WEBSOCKET_GATE_URL"]) as ws:
+                    self.log.info("Sending control packet")
+                    await ws.send(control_packet.json())
+                    await asyncio.gather(
+                            self._ping(ws), self._send_log_record(ws), self._recv_sink(ws)
+                        )
+                    continue
             except websockets.ConnectionClosedError as e:
                 msg = "Connection closed with error."
                 if e.rcvd is not None:
