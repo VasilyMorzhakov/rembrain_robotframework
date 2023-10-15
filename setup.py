@@ -1,5 +1,10 @@
 import os
-
+try:
+    import cv2
+    has_cv2 = True
+except ImportError:
+    has_cv2 = False
+    
 import setuptools
 
 with open("README.md") as f:
@@ -9,6 +14,8 @@ with open(
     os.path.join(os.path.dirname(__file__), "config", "requirements", "base.txt")
 ) as f:
     requirements = [i.strip() for i in f]
+if not has_cv2:
+    requirements.append("opencv-python")
 
 setuptools.setup(
     name="rembrain_robot_framework",
