@@ -1,5 +1,4 @@
 amqp
-opencv-contrib-python
 pika
 python-json-logger
 python-logging-rabbitmq
