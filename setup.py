@@ -18,11 +18,6 @@ with open(
 if not has_cv2:
     requirements.append("opencv-python")
 
-# downgrade websocket for python<3.7
-if sys.version_info.major==3 and sys.version_info.minor<7:
-    for i in range(len(requirements)):
-        if "websockets" in requirements[i]:
-            requirements[i] = "websockets==9.1"
     
 
 setuptools.setup(
@@ -38,9 +33,9 @@ setuptools.setup(
     packages=setuptools.find_packages(),
     install_requires=requirements,
     classifiers=[
-        "Programming Language :: Python :: 3.6",
+        "Programming Language :: Python :: 3.7",
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
     ],
-    python_requires=">=3.6",
+    python_requires=">=3.7",
 )
