@@ -1,6 +1,7 @@
 import typing as T
 
 from pydantic import BaseModel
+import bson
 
 
 class HeartbeatMessage(BaseModel):

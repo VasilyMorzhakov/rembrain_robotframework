@@ -183,8 +183,10 @@ class WsRobotProcess(RobotProcess):
                 data: bytes = personal_bind_message.to_bson()
 
             else:
-                data: bytes = self.consume()
+                data = self.consume()
 
+            if isinstance(data,Request):
+                data=data.json().encode('utf-8')
             if not isinstance(data, bytes):
                 self.log.error(f"Trying to send non-binary data to push: {data}")
                 raise RuntimeError("Data to send to ws should be binary")

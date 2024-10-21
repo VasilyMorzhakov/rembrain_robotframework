@@ -1,0 +1,15 @@
+processes:
+
+
+  command_receiver:
+    command_type: pull
+    exchange: "commands"
+    publish:
+      - commands
+
+  process_responder:
+    consume:
+      - commands
+
+shared_objects:
+  exit_flag: "Value:bool"

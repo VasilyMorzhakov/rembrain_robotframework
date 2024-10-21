@@ -40,3 +40,5 @@ class ImageCapture(RobotProcess):
                 self.heartbeat(f"Hello! Sent {self.frame_number} messages")
 
             time.sleep(1.0 / self.FPS)
+
+

@@ -1,4 +1,6 @@
 import logging
+import os
+import time
 import typing as T
 from collections import namedtuple
 from datetime import datetime
@@ -23,6 +25,7 @@ class RobotProcess:
         publish_queues: T.Dict[str, T.List[Queue]],
         system_queues: T.Dict[str, Queue],
         watcher_queue: T.Optional[Queue],
+        push_system_queue: T.Optional[Queue],
         *args,
         **kwargs,
     ):
@@ -47,6 +50,7 @@ class RobotProcess:
             self._init_monitoring(self.name)
 
         self.watcher_queue = watcher_queue
+        self.push_system_queue = push_system_queue
 
     def run(self) -> None:
         raise NotImplementedError()
@@ -220,7 +224,7 @@ class RobotProcess:
         :rtype: Bool
         """
         if len(self._consume_queues.keys()) == 0:
-            raise ConfigurationError(f'Process "{self.name}" has no queues to read.')
+            raise ConfigurationError(f"Process {self.name} has no queues to read.")
 
         if consume_queue_name is None:
             if len(self._consume_queues.keys()) != 1:
@@ -237,6 +241,7 @@ class RobotProcess:
         message: T.Any,
         queue_name: T.Optional[str] = None,
         service_name: str = "",
+        through_websocket: bool = False,
         clear_on_overflow: bool = False,
     ) -> UUID:
         """
@@ -263,8 +268,15 @@ class RobotProcess:
 
         :raise: ConfigurationError: if number of queues != 1 and queue name was not given
         """
+
+        username=None
+        if through_websocket:
+            if not 'RRF_USERNAME' in os.environ:
+                raise Exception('to operate through websocket RRF_USERNAME is needed')
+            username=os.environ['RRF_USERNAME']
+
         message = Request(
-            client_process=self.name, service_name=service_name, data=message
+            client_process=self.name, service_name=service_name, data=message,username=username
         )
         self.publish(message, queue_name, clear_on_overflow)
         return message.uid
@@ -274,7 +286,7 @@ class RobotProcess:
     ) -> Request:
         return self.consume(queue_name, clear_all_messages)
 
-    def wait_response(self, personal_message_uid: UUID) -> T.Any:
+    def wait_response(self, personal_message_uid: UUID,timeout:float = 60.0) -> T.Any:
         """
         Waits for the response Request object created after publishing a personal message.
         The process is blocked until the result of a message with the personal_message_uid arrives.
@@ -310,15 +322,24 @@ class RobotProcess:
             del self._received_personal_messages[personal_message_uid]
             return personal_message.data
 
+        start=time.time()
         while True:
             if len(self._received_personal_messages) > 50:
                 raise Exception(f"Overflow of personal messages for '{self.name}'!")
 
-            personal_message: Request = self._system_queues[self.name].get()
-            if personal_message.uid == personal_message_uid:
-                return personal_message.data
 
-            self._received_personal_messages[personal_message.uid] = personal_message
+            if not self._system_queues[self.name].empty():
+                personal_message: Request = self._system_queues[self.name].get()
+                if personal_message.uid == personal_message_uid:
+                    return personal_message.data
+
+                self._received_personal_messages[personal_message.uid] = personal_message
+            else:
+                time.sleep(0.01)
+
+            if time.time()-start>timeout:
+                self.log.error('timeout in wait_response')
+                return None
 
     def respond_to(self, request: Request) -> None:
         """
@@ -330,7 +351,11 @@ class RobotProcess:
         :param Request request: request with response data
         :return None
         """
-        self._system_queues[request.client_process].put(request)
+        if request.username is None:
+            self._system_queues[request.client_process].put(request)
+        else:
+            #it means an external response
+            self.push_system_queue.put(request)
 
     def heartbeat(self, message: str):
         if not self.watcher_queue:

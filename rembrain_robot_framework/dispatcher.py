@@ -9,6 +9,7 @@ from threading import Thread
 from rembrain_robot_framework import utils
 from rembrain_robot_framework.logger.utils import setup_logging
 from rembrain_robot_framework.services.watcher import Watcher
+from rembrain_robot_framework.services.system_queue_process import SystemQueueProcess
 from multiprocessing import Queue, Process
 
 
@@ -28,7 +29,7 @@ class RobotDispatcher:
         processes: T.Optional[dict] = None,
         project_description: T.Optional[dict] = None,
         format_string: str = "%(levelname)s:%(name)s:%(message)s",
-        in_cluster: bool = True,
+        in_cluster: bool = False,
     ):
         """
         Set up processes and queues configuration
@@ -178,8 +179,14 @@ class RobotDispatcher:
             p: self.mp_context.Queue(maxsize=self.DEFAULT_QUEUE_SIZE)
             for p in self.processes
         }
+        #push system queue for cross network RPC
+        self.push_system_queue = self.mp_context.Queue(maxsize=self.DEFAULT_QUEUE_SIZE)
 
         self._set_watcher()
+
+
+
+
 
     def _set_watcher(self):
         # for heartbeat
@@ -191,10 +198,13 @@ class RobotDispatcher:
             Thread(target=self.watcher.notify, daemon=True).start()
 
     def start_processes(self) -> None:
+
         for process_name in self.processes.keys():
             self._run_process(process_name)
             proc = self.process_pool[process_name]
             self.log.info(f"Process {process_name} on PID {proc.pid} was started")
+        self.system_process_runner = SystemQueueProcess(self.push_system_queue, self)
+
 
     def add_process(
         self,
@@ -355,6 +365,7 @@ class RobotDispatcher:
                 "project_description": self.project_description,
                 "logging_queue": self.log_queue,
                 "system_queues": self.system_queues,
+                "push_system_queue": self.push_system_queue,
                 "watcher_queue": self.watcher_queue,
                 **self.processes[proc_name],
                 **kwargs,

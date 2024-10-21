@@ -33,7 +33,7 @@ class Watcher:
         async for ws in websockets.connect(self.ws_url, open_timeout=1.5):
             try:
                 if not self.watcher_queue.empty():
-                    message = self.watcher_queue.get()
+                    message= self.watcher_queue.get()
 
                     await ws.send(
                         WsRequest(
@@ -43,7 +43,7 @@ class Watcher:
                             username=self.username,
                             password=self.password,
                             message=message,
-                        )
+                        ).json()
                     )
                 await asyncio.sleep(0.1)
 

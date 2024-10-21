@@ -1,0 +1,15 @@
+processes:
+
+
+  command_sender:
+    command_type: push_loop
+    exchange: "commands"
+    consume:
+      - commands
+
+  process_requester:
+    publish:
+      - commands
+
+shared_objects:
+  exit_flag: "Value:bool"
