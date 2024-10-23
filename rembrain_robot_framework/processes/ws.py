@@ -12,7 +12,6 @@ from rembrain_robot_framework.models.bind_request import BindRequest
 from rembrain_robot_framework.utils import get_arg_with_env_fallback
 from rembrain_robot_framework.ws import WsCommandType, WsRequest
 from rembrain_robot_framework.ws.log_adapter import WsLogAdapter
-import sys
 
 
 
@@ -88,7 +87,16 @@ class WsRobotProcess(RobotProcess):
 
         elif self.command_type == WsCommandType.PUSH_LOOP:
             asyncio.run(self._connect_ws(self._push_loop_callback))
-                
+
+        elif self.command_type == WsCommandType.BIDIRECTIONAL:
+            asyncio.run(self._connect_ws(self.bidirectional_callback))
+
+    async def bidirectional_callback(self, ws):
+        await asyncio.gather(
+            self._pull_callback(ws),
+            self._ping(ws)
+        )
+
     async def _pull_callback(self, ws):
         while True:
             data = await ws.recv()
@@ -194,7 +202,7 @@ class WsRobotProcess(RobotProcess):
     def _get_control_packet(self) -> str:
         extra_params = {}
 
-        if self.command_type == WsCommandType.PULL:
+        if self.command_type in {WsCommandType.PULL, WsCommandType.BIDIRECTIONAL}:
             if self.rpc_user_type == RpcUserType.CLIENT:
                 extra_params["exchange_bind_key"] = f"{self.robot_name}.*"
 
@@ -234,6 +242,7 @@ class WsRobotProcess(RobotProcess):
             WsCommandType.PUSH,
             WsCommandType.PULL,
             WsCommandType.PUSH_LOOP,
+            WsCommandType.BIDIRECTIONAL,
         ):
             raise RuntimeError("Unknown/disallowed command type.")
 
