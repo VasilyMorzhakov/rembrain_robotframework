@@ -11,6 +11,10 @@ from multiprocessing import context, Manager
 
 def generate(name: str, manager: Manager, ctx: context.BaseContext) -> T.Any:
     # Important: Since we are using a separate context for the RobotProcesses, always instantiate from it
+    if name.startswith("Array:"):
+        length = int(name.split(":")[1])
+        return ctx.Array('B', length, lock=True) 
+    
     if name == "dict":
         return manager.dict()
 
